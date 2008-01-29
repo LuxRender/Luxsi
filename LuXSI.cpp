@@ -1,7 +1,5 @@
 /*
 LuXSI - Softimage XSI Export plug-in for the LuxRender (http://www.luxrender.org) renderer
-		compiled version at: http://www.migaweb.de
-
 
 Copyright (C) 2007  Michael Gangolf
 
@@ -19,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-
 #include <xsi_particlecloud.h> 
 #include <xsi_particlecloudprimitive.h> 
 #include <xsi_application.h>
@@ -55,11 +52,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <xsi_vertex.h>
 #include <xsi_polygonnode.h>
 #include <xsi_utils.h>
+#include <math.h>
 
 using namespace XSI; 
 using namespace MATH; 
 using namespace std;
 
+#define PI 3.14159265
 
 void writeLuxsiBasics();
 void writeLuxsiCam(X3DObject o);
@@ -80,8 +79,8 @@ std::stringstream sLight, sObj, sMat;
 Null null;
 CustomProperty prop ;
 
-int vXRes=640,vYRes=480,vFilt=1,vMaxDepth=256,vSamples=4,vSave=120,vTone=1,vMaxrej=128,vSampler=0;
-bool vMLT=false,vIsLinux=true,vIsGI=true,vRrft=true,vBloom=false, vProg=true,vIsCaustic=false,vIsHiddenCam=false,vIsHiddenLight=false,vIsHiddenObj=false;
+int vXRes=640,vYRes=480,vFilt=1,vMaxDepth=256,vSamples=4,vPxSampler=1,vSave=120,vTone=1,vMaxrej=128,vSampler=0;
+bool vMLT=true,vIsLinux=true,vIsGI=true,vRrft=true,vBloom=false, vProg=true,vIsCaustic=false,vIsHiddenCam=false,vIsHiddenLight=false,vIsHiddenObj=false;
 bool vUseJitter=true,vIsHiddenSurfaces=false,vSFPreview=true,vIsHiddenClouds=false,vExpOne=true,vAmbBack=false,vExr=false,vIgi=false,vTga=true;
 float vTPre=1.0f,vTPos=1.0f,vTBurn=6.0f,vCSize=0.4f,vGITolerance=0.025f,vSpacingX=0.1f,vSpacingY=0.1f,vContrast=2.0f,vDither=0.5f,vBloomWidth=0.1f,vBloomRadius=0.1f,vLmprob=0.25f;
 
@@ -97,7 +96,7 @@ XSIPLUGINCALLBACK CStatus XSILoadPlugin( PluginRegistrar& in_reg )
 	in_reg.PutName(L"LuXSI");
 	in_reg.PutEmail(L"miga@migaweb.de");
 	in_reg.PutURL(L"http://www.migaweb.de");
-	in_reg.PutVersion(0,3);
+	in_reg.PutVersion(0,4);
 	in_reg.RegisterProperty(L"LuXSI");
 	in_reg.RegisterMenu(siMenuMainFileExportID,L"LuXSI_Menu",false,false);
 	//RegistrationInsertionPoint - do not remove this line
@@ -136,8 +135,9 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 	prop.AddParameter(L"progressive",CValue::siBool,siPersistable,L"",L"",vProg,CValue(),CValue(),CValue(),CValue(),oParam);
 	prop.AddParameter(L"rrft",CValue::siBool,siPersistable,L"",L"",vRrft,CValue(),CValue(),CValue(),CValue(),oParam);
 	
-        prop.AddParameter( L"Filt", CValue::siInt4, siPersistable, L"", L"",vFilt, oParam ) ;
+	prop.AddParameter( L"Filt", CValue::siInt4, siPersistable, L"", L"",vFilt, oParam ) ;
 	prop.AddParameter( L"sampler", CValue::siInt4, siPersistable, L"", L"",vSampler, oParam ) ;
+	prop.AddParameter( L"pxsampler", CValue::siInt4, siPersistable, L"", L"",vPxSampler, oParam ) ;
 	prop.AddParameter( L"tone", CValue::siInt4, siPersistable, L"", L"",vTone, oParam ) ;
 	prop.AddParameter(L"dither",CValue::siFloat,siPersistable,L"",L"",vDither,0,10,0,1,oParam);
 	
@@ -187,20 +187,29 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
 	
 	lay.AddRow();
 	CValueArray vItem2(10);
-        vItem2[0] = L"box" ; vItem2[1] = 0;
+	vItem2[0] = L"box" ; vItem2[1] = 0;
 	vItem2[2] = L"gaussian" ; vItem2[3] = 1;
 	vItem2[4] = L"mitchell" ; vItem2[5] = 2;
 	vItem2[6] = L"sinc" ; vItem2[7] = 3;
 	vItem2[8] = L"triangle" ; vItem2[9] = 4;
 	lay.AddEnumControl(L"Filt",vItem2,L"Filter",siControlCombo ) ;
 	
-	CValueArray vItem3(8);
-        vItem3[0] = L"lowdiscrepancy" ; vItem3[1] = 0;
-	vItem3[2] = L"random" ; vItem3[3] = 1;
-	vItem3[4] = L"stratfied" ; vItem3[5] = 2;
-	vItem3[6] = L"bestcandidate" ; vItem3[7] = 3;
+	CValueArray vItem3(12);
+	vItem3[0] = L"lowdiscrepancy" ; vItem3[1] = 0;
+	vItem3[2] = L"halton" ; vItem3[3] = 1;
+	vItem3[4] = L"random" ; vItem3[5] = 2;
+	vItem3[6] = L"stratfied" ; vItem3[7] = 3;
+	vItem3[8] = L"bestcandidate" ; vItem3[9] = 4;
+	vItem3[10] = L"erpt" ; vItem3[11] = 5;
 	lay.AddEnumControl(L"sampler",vItem3,L"Sampler",siControlCombo ) ;
 	lay.EndRow();
+	
+	CValueArray vItem5(6);
+	vItem5[0] = L"linear" ; vItem5[1] = 0;
+	vItem5[2] = L"vegas" ; vItem5[3] = 1;
+	vItem5[4] = L"random" ; vItem5[5] = 2;
+	lay.AddEnumControl(L"pxsampler",vItem5,L"Pixelsampler",siControlCombo ) ;
+	
 	lay.EndGroup();
 	
 	
@@ -225,7 +234,6 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
 	PPGItem it = lay.GetItem( L"fObjects" );
 	it.PutAttribute( siUIFileFilter, L"LuXSI Scenes|*.lxs" ) ;
 	lay.AddRow();
-	Command cmd();
 	lay.AddButton(L"exe_luxsi",L"Export");
 	lay.EndRow();
 	
@@ -248,7 +256,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
 	
 	lay.AddGroup(L"Tonemapping");
 	CValueArray vItem4(10);
-        vItem4[0] = L"none" ; vItem4[1] = 0;
+	vItem4[0] = L"none" ; vItem4[1] = 0;
 	vItem4[2] = L"Reinhard" ; vItem4[3] = 1;
 	vItem4[4] = L"maxwhite" ; vItem4[5] = 2;
 	vItem4[6] = L"highcontrast" ; vItem4[7] = 3;
@@ -270,7 +278,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
 	lay.EndRow();
 	lay.EndGroup();
 	
-
+	
 	lay.AddRow();
 	lay.AddButton(L"exe_luxsi",L"Export");
 	lay.EndRow();
@@ -287,7 +295,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
 	
 	
 	
-			
+	
 	PPGEventContext::PPGEvent eventID = ctxt.GetEventID() ;
 	
 	if ( eventID == PPGEventContext::siOnInit )
@@ -396,6 +404,8 @@ void update_LuXSI_values(CString paramName, Parameter changed,PPGLayout lay){
 		vTga=changed.GetValue();
 	} else if (paramName==L"sampler"){
 		vSampler=changed.GetValue();
+	} else if (paramName==L"pxsampler"){
+		vPxSampler=changed.GetValue();
 	}
 }
 
@@ -461,7 +471,8 @@ void writeLuxsiBasics(){
 	
 	
 	char aBool[2][6]={"false","true"};
-	char aSampler[4][20]={"lowdiscrepancy","random","stratified","bestcandidate"};
+	char aSampler[6][20]={"lowdiscrepancy","halton","random","stratified","bestcandidate","erpt"};
+	char aPxSampler[3][20]={"linear","vegas","random"};
 	
 	string fname=vFileObjects.GetAsciiString();
 	int loc=fname.rfind(".");
@@ -506,7 +517,7 @@ void writeLuxsiBasics(){
 	f << "      \"float gamma\" [" << vContrast << "]\n";
 	f << "      \"float dither\" ["<< vDither <<"]\n";
 	f << "PixelFilter \""<< aFilter[vFilt] << "\" \"float xwidth\" [2.000000] \"float ywidth\" [2.000000]\n";
-	f << "Sampler \""<< aSampler[vSampler] <<"\" \"bool progressive\" [\"" << aBool[vProg] << "\"]\n";
+	f << "Sampler \""<< aSampler[vSampler] <<"\"  \"string pixelsampler\" [\""<< aPxSampler[vPxSampler] <<"\"]  \"bool progressive\" [\"" << aBool[vProg] << "\"]\n";
 	
 	if (vSampler==0) {
 		f << "\"integer pixelsamples\" ["<< vSamples <<"]\n";
@@ -603,13 +614,18 @@ void writeLuxsiCam(X3DObject o){
 	CVector3 tranlation(0,1,0);
 	CTransformation target=o2.GetKinematics().GetGlobal().GetTransform().AddLocalTranslation(tranlation);	
 	CVector3 up(target.GetTranslation());
-	
-	
-	
-	
+	float vfov;
+	if ((int)c.GetParameterValue(CString(L"fovtype"))==1) {
+		// calculate the proper FOV (horizontal -> vertical)
+		float hfov = (float)c.GetParameterValue(CString(L"fov"));
+		vfov=2* atan(1/(float)c.GetParameterValue(CString(L"aspect")) * tan(hfov/2*PI/180))*180/PI;
+	} else {
+		// keep vertical FOV
+		vfov=(float)c.GetParameterValue(CString(L"fov"));
+	}
 	// lookat: posX posY posZ targetX targetY targetZ upX upY upZ
 	f << "LookAt " << CString(gt.GetTranslation().GetX()).GetAsciiString() << " " <<CString(gt.GetTranslation().GetY()).GetAsciiString() << " " << CString(gt.GetTranslation().GetZ()).GetAsciiString() << " " << CString(ci_gt.GetTranslation().GetX()).GetAsciiString() << " " <<CString(ci_gt.GetTranslation().GetY()).GetAsciiString()  << " " <<CString(ci_gt.GetTranslation().GetZ()).GetAsciiString()  << " 0 " << CString(up.GetY()*up.GetY()).GetAsciiString() << " 0 \n";
-	f << "Camera \"perspective\" \"float fov\" [" << (c.GetParameterValue(CString(L"fov")).GetAsText()).GetAsciiString() << "] \"float lensradius\" ["<< CString(vLensr).GetAsciiString()  <<"] \"float focaldistance\" ["<< CString(vFdist).GetAsciiString() <<"]"; 
+	f << "Camera \"perspective\" \"float fov\" [" << vfov << "] \"float lensradius\" ["<< CString(vLensr).GetAsciiString()  <<"] \"float focaldistance\" ["<< CString(vFdist).GetAsciiString() <<"]"; 
 	f << "\n\n";
 }
 
@@ -659,29 +675,14 @@ void writeLuxsiLight(X3DObject o){
 		//
 		//sunlight
 		//
-		// calculate interest
-		X3DObject li;
-		CVector3 intPos;
-		CVector3 tranlation(0,0,-1);
-		CTransformation target=localTransformation.AddLocalTranslation(tranlation);
 		
+		CMatrix4 sunTransMat = o.GetKinematics().GetGlobal().GetTransform().GetMatrix4();
 		
-		CVector3 tranlation1(0,-1,0);
-		CTransformation up=o.GetKinematics().GetGlobal().GetTransform().AddLocalTranslation(tranlation1);
-		
-		CVector3 tranlation2(1,0,0);
-		CTransformation east=o.GetKinematics().GetGlobal().GetTransform().AddLocalTranslation(tranlation2);
-		
-		KinematicState  gs2 = o.GetKinematics().GetGlobal();
-		CTransformation gt2 = gs2.GetTransform();
-		MapObjectPoseToWorldSpace(  gt2, up);
-		intPos=up.GetTranslation();
-		lMore=L"Rotate 90 1 0 0\nRotate " + CString(intPos.GetX()) + L" 1 0 0 \n Rotate " + CString(intPos.GetY()) +L" 0 1 0 \n Rotate "+ CString(intPos.GetZ())+L" 0 0 1";
-		lRow1=L"LightSource \"sunsky\" \"integer nsamples\" [ 4 ]\n";
-		lRow2=L"\"vector sundir\" [ 0 0 1 ]";
-		lRow3=L"\"float turbidity\" [2.000000]\n";
-		
-		
+		// CHECK LIGHT DIR
+		lMore=L"Transform ["+CString((float)sunTransMat.GetValue(0,0))+L" "+CString((float)sunTransMat.GetValue(0,1))+L" "+CString((float)sunTransMat.GetValue(0,2))+L" 0 "+CString((float)sunTransMat.GetValue(1,0))+L" "+CString((float)sunTransMat.GetValue(1,1))+L" "+CString((float)sunTransMat.GetValue(1,2))+L" 0 "+CString((float)sunTransMat.GetValue(2,0))+L" "+CString((float)sunTransMat.GetValue(2,1))+L" "+CString((float)sunTransMat.GetValue(2,2))+L" 0 "+CString((float)sunTransMat.GetValue(3,0))+L" "+CString((float)sunTransMat.GetValue(3,1))+L" "+CString((float)sunTransMat.GetValue(3,2))+L" 1]";
+		lRow1=L"LightSource \"sunsky\" \"integer nsamples\" [4] ";
+		//lRow2=L"\"vector sundir\" [ "+CString((float)sunTransMat.GetValue(2,0))+L" "+CString((float)sunTransMat.GetValue(2,2))+L" "+CString((float)sunTransMat.GetValue(2,1))+L" ]";
+		lRow2=L"\"vector sundir\" [0 1 1] \"color L\" [0.005000 0.005000 0.005000]\n\"float turbidity\" [2.000000]";
 		
 	} else {
 		//
@@ -694,7 +695,7 @@ void writeLuxsiLight(X3DObject o){
 	
 	sLight <<"AttributeBegin \n";
 	if (lMore.GetAsText()!=L"") {
-		sLight << lMore.GetAsText().GetAsciiString()<< " \n";
+		sLight << "  " << lMore.GetAsText().GetAsciiString()<< " \n";
 	}
 	
 	sLight <<"  " << lRow1.GetAsText().GetAsciiString()<< " \n";
@@ -763,34 +764,43 @@ int writeLuxsiShader(X3DObject o){
 	
 	
 	
-	if (s.GetParameter(L"refract_inuse").GetValue()=="-1" || (float)s.GetParameter(L"transparency").GetValue()>0.0f){
-		
+	if (s.GetParameter(L"refract_inuse").GetValue()=="-1") { 
+		//glass phong/lamber/blin/constant/cooktorrance/strauss
+		float ior=0.0f;
 		s.GetColorParameterValue(L"transparency",red,green,blue,alpha );
-		s.GetColorParameterValue(L"refr_color",b_red,b_green,b_blue,b_alpha );
-		
-		
-		
-		if (red>0 || green>0 || blue>0 || b_red>0 || b_green>0 || b_blue>0) {
-			//glass
-			float ior=0.0f;
-			if (vMatID==L"mia_material_phen") { 
-				s.GetColorParameterValue(L"refr_color",red,green,blue,alpha );
-				s.GetColorParameterValue(L"refr_color",sp_red,sp_green,sp_blue,sp_alpha );
-				ior = (float)s.GetParameter(L"refr_ior").GetValue();
-				
-			} else {
-				s.GetColorParameterValue(L"refl_color",sp_red,sp_green,sp_blue,sp_alpha );
-				ior = (float)s.GetParameter(L"index_of_refraction").GetValue();
-			}
+		if (red>0 || green>0 || blue>0) {
+		  	ret=1; // glass
+			s.GetColorParameterValue(L"reflectivity",sp_red,sp_green,sp_blue,sp_alpha );
+			ior = (float)s.GetParameter(L"index_of_refraction").GetValue();
+			vMore1= L"Texture \"Kt-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" ["+CString(red)+L" "+CString(green)+L" "+CString(blue)+L"]";
+			vMore2= L"Texture \"Kr-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" ["+CString(sp_red)+L" "+CString(sp_green)+L" "+CString(sp_blue)+L"]";
+			vMore3= L"Texture \"index-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" ["+CString(ior)+L"]";
+			if ((float)s.GetParameter(L"trans_glossy").GetValue()>0) {
+		   	vMore4= L"Texture \"uroughness-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" ["+CString((float)s.GetParameter(L"trans_glossy").GetValue())+L"]";
+		   	vMore5= L"Texture \"vroughness-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" ["+CString((float)s.GetParameter(L"trans_glossy").GetValue())+L"]";
+		   	ret=7; // roughglass
+		   }
 			
-			
-			vMore1= L"Texture \"Kt-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" ["+CString(red)+L" "+CString(green)+L" "+CString(blue)+L"]\n";
-			vMore2= L"Texture \"Kr-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" ["+CString(sp_red)+L" "+CString(sp_green)+L" "+CString(sp_blue)+L"]\n";
-			vMore3= L"Texture \"index-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" ["+CString(ior)+L"]\n";
-			ret=1;
 			vIsSet=true;
 		}
 	}
+	
+	
+	if (!vIsSet) {
+		if ((float)s.GetParameter(L"transparency").GetValue()>0.0f) {
+			float ior=0.0f;
+			// glass mia-arch shader
+			s.GetColorParameterValue(L"refr_color",red,green,blue,alpha );
+			s.GetColorParameterValue(L"refl_color",sp_red,sp_green,sp_blue,sp_alpha );
+			ior = (float)s.GetParameter(L"refr_ior").GetValue();
+			vMore1= L"Texture \"Kt-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" ["+CString(red)+L" "+CString(green)+L" "+CString(blue)+L"]";
+			vMore2= L"Texture \"Kr-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" ["+CString(sp_red)+L" "+CString(sp_green)+L" "+CString(sp_blue)+L"]";
+			vMore3= L"Texture \"index-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" ["+CString(ior)+L"]";
+			ret=1;  // glass
+			vIsSet=true;
+		}
+	}
+	
 	
 	if (!vIsSet) {
 		if (s.GetParameter(L"reflect_inuse").GetValue()=="-1" || (float)s.GetParameter(L"reflectivity").GetValue()>0.0f){
@@ -808,18 +818,14 @@ int writeLuxsiShader(X3DObject o){
 			}
 			if (red>0 || green>0 || blue>0) {
 				//mirror
-				vMore1= L"Texture \"Kr-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" ["+CString(red)+L" "+CString(green)+L" "+CString(blue)+L"]\n";
+				vMore1= L"Texture \"Kr-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" ["+CString(red)+L" "+CString(green)+L" "+CString(blue)+L"]";
 				ret=3;
 				vIsSet=true;
 			}
-			
 		} 
-	}
-	
-	
+	}	
 	if (!vIsSet) {
 		//app.LogMessage(vMatID);
-		
 		
 		// Get Textures
 		/*
@@ -835,56 +841,12 @@ int writeLuxsiShader(X3DObject o){
 		// Material Stuff
 		if (vMatID==L"mi_car_paint_phen") { 
 			// car paint
-		
-			
-			
-			
-			if (string(CString(s.GetName()).GetAsciiString()).find( "FORDF8", 0 ) != string::npos) {
-				//
-			} else if (string(CString(s.GetName()).GetAsciiString()).find( "POLARIS", 0 ) != string::npos) {
-				//
-			}else if (string(CString(s.GetName()).GetAsciiString()).find( "OPELTITAN", 0 ) != string::npos) {
-				//
-			}else if (string(CString(s.GetName()).GetAsciiString()).find( "BMW339", 0 ) != string::npos) {
-				//
-			}else if (string(CString(s.GetName()).GetAsciiString()).find( "2KACRYLACK", 0 ) != string::npos) {
-				//
-			}else if (string(CString(s.GetName()).GetAsciiString()).find( "WHITE", 0 ) != string::npos) {
-				//
-			}else if (string(CString(s.GetName()).GetAsciiString()).find( "BLUE", 0 ) != string::npos) {
-				vMore1=L"Texture \"Kd-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" [0.0079 0.023 0.1]\n \       
-				Texture \"Ks1-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" [0.0011 0.0015 0.0019]\n  \
-				Texture \"Ks2-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" [0.025 0.03 0.043]\n      \
-				Texture \"Ks3-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" [0.059 0.074 0.082]\n      \
-				Texture \"R1-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [1.000]\n \
-				Texture \"R2-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [0.094]\n \
-				Texture \"R3-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [0.170]\n \
-				Texture \"M1-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [0.150]\n \
-				Texture \"M2-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [0.043]\n \
-				Texture \"M3-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [0.020]";  
-
-			}else if (string(CString(s.GetName()).GetAsciiString()).find( "BLUEMATTE", 0 ) != string::npos) {
-				//
-			} else {
 				float spr,spg,spb,spa,spr2,spg2,spb2,spa2,r,g,b,a;
 				s.GetColorParameterValue(L"spec",spr,spg,spb,spa );
 				s.GetColorParameterValue(L"spec_sec",spr2,spg2,spb2,spa2 );
 				s.GetColorParameterValue(L"base_color",r,g,b,a );
-				
-				
-				vMore1=L"Texture \"Kd-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" ["+CString(r)+L" "+CString(g)+L" "+CString(b)+L"]\n \       
-				Texture \"Ks1-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" ["+CString(spr)+L" "+CString(spg)+L" "+CString(spb)+L"]\n  \
-				Texture \"Ks2-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" ["+CString(spr2)+L" "+CString(spg2)+L" "+CString(spb2)+L"]\n      \
-				Texture \"Ks3-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" ["+CString(spr2)+L" "+CString(spg2)+L" "+CString(spb2)+L"]\n      \
-				Texture \"R1-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [1.000]\n \
-				Texture \"R2-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [0.094]\n \
-				Texture \"R3-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [0.170]\n \
-				Texture \"M1-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [0.150]\n \
-				Texture \"M2-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [0.043]\n \
-				Texture \"M3-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [0.020]";  
-			}
-			ret=6;
-			
+				vMore1=L"Texture \"Kd-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" ["+CString(r)+L" "+CString(g)+L" "+CString(b)+L"]\n Texture \"Ks1-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" ["+CString(spr)+L" "+CString(spg)+L" "+CString(spb)+L"]\n Texture \"Ks2-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" ["+CString(spr2)+L" "+CString(spg2)+L" "+CString(spb2)+L"]\n Texture \"Ks3-"+ m.GetName() +L"\" \"color\" \"constant\" \"color value\" ["+CString(spr2)+L" "+CString(spg2)+L" "+CString(spb2)+L"]\n Texture \"R1-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [1.000]\n Texture \"R2-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [0.094]\n Texture \"R3-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [0.170]\n Texture \"M1-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [0.150]\n Texture \"M2-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [0.043]\n Texture \"M3-"+ m.GetName() +L"\" \"float\" \"constant\" \"float value\" [0.020]";
+				ret=6; // carpaint
 		} else if (vMatID==L"mia_material_phen") {
 			// arch vis
 			s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
@@ -913,9 +875,7 @@ int writeLuxsiShader(X3DObject o){
 			
 		} else if (vMatID==L"XSIAmbientOcclusion"){
 			
-		}
-		
-		else if (vMatID==L"material-constant"){
+		} else if (vMatID==L"material-constant"){
 			s.GetColorParameterValue(L"color",red,green,blue,alpha );
 		} else if (vMatID==L"material-strauss"){
 			s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
@@ -1028,19 +988,20 @@ int writeLuxsiObj(X3DObject o, CString vType){
 	
 	CLongArray pvCount;
 	CLongArray vIndices;
-        ga.GetVertexIndices(vIndices);
+   ga.GetVertexIndices(vIndices);
 	
-        ga.GetPolygonVerticesCount(pvCount);
+   ga.GetPolygonVerticesCount(pvCount);
 	LONG nPolyCount = ga.GetPolygonCount();
 	
-	CValueArray aShader(6);
+	CValueArray aShader(8);
 	aShader[0] = L"matte" ;
-        aShader[1] = L"glass" ;
+    aShader[1] = L"glass" ;
 	aShader[2] = L"substrate";
 	aShader[3] = L"mirror";
 	aShader[4] = L"matte";
 	aShader[5] = L"plastic";
 	aShader[6] = L"carpaint";
+	aShader[7] = L"roughglass";
 	int shader;
 	if (points.GetCount()>0 || tris.GetCount()>0) {
 		sObj << "# Object : " << (o.GetName()).GetAsciiString() ;
@@ -1070,6 +1031,8 @@ int writeLuxsiObj(X3DObject o, CString vType){
 				tmp=L" \"texture Kd\" \"Kd-"+m.GetName()+ L"\" \"texture Ks\" \"Ks-"+m.GetName()+L"\" \"texture roughness\" \"roughness-"+m.GetName()+L"\"";
 			} else if (shader==6) {
 				tmp=L"\"texture Kd\" \"Kd-"+m.GetName()+ L"\" \"texture Ks1\" \"Ks1-"+m.GetName()+ L"\" \"texture Ks2\" \"Ks2-"+m.GetName()+ L"\" \"texture Ks3\" \"Ks3-"+m.GetName()+ L"\" \"texture R1\" \"R1-"+m.GetName()+ L"\" \"texture R2\" \"R2-"+m.GetName()+ L"\" \"texture R3\" \"R3-"+m.GetName()+ L"\" \"texture M1\" \"M1-"+m.GetName()+ L"\" \"texture M2\" \"M2-"+m.GetName()+ L"\" \"texture M3\" \"M3-"+m.GetName()+ L"\"";
+			} else if (shader==7) {
+				tmp=L" \"texture Kr\" \"Kr-" + m.GetName()+L"\" \"texture Kt\" \"Kt-"+ m.GetName()+L"\" \"texture index\" \"index-"+ m.GetName()+L"\" \"texture uroughness\" \"uroughness-"+m.GetName()+L"\" \"texture vroughness\" \"vroughness-"+m.GetName()+L"\"";
 			}
 			if (vIsMeshLight) {
 				sObj << "AreaLightSource \"area\" \"integer nsamples\" [1] \"color L\" ["<<(red*(float)s.GetParameterValue(L"inc_inten")) <<" "<<(green*(float)s.GetParameterValue(L"inc_inten")) <<" "<<(blue*(float)s.GetParameterValue(L"inc_inten"))<<"]\n";
@@ -1280,7 +1243,7 @@ void luxsi_write(){
 		f << sObj.str();
 		sObj.flush();
 		sMat.flush();
-
+		
 		f << "WorldEnd";
 		f.close();
 	} else {}
