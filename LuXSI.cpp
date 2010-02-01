@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
+#include <xsi_segment.h>
 #include <xsi_materiallibrary.h>
 #include <xsi_particlecloud.h> 
 #include <xsi_particlecloudprimitive.h> 
@@ -79,6 +80,8 @@ using namespace std;
 void writeLuxsiBasics();
 void writeLuxsiCam(X3DObject o);
 void writeLuxsiLight(X3DObject o);
+int writeLuxsiInstance(X3DObject o);
+
 int writeLuxsiObj(X3DObject o);
 void writeClouds(X3DObject o);
 void writeLuxsiShader();
@@ -97,12 +100,12 @@ CustomProperty prop ;
 
 int vBounces=10,vPixelsamples=2,vSampler=2,vPresets=0,vDis=8,vThreads=2,vEye_depth=2,vLight_depth=2,vmaxRejects=256,vSurf=3,vXRes=800,vYRes=600,vFilt=2,vMaxDepth=256,vSamples=4,vSave=120,vPixelsampler=1;
 bool vMLT=true,vIsLinux=true,vIsGI=true,vRrft=true,vProg=true,vIsCaustic=false,vIsHiddenCam=false,vIsHiddenLight=false,vIsHiddenObj=false, vExportDone=false;
-bool vResume=false,vUseJitter=true,vIsHiddenSurfaces=false,vSFPreview=true,vIsHiddenClouds=false,vExpOne=true,vAmbBack=false,vExr=true,vIgi=false,vTga=true;
+bool vResume=false,vUseJitter=true,vIsHiddenSurfaces=false,vSFPreview=true,vIsHiddenClouds=false,vExpOne=true,vAmbBack=false,vExr=true,vPng=false,vTga=true;
 float vCSize=0.4f,vGITolerance=0.025f,vSpacingX=0.1f,vSpacingY=0.1f,vContrast=2.2f;
 float vmutation=0.1f, vrrprob=0.65f;
 
 CRefArray aGroups;
-CStringArray aMatList;
+CStringArray aMatList,aInstanceList;
 
 UIToolkit kit = app.GetUIToolkit();
 ProgressBar pb = kit.GetProgressBar();
@@ -166,7 +169,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 	prop.AddParameter(L"AmbBack",CValue::siBool,siPersistable,L"",L"",vAmbBack,CValue(),CValue(),CValue(),CValue(),oParam);
 	
 	prop.AddParameter(L"save_exr",CValue::siBool,siPersistable,L"",L"",vExr,CValue(),CValue(),CValue(),CValue(),oParam);
-	prop.AddParameter(L"save_igi",CValue::siBool,siPersistable,L"",L"",vIgi,CValue(),CValue(),CValue(),CValue(),oParam);
+	prop.AddParameter(L"save_png",CValue::siBool,siPersistable,L"",L"",vPng,CValue(),CValue(),CValue(),CValue(),oParam);
 	prop.AddParameter(L"save_tga",CValue::siBool,siPersistable,L"",L"",vTga,CValue(),CValue(),CValue(),CValue(),oParam);
 	
 	prop.AddParameter(L"mlt",CValue::siBool,siPersistable,L"",L"",vMLT,CValue(),CValue(),CValue(),CValue(),oParam);
@@ -228,7 +231,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
 	lay.AddGroup(L"Save as");
 	lay.AddItem(L"save_tga", L"TGA");
 	lay.AddItem(L"save_exr", L"EXR");
-	lay.AddItem(L"save_igi", L"IGI");
+	lay.AddItem(L"save_png", L"PNG");
 	lay.AddItem(L"savint",L"Interval");
 	
 	lay.EndGroup();
@@ -317,9 +320,6 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
 	
 	lay.AddItem(L"resume", L"Resume render");
 	
-
-	
-	
 	
 	lay.AddRow();
 	lay.AddButton(L"exe_luxsi",L"Export");
@@ -405,6 +405,10 @@ string replace(string input) {
 	return input;
 }
 
+CVector3 convertMatrix(CVector3 v){
+	CMatrix3 m2(1.0,0.0,0.0,  0.0,0.0,1.0,   0.0,-1.0,0.0);
+    return v.MulByMatrix3InPlace (m2);
+}
 
 void update_LuXSI_values(CString paramName, Parameter changed,PPGLayout lay){
 	// update variables when PPG value changed
@@ -537,8 +541,8 @@ void update_LuXSI_values(CString paramName, Parameter changed,PPGLayout lay){
 		vAmbBack=changed.GetValue();
 	} else if (paramName==L"maxrej"){
 		vmaxRejects=changed.GetValue();
-	} else if (paramName==L"save_igi"){
-		vIgi=changed.GetValue();
+	} else if (paramName==L"save_png"){
+		vPng=changed.GetValue();
 	} else if (paramName==L"save_exr"){
 		vExr=changed.GetValue();
 	} else if (paramName==L"save_tga"){
@@ -579,9 +583,24 @@ XSIPLUGINCALLBACK CStatus OnLuXSI_MenuClicked( XSI::CRef& )
 	addpropArgs[0] = L"LuXSI"; // Type of Property
 	addpropArgs[3] = L"LuXSI"; // Name for the Property
 	addpropArgs[1] = L"Scene_Root";
-	
+	bool vAlreadyThere=false;
 	CValue retVal ;
-	CStatus st = app.ExecuteCommand( L"SIAddProp", addpropArgs, retVal ) ;
+	CStatus st;
+	
+	// search for existing interface
+	CRefArray vItems = app.GetActiveSceneRoot().GetProperties();
+	for (int i=0;i<vItems.GetCount();i++){
+		if (SIObject(vItems[i]).GetType()==L"LuXSI") {
+			vAlreadyThere=true;
+			st = true;
+			break;
+		}
+	}
+	
+	
+	if (!vAlreadyThere){
+		st = app.ExecuteCommand( L"SIAddProp", addpropArgs, retVal ) ;
+	}
 	
 	if ( st.Succeeded() )
 	{
@@ -618,7 +637,7 @@ CString findInGroup(CString s){
 		CRefArray a=Group(grps[i]).GetMembers();
 		for (int j=0;j<a.GetCount();j++){
 			if (X3DObject(a[j]).GetName()==s) {
-				app.LogMessage(L"Group: " + Group(grps[i]).GetName() + L"Childname: "+X3DObject(a[j]).GetName());
+				//app.LogMessage(L"Group: " + Group(grps[i]).GetName() + L"Childname: "+X3DObject(a[j]).GetName());
 				return Group(grps[i]).GetName();
 			}
 		}
@@ -648,26 +667,26 @@ void writeLuxsiBasics(){
 	int loc=(int)fname.rfind(".");
 	
 	f << "Film \"fleximage\"\n";
-	f << "  \"integer xresolution\" [" <<  vXRes << "] \"integer yresolution\" [" <<  vYRes<<"]\n";
+	f << "  \"integer xresolution\" [" <<  vXRes << "]\n  \"integer yresolution\" [" <<  vYRes<<"]\n";
 	
 	f << "  \"string filename\" [\""<< replace(fname.substr(0,loc)) << "\"]\n";
 	f << "  \"integer writeinterval\" ["<< vSave << "]\n";
 	f << "  \"integer displayinterval\" ["<< vDis << "]\n";
 	
 	if (vExr){
-		f << "  \"bool write_tonemapped_exr\" [\"true\"]\n";
-		f << "  \"bool write_untonemapped_exr\" [\"true\"]\n";
+		f << "  \"bool write_exr\" [\"true\"]\n";
 	} else {
-		f << "  \"bool write_tonemapped_exr\" [\"false\"]\n";
+		f << "  \"bool write_exr\" [\"false\"]\n";
 	}
 	
 	if (vTga){
-		f << "  \"bool write_tonemapped_tga\" [\"true\"]\n";
+		f << "  \"bool write_tga\" [\"true\"]\n";
 	} 
-	if (vIgi){
-		f << "  \"bool write_tonemapped_igi\" [\"true\"]\n";
-		f << "  \"bool write_untonemapped_igi\" [\"true\"]\n";
-	} 
+	if (vPng){
+		f << "  \"bool write_png\" [\"true\"]\n";
+	} else {
+		f << "  \"bool write_png\" [\"false\"]\n";
+	}	
 	
 	f << "  \"bool write_resume_flm\" [\""<< aBool[vResume] << "\"]\n";
 	f << "  \"bool premultiplyalpha\" [\"false\"]\n";
@@ -693,7 +712,7 @@ void writeLuxsiBasics(){
 	}
 		
 	f << "\nSurfaceIntegrator \"" << aSurf[vSurf] << "\"\n";
-	f << "  \"integer maxdepth\" ["<< vMaxDepth << "] \n";
+	
 	switch(vSurf) {
 		case 0: // bidirectional
 			f << "  \"integer eyedepth\" ["<< vEye_depth << "] \n";
@@ -702,6 +721,8 @@ void writeLuxsiBasics(){
 		case 1: break;
 		case 2: break;
 		case 3: 
+			// path
+			f << "  \"integer maxdepth\" ["<< vMaxDepth << "] \n";
 			//f << "\"float rrcontinueprob\" ["<<vrrprob << "] ";
 			break;
 		case 4: break;
@@ -778,7 +799,7 @@ void writeLuxsiCam(X3DObject o){
 		c=o.GetChildren()[0];
 	}
 	
-	CVector3 vnegZ(0,0,-1);
+	CVector3 vnegZ(0,0,1);
 
 	// Operations to calculate look at position.
 	vnegZ.MulByMatrix3InPlace(c.GetKinematics().GetGlobal().GetTransform().GetRotationMatrix3());
@@ -790,7 +811,7 @@ void writeLuxsiCam(X3DObject o){
 	CTransformation localTransformation = o2.GetKinematics().GetLocal().GetTransform();
 	KinematicState  gs = o2.GetKinematics().GetGlobal();
 	CTransformation gt = gs.GetTransform();
-	MapObjectPoseToWorldSpace(  gt, localTransformation);
+	//MapObjectPoseToWorldSpace(  gt, localTransformation);
 	CVector3 translation(localTransformation.GetTranslation());
 	bool vDof=false;
 	
@@ -828,7 +849,11 @@ void writeLuxsiCam(X3DObject o){
 	// lookat: posX posY posZ targetX targetY targetZ upX upY upZ
 	double x,y,z;
 	vnegZ.Get( x,y,z );
-	f << "LookAt " << CString(gt.GetTranslation().GetX()).GetAsciiString() << " " <<CString(-gt.GetTranslation().GetZ()).GetAsciiString() << " " << CString(gt.GetTranslation().GetY()).GetAsciiString() << " " << x << " " << -z  << " " << y  << " 0 0 " << 	CString(up.GetZ()*up.GetZ()).GetAsciiString() << "\n";
+	
+	CVector3 new_pos = convertMatrix(gt.GetTranslation());
+	CVector3 new_pos_ci = convertMatrix(ci_gt.GetTranslation());
+	
+	f << "LookAt " << CString(new_pos.GetX()).GetAsciiString() << " " <<CString(new_pos.GetY()).GetAsciiString() << " " << CString(new_pos.GetZ()).GetAsciiString() << " " << CString(new_pos_ci.GetX()).GetAsciiString() << " " <<CString(new_pos_ci.GetY()).GetAsciiString() << " " << CString(new_pos_ci.GetZ()).GetAsciiString()  << " 0 0 " << 	CString(up.GetZ()).GetAsciiString() << "\n";
 	f << "Camera \"perspective\" \"float fov\" [" << vfov << "] \"float lensradius\" ["<< CString(vLensr).GetAsciiString()  <<"] \"float focaldistance\" ["<< CString(vFdist).GetAsciiString() <<"]"; 
 	f << "\n\n";
 }
@@ -866,10 +891,10 @@ void writeLuxsiLight(X3DObject o){
 		
 		//Get Interest
 		li= X3DObject(o.GetParent()).GetChildren()[1];
-		CTransformation localTransformation2 = li.GetKinematics().GetLocal().GetTransform();
-		KinematicState  gs2 = li.GetKinematics().GetGlobal();
-		CTransformation gt2 = gs2.GetTransform();
-		intPos=gt2.GetTranslation();
+		CTransformation lt = li.GetKinematics().GetLocal().GetTransform();
+		//KinematicState  gs2 = li.GetKinematics().GetGlobal();
+		//CTransformation gt2 = gs2.GetTransform();
+		intPos=lt.GetTranslation();
 		
 		CRefArray shad(Light(o).GetShaders());
 		Shader s(shad[0]);
@@ -887,7 +912,7 @@ void writeLuxsiLight(X3DObject o){
 		
 		f << "\nLightSource \"sunsky\"\n";
 		f << "  \"integer nsamples\" [4]\n";
-		f << "  \"vector sundir\" [ "<< (float)sunTransMat.GetValue(2,0) << " " << (float)-sunTransMat.GetValue(2,2) << " " << (float)sunTransMat.GetValue(2,1) << " ] \"float gain\" [" << (float)s.GetParameterValue(L"intensity") << "]\n";
+		f << "  \"vector sundir\" [ "<< (float)sunTransMat.GetValue(2,0) << " " << -(float)sunTransMat.GetValue(2,2) << " " << (float)sunTransMat.GetValue(2,1) << " ] \"float gain\" [" << (float)s.GetParameterValue(L"intensity") << "]\n";
 		
 	} else {
 		//
@@ -932,7 +957,8 @@ void writeLuxsiShader(){
 	
 	for ( LONG i=0; i < materials.GetCount(); i++ ) {
 		Texture vTexture;
-		CString addString;
+		CString shaderString;	
+		CString shaderType;
 	
 		float b_red=0.0f,b_green=0.0f,b_blue=0.0f,b_alpha=0.0f,red=0.0f,green=0.0f,blue=0.0f,alpha=0.0f,sp_red=0.0f,sp_green=0.0f,sp_blue=0.0f,sp_alpha=0.0f,vModScale=0.0f,refl_red=0.0f,refl_green=0.0f,refl_blue=0.0f,refl_alpha=0.0f;
 		float mRough=0.0f;
@@ -961,40 +987,41 @@ void writeLuxsiShader(){
 		//app.LogMessage(L"Shader: " + CString(Parameter(s.GetParameterValue(L"bump")).GetValue()));
 		
 		if (vMatID==L"lux_glass") {
+			shaderType=L"glass";
 			s.GetColorParameterValue(L"kt",red,green,blue,alpha );
-			f << "Texture \"Kt-" << sname << "\" \"color\" \"constant\" \"color value\" [" << red << " " << green << " " << blue << "]\n";
+			shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
 			s.GetColorParameterValue(L"kr",red,green,blue,alpha );
-			f << "Texture \"Kr-" << sname << "\" \"color\" \"constant\" \"color value\" [" << red << " " << green << " " << blue << "]\n";
-			f << "Texture \"index-"<<  sname << "\" \"float\" \"constant\" \"float value\" [" << (float)s.GetParameter(L"index").GetValue() << "]\n";
-			f << "Texture \"cauchyb-"<<  sname << "\" \"float\" \"constant\" \"float value\" [" << (float)s.GetParameter(L"cauchyb").GetValue() << "]\n";
+			shaderString += L"  \"color Kr\" [" + CString(red) + L" "  + CString(green) +  L" "  + CString(blue) + L"]\n";
+			shaderString += L"  \"float index\" [" + CString((float)s.GetParameter(L"index").GetValue()) + L"]\n";
+			shaderString += L"  \"float cauchyb\" [" + CString((float)s.GetParameter(L"cauchyb").GetValue()) + L"]\n";
+			/*
 			if ((bool)s.GetParameter(L"architectural").GetValue()==true) {
 				 addString += L"\"bool architectural\" [\"true\"]";
 			}
-			ret=1;
+			*/
 			vIsSet=true;	
 		} else if (vMatID==L"lux_roughglass") {
+			shaderType=L"roughglass";
 			s.GetColorParameterValue(L"kt",red,green,blue,alpha );
-			f << "Texture \"Kt-" << sname << "\" \"color\" \"constant\" \"color value\" [" << red << " " << green << " " << blue << "]\n";
+			shaderString += L"  \"color Kt\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"] \"float uroughness\" ["+ CString((float)s.GetParameter(L"uroughness").GetValue())+L"] \"float vroughness\" ["+CString((float)s.GetParameter(L"vroughness").GetValue())+L"]\n";
 			s.GetColorParameterValue(L"kr",red,green,blue,alpha );
-			f << "Texture \"Kr-" << sname << "\" \"color\" \"constant\" \"color value\" [" << red << " " << green << " " << blue << "]\n";
-			f << "Texture \"uroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" [" << (float)s.GetParameter(L"uroughness").GetValue() << "]\n";
-			f << "Texture \"vroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" [" << (float)s.GetParameter(L"vroughness").GetValue() << "]\n";
-			f << "Texture \"index-"<<  sname << "\" \"float\" \"constant\" \"float value\" [" << (float)s.GetParameter(L"index").GetValue() << "]\n";
-			f << "Texture \"cauchyb-"<<  sname << "\" \"float\" \"constant\" \"float value\" [" << (float)s.GetParameter(L"cauchyb").GetValue() << "]\n";
-			ret=7;
+			shaderString += L"  \"color Kr\" [" + CString(red) + L" "  + CString(green) +  L" "  + CString(blue) + L"]\n";
+			shaderString += L"  \"float index\" [" + CString((float)s.GetParameter(L"index").GetValue()) + L"]\n";
+			shaderString += L"  \"float cauchyb\" [" + CString((float)s.GetParameter(L"cauchyb").GetValue()) + L"]\n";
 			vIsSet=true;	
 		} else if (vMatID==L"lux_matte") {
+			shaderType=L"matte";
 			s.GetColorParameterValue(L"kd",red,green,blue,alpha );
-			f << "Texture \"Kd-"<< sname << "\" \"color\" \"constant\" \"color value\" ["<<red<<" "<<green<<" "<<blue<<"]\n";	
-			f << "Texture \"sigma-"<< sname << "\" \"float\" \"constant\" \"float value\" ["<< (float)s.GetParameter(L"sigma").GetValue() <<"]\n";
-			ret=4;
+			shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+			shaderString += L"  \"float sigma\" [" + CString((float)s.GetParameter(L"sigma").GetValue()) + L"]\n";
 			vIsSet=true;	
 		} else if (vMatID==L"lux_mirror") {
 			s.GetColorParameterValue(L"kr",red,green,blue,alpha );
-			f << "Texture \"Kr-"<< sname << "\" \"color\" \"constant\" \"color value\" ["<<red<<" "<<green<<" "<<blue<<"]\n";	
-			ret=8;
+			shaderType=L"mirror";
+			shaderString += L"  \"color Kr\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
 			vIsSet=true;	
 		} else if (vMatID==L"lux_metal") {
+			/*
 			CValueArray aMetal(5);
 			aMetal[0]="amorphous carbon";
 			aMetal[1]="silver";
@@ -1006,31 +1033,29 @@ void writeLuxsiShader(){
 			f << "Texture \"vroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" [" << (float)s.GetParameter(L"roughness").GetValue() << "]\n";
 			ret=9;
 			vIsSet=true;	
+			*/
 		} else if (vMatID==L"lux_shinymetal") {
+			
+			shaderType=L"shinymetal";
 			s.GetColorParameterValue(L"ks",red,green,blue,alpha );
-			f << "Texture \"Ks-" << sname << "\" \"color\" \"constant\" \"color value\" [" << red << " " << green << " " << blue << "]\n";
+			shaderString += L"  \"color Ks\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"] \"float uroughness\" ["+ CString((float)s.GetParameter(L"roughness").GetValue())+L"] \"float vroughness\" ["+CString((float)s.GetParameter(L"roughness").GetValue())+L"]\n";
 			s.GetColorParameterValue(L"kr",red,green,blue,alpha );
-			f << "Texture \"Kr-" << sname << "\" \"color\" \"constant\" \"color value\" [" << red << " " << green << " " << blue << "]\n";
-			f << "Texture \"uroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" [" << (float)s.GetParameter(L"roughness").GetValue() << "]\n";
-			f << "Texture \"vroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" [" << (float)s.GetParameter(L"roughness").GetValue() << "]\n";
-			ret=3;
+			shaderString += L"  \"color Kr\" [" + CString(red) + L" "  + CString(green) +  L" "  + CString(blue) + L"]\n";
 			vIsSet=true;	
 		} else if (vMatID==L"lux_substrate") {
+			shaderType=L"substrate";
 			s.GetColorParameterValue(L"kd",red,green,blue,alpha );
-			f << "Texture \"Kd-" << sname << "\" \"color\" \"constant\" \"color value\" [" << red << " " << green << " " << blue << "]\n";
+			shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"] \"float uroughness\" ["+ CString((float)s.GetParameter(L"uroughness").GetValue())+L"] \"float vroughness\" ["+CString((float)s.GetParameter(L"vroughness").GetValue())+L"]\n";
 			s.GetColorParameterValue(L"ks",red,green,blue,alpha );
-			f << "Texture \"Ks-" << sname << "\" \"color\" \"constant\" \"color value\" [" << red << " " << green << " " << blue << "]\n";
-			f << "Texture \"uroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" [" << (float)s.GetParameter(L"uroughness").GetValue() << "]\n";
-			f << "Texture \"vroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" [" << (float)s.GetParameter(L"vroughness").GetValue() << "]\n";
-			ret=2;
+			shaderString += L"  \"color Ks\" [" + CString(red) + L" "  + CString(green) +  L" "  + CString(blue) + L"]\n";
 			vIsSet=true;	
 		}else if (vMatID==L"lux_mattetranslucent") {
+			shaderType=L"mattetranslucent";
 			s.GetColorParameterValue(L"kr",red,green,blue,alpha );
-			f << "Texture \"Kr-"<< sname << "\" \"color\" \"constant\" \"color value\" ["<<red<<" "<<green<<" "<<blue<<"]\n";	
+			shaderString += L"  \"color Kr\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
 			s.GetColorParameterValue(L"kt",red,green,blue,alpha );
-			f << "Texture \"Kt-"<< sname << "\" \"color\" \"constant\" \"color value\" ["<<red<<" "<<green<<" "<<blue<<"]\n";	
-			f << "Texture \"sigma-"<< sname << "\" \"float\" \"constant\" \"float value\" ["<< (float)s.GetParameter(L"sigma").GetValue() <<"]\n";
-			ret=10;
+			shaderString += L"  \"color Kt\" [" + CString(red) + L" "  + CString(green) +  L" "  + CString(blue) + L"]\n";
+			shaderString += L"  \"float sigma\" [" + CString((float)s.GetParameter(L"sigma").GetValue()) + L"]\n";
 			vIsSet=true;	
 		}
 		
@@ -1040,18 +1065,17 @@ void writeLuxsiShader(){
 			float ior=0.0f;
 			s.GetColorParameterValue(L"transparency",red,green,blue,alpha );
 			if (red>0 || green>0 || blue>0) {
-				ret=1; // glass
+				shaderType=L"glass";
+				
+				shaderString += L"  \"color Kt\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
 				s.GetColorParameterValue(L"reflectivity",sp_red,sp_green,sp_blue,sp_alpha );
-				ior = (float)s.GetParameter(L"index_of_refraction").GetValue();
-				f << "Texture \"Kt-" << sname << "\" \"color\" \"constant\" \"color value\" [" << red << " " << green << " " << blue << "]\n";
-				f << "Texture \"Kr-" << sname << "\" \"color\" \"constant\" \"color value\" [" << sp_red << " " << sp_green << " " << sp_blue << "]\n";
-				f << "Texture \"index-"<<  sname << "\" \"float\" \"constant\" \"float value\" [" << ior << "]\n";
-				f << "Texture \"cauchyb-"<<  sname << "\" \"float\" \"constant\" \"float value\" [0]\n";
-			
+				shaderString += L"  \"color Kr\" [" + CString(sp_red) + L" "  + CString(sp_green) +  L" "  + CString(sp_blue) + L"]\n";
+				shaderString += L"  \"float index\" [" + CString((float)s.GetParameter(L"index_of_refraction").GetValue()) + L"]\n";
+				shaderString += L"  \"float cauchyb\" [0]\n";
+							
 				if ((float)s.GetParameter(L"trans_glossy").GetValue()>0 ) {
-					f << "Texture \"uroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" [" << (float)s.GetParameter(L"trans_glossy").GetValue() << "]\n";
-					f << "Texture \"vroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" [" << (float)s.GetParameter(L"trans_glossy").GetValue() << "]\n";
-					ret=7; // roughglass
+					shaderType=L"roughglass";
+					shaderString += L"  \"float uroughness\" ["+ CString((float)s.GetParameter(L"trans_glossy").GetValue())+L"] \"float vroughness\" ["+CString((float)s.GetParameter(L"trans_glossy").GetValue())+L"]\n";
 				}
 				vIsSet=true;
 			}
@@ -1064,16 +1088,14 @@ void writeLuxsiShader(){
 				// glass mia-arch shader
 				s.GetColorParameterValue(L"refr_color",red,green,blue,alpha );
 				s.GetColorParameterValue(L"refl_color",sp_red,sp_green,sp_blue,sp_alpha );
-				ior = (float)s.GetParameter(L"refr_ior").GetValue();
-				f << "Texture \"Kt-"<< sname <<"\" \"color\" \"constant\" \"color value\" ["<< red << " " <<green<<" "<<blue<<"]\n";
-				f << "Texture \"Kr-"<< sname <<"\" \"color\" \"constant\" \"color value\" ["<< sp_red << " "<<sp_green<<" "<<sp_blue<<"]\n";
-				f << "Texture \"index-"<< sname <<"\" \"float\" \"constant\" \"float value\" [" << ior <<"]\n";
-				f << "Texture \"cauchyb-"<<  sname << "\" \"float\" \"constant\" \"float value\" [0]\n";
-				ret=1;  // glass
+				shaderString += L"  \"color Kt\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+				shaderString += L"  \"color Kr\" [" + CString(sp_red) + L" "  + CString(sp_green) +  L" "  + CString(sp_blue) + L"]\n";
+				shaderString += L"  \"float index\" [" + CString((float)s.GetParameter(L"refr_ior").GetValue()) + L"]\n";
+				shaderString += L"  \"float cauchyb\" [0]\n";
+				
 				if ((float)s.GetParameter(L"refr_gloss").GetValue()<1 ) {
-					f << "Texture \"uroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" [" << (1.0f-(float)s.GetParameter(L"refr_gloss").GetValue()) << "]\n";
-					f << "Texture \"vroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" [" << (1.0f-(float)s.GetParameter(L"refr_gloss").GetValue()) << "]\n";
-					ret=7; // roughglass
+					shaderType=L"roughglass";
+					shaderString += L"  \"float uroughness\" ["+ CString(1.0f-(float)s.GetParameter(L"refr_gloss").GetValue())+L"] \"float vroughness\" ["+CString(1.0f-(float)s.GetParameter(L"refr_gloss").GetValue())+L"]\n";
 				}
 				vIsSet=true;
 			}
@@ -1093,20 +1115,15 @@ void writeLuxsiShader(){
 					red=red*a;
 					green=green*b;
 					blue=blue*c;
-					app.LogMessage(L"hier: "+CString(red));
+					
 				} else {
 					s.GetColorParameterValue(L"reflectivity",red,green,blue,alpha );
 					mRough=(float)s.GetParameter(L"reflect_glossy").GetValue();
 				}
 				if (red>0 || green>0 || blue>0) {
-					// shiny metal
-				
-					f << "Texture \"Kr-" << sname << "\" \"color\" \"constant\" \"color value\" [" << a << " " << b << " " << c << "]\n";
-					f << "Texture \"Ks-" << sname << "\" \"color\" \"constant\" \"color value\" [" << red <<" " << green << " " << blue << "]\n";
-					f << "Texture \"uroughness-" << sname << "\" \"float\" \"constant\" \"float value\" ["<< mRough/10 << "]\n";
-					f << "Texture \"vroughness-" << sname << "\" \"float\" \"constant\" \"float value\" ["<< mRough/10 << "]\n";
-					
-					ret=3;
+					shaderType=L"shinymetal";
+					shaderString += L"  \"color Kr\" [" + CString(a) + L" " + CString(b) + L" " + CString(c) + L"] \"float uroughness\" ["+ CString(mRough/10)+L"] \"float vroughness\" ["+CString(mRough/10)+L"]\n";
+					shaderString += L"  \"color Ks\" [" + CString(red) + L" "  + CString(green) +  L" "  + CString(blue) + L"]\n";
 					vIsSet=true;
 				}
 			} 
@@ -1130,6 +1147,7 @@ void writeLuxsiShader(){
 			// Material Stuff
 			if (vMatID==L"mi_car_paint_phen") { 
 				// car paint
+				/*
 				float spr,spg,spb,spa,spr2,spg2,spb2,spa2,r,g,b,a;
 				s.GetColorParameterValue(L"spec",spr,spg,spb,spa );
 				s.GetColorParameterValue(L"spec_sec",spr2,spg2,spb2,spa2 );
@@ -1145,6 +1163,7 @@ void writeLuxsiShader(){
 				f << "Texture \"M2-" << sname << "\" \"float\" \"constant\" \"float value\" [0.043]\n";
 				f << "Texture \"M3-" << sname << "\" \"float\" \"constant\" \"float value\" [0.020]\n";
 				ret=6; // carpaint
+				*/
 			} else if (vMatID==L"mia_material_phen") {
 				// arch vis
 				s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
@@ -1155,54 +1174,45 @@ void writeLuxsiShader(){
 				
 					
 				if (refl>0) {
-					f << "Texture \"Kr-" << sname << "\" \"color\" \"constant\" \"color value\" [" << red << " " << green << " " << blue << "]\n";
-				
-					f << "Texture \"Ks-" << sname << "\" \"color\" \"constant\" \"color value\" [" << refl*sp_red*brdf << " " << refl*sp_green*brdf << " " << refl*sp_blue*brdf << "]\n";
-					f << "Texture \"uroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" [" << 1-mRough << "]\n";
-					f << "Texture \"vroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" [" << 1-mRough << "]\n";
-					ret=3; // shinymetal
+					shaderType=L"shinymetal";
+					shaderString += L"  \"color Kr\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"] \"float uroughness\" ["+ CString(1-mRough)+L"] \"float vroughness\" ["+CString(1-mRough)+L"]\n";
+					shaderString += L"  \"color Ks\" [" + CString(refl*sp_red*brdf) + L" "  + CString(refl*sp_green*brdf) +  L" "  + CString(refl*sp_blue*brdf) + L"]\n";
 				} else {
-					f << "Texture \"Kd-" << sname << "\" \"color\" \"constant\" \"color value\" [" << red << " " << green << " " << blue << "]\n";
-				
-					f << "Texture \"sigma-"<< sname << "\" \"float\" \"constant\" \"float value\" ["<< mRough <<"]\n";
-					ret=4; // matte
+					shaderType=L"matte";
+					s.GetColorParameterValue(L"kd",red,green,blue,alpha );
+					shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+					shaderString += L"  \"float sigma\" [" + CString(mRough) + L"]\n";
 				}
 			} else if (vMatID==L"material-phong") {
+				shaderType=L"glossy";
 				s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
-				s.GetColorParameterValue(L"specular",sp_red,sp_green,sp_blue,sp_alpha );
-				
-				f << "Texture \"Kd-"<< sname << "\" \"color\" \"constant\" \"color value\" ["<< red<<" "<<green<<" "<<blue<<"]\n";
-				f << "Texture \"Ks-"<< sname << "\" \"color\" \"constant\" \"color value\" ["<< sp_red<<" "<<sp_green<<" "<<sp_blue<<"]\n";
-				f << "Texture \"uroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" ["<< (float)(s.GetParameterValue(L"shiny"))/10<<"]\n";
-				f << "Texture \"vroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" ["<< (float)(s.GetParameterValue(L"shiny"))/10<<"]\n";
-				ret=2;
-				
+				shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"] \"float uroughness\" ["+ CString((float)(s.GetParameterValue(L"shiny"))/10)+L"] \"float vroughness\" ["+CString((float)(s.GetParameterValue(L"shiny"))/10)+L"]\n";
+				s.GetColorParameterValue(L"specular",red,green,blue,alpha );
+				shaderString += L"  \"color Ks\" [" + CString(red) + L" "  + CString(green) +  L" "  + CString(blue) + L"]\n";
 			}  else if (vMatID==L"material-lambert"){
+				shaderType=L"matte";
 				s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
-				f << "Texture \"Kd-"<< sname << "\" \"color\" \"constant\" \"color value\" ["<<red<<" "<<green<<" "<<blue<<"]\n";	
-				f << "Texture \"sigma-"<< sname << "\" \"float\" \"constant\" \"float value\" [0]\n";
-				ret=4;
+				shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+				shaderString += L"  \"float sigma\" [0]\n";
 			} else if (vMatID==L"material-ward"){
-				// anisotrop
 				s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
-				//s.GetColorParameterValue(L"glossy",sp_red,sp_green,sp_blue,alpha );
-				f << "Texture \"Kd-"<< sname << "\" \"color\" \"constant\" \"color value\" ["<< red<<" "<<green<<" "<<blue<<"]\n";
-				f << "Texture \"Ks-"<< sname << "\" \"color\" \"constant\" \"color value\" ["<< red<<" "<<green<<" "<<blue<<"]\n";
-				f << "Texture \"uroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" ["<< (float)(s.GetParameterValue(L"shiny_u"))/10<<"]\n";
-				f << "Texture \"vroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" ["<< (float)(s.GetParameterValue(L"shiny_v"))/10<<"]\n";
-				ret=2;
+				shaderType=L"glossy";
+				shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"] \"float uroughness\" ["+ CString((float)(s.GetParameterValue(L"shiny_u"))/10)+L"] \"float vroughness\" ["+CString((float)(s.GetParameterValue(L"shiny_v"))/10)+L"]\n";
+				shaderString += L"  \"color Ks\" [" + CString(red) + L" "  + CString(green) +  L" "  + CString(blue) + L"]\n";
 			} else if (vMatID==L"material-constant"){
 				s.GetColorParameterValue(L"color",red,green,blue,alpha );
-				f << "Texture \"Kd-"<< sname << "\" \"color\" \"constant\" \"color value\" ["<<red <<" " << green << " " << blue << "]\n";
-				f << "Texture \"sigma-"<< sname << "\" \"float\" \"constant\" \"float value\" [0]\n";
-				ret=4;
+				shaderType=L"matte";
+				shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+				shaderString += L"  \"float sigma\" [0]\n";
 			} else if (vMatID==L"material-strauss"){
 				s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
+				shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+				shaderString += L"  \"float sigma\" [0]\n";
 			} else {
 				// fall back shader
-				f << "Texture \"Kd-"<< sname << "\" \"color\" \"constant\" \"color value\" [0.7 0.7 0.7]\n";
-				f << "Texture \"sigma-"<< sname << "\" \"float\" \"constant\" \"float value\" [0]\n";
-				ret=4;
+				shaderType=L"matte";
+				shaderString += L"  \"color Kd\" [0.7 0.7 0.7]\n";
+				shaderString += L"  \"float sigma\" [0]\n";
 			}
 		}
 		
@@ -1219,7 +1229,7 @@ void writeLuxsiShader(){
 					Source vImgClipSrc(vImgClip.GetSource());
 					CValue vFileName = vImgClipSrc.GetParameterValue( L"path");
 					
-					f << "Texture \"Kd-"<< sname << "\" \"color\" \"imagemap\" \"string filename\" [\"" << replace(vFileName.GetAsText().GetAsciiString()) << "\"] \"float vscale\" [-1.0]\n";
+					f << "Texture \"Kd-"<< sname << "\" \"color\" \"imagemap\" \"string filename\" [\"" << replace(vFileName.GetAsText().GetAsciiString()) << "\"] \"string wrap\" [\"repeat\"] \"string filtertype\" [\"bilinear\"] \"string mapping\" [\"uv\"] \"float vscale\" [-1.0]\n";
 					vText=true;
 				}
 			}
@@ -1229,7 +1239,12 @@ void writeLuxsiShader(){
 		// write shader block
 		//
 		
-				
+		f << "MakeNamedMaterial \""<< m.GetName().GetAsciiString() << "\" \n";
+		f << "  \"string type\" [\""<< shaderType.GetAsciiString() <<"\"]\n";
+		f << shaderString.GetAsciiString();
+		
+		
+		/*
 		CValue tmp;
 		switch (ret) {
 		case 1: tmp=L"\"texture Kr\" \"Kr-" + m.GetName()+L"\" \"texture Kt\" \"Kt-"+ m.GetName()+L"\" \"texture index\" \"index-"+ m.GetName()+L"\" \"texture cauchyb\" \"cauchyb-"+ m.GetName()+L"\" ";break;
@@ -1242,8 +1257,8 @@ void writeLuxsiShader(){
 		case 9: tmp=L"\"texture name\" \"name-" + m.GetName()+L"\" \"texture uroughness\" \"uroughness-"+m.GetName()+L"\" \"texture vroughness\" \"roughness-"+m.GetName()+L"\" ";break;
 		case 10: tmp=L"\"texture Kr\" \"Kr-"+m.GetName()+ L"\" \"texture Kt\" \"Kt-"+m.GetName()+ L"\" \"texture sigma\" \"sigma-"+ m.GetName()+L"\" ";break;
 		}
+		*/
 		
-		f << "MakeNamedMaterial \""<< m.GetName().GetAsciiString() << "\" \"string type\" [\""<< aShader[ret].GetAsText().GetAsciiString() <<"\"] " << tmp.GetAsText().GetAsciiString() << " " << addString.GetAsciiString()  << "\n\n";
 		
 	}
 }
@@ -1257,9 +1272,9 @@ int writeLuxsiObj(X3DObject o, CString vType){
 	CValueArray fooArgs(1) ;
 	fooArgs[0] = L"" ;
 	CValue retVal=false ;
-	CDoubleArray points;
+	CDoubleArray point_count;
 	CFloatArray normals;
-	CLongArray tris,nod,out;
+	CLongArray tri_count,nod,out;
 	bool vIsMeshLight=false;
 	bool vIsSet=false;
 	bool vText=false,vIsSubD=false;
@@ -1272,44 +1287,66 @@ int writeLuxsiObj(X3DObject o, CString vType){
 	Shader s(shad[0]);
 	CGeometryAccessor ga;
 	CValue vObjW,vObjType,vObjSh2,vObjSh3,vObjSh;
-	CString vNormals=L"",vTris=L"",vMod=L"",vPoints=L"";
-	
+	CString vUV=L"",vNormals=L"",vTris=L"",vMod=L"",vPoints=L"";
+	CFacetRefArray facets( g.GetFacets() );
+
 	int vSubDValue=1;
 	
 	Property geopr=o.GetProperties().GetItem(L"Geometry Approximation");
 	if ((int)geopr.GetParameterValue(L"gapproxmordrsl")>0 || (int)geopr.GetParameterValue(L"gapproxmosl")>0) {
 		vIsSubD=true;
 		if ((int)geopr.GetParameterValue(L"gapproxmordrsl")>0) {
-			vSubDValue=(int)geopr.GetParameterValue(L"gapproxmordrsl");
+			vSubDValue=(int)geopr.GetParameterValue(L"gapproxmordrsl")+1;
 		} else {
-			vSubDValue=(int)geopr.GetParameterValue(L"gapproxmosl");
+			vSubDValue=(int)geopr.GetParameterValue(L"gapproxmosl")+1;
 		}
 	} else {
 		vIsSubD=false;
 	}
 	
+	
 	ga = PolygonMesh(g).GetGeometryAccessor();
+	CRefArray gaUV = ga.GetUVs();
+	ClusterProperty uv(gaUV[0]);
+	CFloatArray uvValues;
+	uv.GetValues( uvValues );
 	
+	ga.GetVertexPositions(point_count);
+	ga.GetTriangleVertexIndices(tri_count); 
 	
-	ga.GetVertexPositions(points);
-	ga.GetTriangleVertexIndices(tris); 
 	ga.GetTriangleNodeIndices(nod); 
 	ga.GetNodeNormals(normals);
 	
 	CLongArray pvCount;
 	CLongArray vIndices;
-	ga.GetVertexIndices(vIndices);
+	ga.GetTriangleNodeIndices(vIndices);
 	
 	ga.GetPolygonVerticesCount(pvCount);
 	long nPolyCount = ga.GetPolygonCount();
 	
-	CRefArray cls = o.GetActivePrimitive().GetGeometry().GetClusters();	// get clusters
+	
+	//app.LogMessage(L"GA Stuff:" + CString(pvCount) + L" " + CString(vIndices.GetCount()) + L" " + CString(nod.GetCount()));
+	//Cube: vIndices.GetCount()=24 ----  nod.GetCount()=36
+	
+	//CRefArray cls = o.GetActivePrimitive().GetGeometry().GetClusters();	// get clusters
+	CTransformation localTransformation = ga.GetTransform();
+	KinematicState  gs = o.GetKinematics().GetGlobal();
+	//KinematicState  gs = o.GetKinematics().GetLocal();
+	CTransformation gt = gs.GetTransform();
+	CMatrix4 mat4(gt.GetMatrix4());
+	
+	CVector3 axis; 
+	double rot = gt.GetRotationAxisAngle(axis);
+	
 	
 	//app.LogMessage(L"Clusters: "+CString(cls.GetCount()));
 	
-	if (points.GetCount()>0 || tris.GetCount()>0) {
-		f << "# Object : " << (o.GetName()).GetAsciiString() ;
-		f << "\nAttributeBegin";
+	
+	
+	if (point_count.GetCount()>0 || tri_count.GetCount()>0) {
+		
+		f << "\nAttributeBegin #" << o.GetName().GetAsciiString();
+		
 		
 		
 		if ((float)s.GetParameter(L"inc_inten").GetValue()>0) {
@@ -1334,42 +1371,77 @@ int writeLuxsiObj(X3DObject o, CString vType){
 			f << "\nNamedMaterial \""<< m.GetName().GetAsciiString() <<"\"\n";
 		}
 		
-		if (vType==L"obj"){
+		
+		
+		
 			
 			//
 			// write triangles
 			//
-			CTransformation localTransformation = ga.GetTransform();
-			KinematicState  gs = o.GetKinematics().GetGlobal();
-			//KinematicState  gs = o.GetKinematics().GetLocal();
-			CTransformation gt = gs.GetTransform();
-			
-			
+			if (vType==L"instance") {
+				f << "Identity\n";
+			}
+				f << "Translate " << CString(gt.GetPosX()).GetAsciiString() << " " << CString(-gt.GetPosZ()).GetAsciiString() << " "<< CString(gt.GetPosY()).GetAsciiString() << "\n";
+				if (rot!=0){
+				f << "Rotate " << (rot*180/PI) << " "<< CString(axis[0]).GetAsciiString() << " " << CString(-axis[2]).GetAsciiString() << " "<< CString(axis[1]).GetAsciiString() << "\n";
+				}
+				if (gt.GetSclX()==gt.GetSclY()==gt.GetSclZ()==1) {} else {
+					f << "Scale " << CString(gt.GetSclX()).GetAsciiString() << " " << CString(gt.GetSclZ()).GetAsciiString() << " "<< CString(gt.GetSclY()).GetAsciiString() << "\n";
+				}
+		//	}
 			
 			CTriangleRefArray triangles(g.GetTriangles());
 			CLongArray indices( triangles.GetIndexArray() );
-			CUVArray aUV ( triangles.GetUVArray() );
-			CStringArray vUV(g.GetPoints().GetCount());
+			//CUVArray aUV ( triangles.GetUVArray() );
 			
-			for (LONG j=0; j<indices.GetCount(); j += 3 )
-			{
-				vTris += L" "+ CValue(indices[j]).GetAsText() + L" " + CValue(indices[j+1]).GetAsText() + L" " + CValue(indices[j+2]).GetAsText()+L"\n";
+			for ( LONG i=0; i<indices.GetCount(); i+=3 )	{
+				vTris += L" "+ CValue(indices[i]).GetAsText() + L" "+CValue(indices[i+1]).GetAsText() + L" "+CValue(indices[i+2]).GetAsText() + L" "  + L"\n ";
+			}
+				
+			
+			for (LONG j=0;j<point_count.GetCount();j+=3){
+					//bool b;
+					//CVector3 pos(Point(points[j]).GetPosition());
+					//CVector3 norm(Point(points[j]).GetNormal(b));
+					//norm.NormalizeInPlace();
+					vPoints +=  L" "+ CString(point_count[j]) + L" "+  CString(-point_count[j+2]) + L" "+ CString(point_count[j+1])+L"\n"; 
+					//vNormals +=  L" "+ CString(norm[0]) + L" "+  CString(-norm[2]) + L" "+ CString(norm[1])+L"\n"; 
+					//vUV +=  L" "+CString(uvValues[j*3+1]) + L" "+ CString(-uvValues[j*3])+L"\n";
+					
+				}
+			/*
+			CPointRefArray points;
+			LONG lFacetCount = facets.GetCount();
+				
+			for ( LONG i=0; i<lFacetCount; i++ )	{
+				Facet facet(facets[i]);
+				CSampleRefArray samples( facet.GetSamples() );
+				points = facet.GetPoints() ;
+				
+				LONG lSampleCount = samples.GetCount();
+				for (LONG j=0; j<lSampleCount; j+=lSampleCount)	{
+					vTris += L" "+ CValue(Sample(samples[j]).GetIndex()).GetAsText()+ L" " + CValue(Sample(samples[j+1]).GetIndex()).GetAsText()+ L" "+ CValue(Sample(samples[j+2]).GetIndex()).GetAsText() + L"\n ";
+					if (lSampleCount==4) {
+						vTris += L" "+ CValue(Sample(samples[j]).GetIndex()).GetAsText()+ L" " + CValue(Sample(samples[j+2]).GetIndex()).GetAsText()+ L" "+ CValue(Sample(samples[j+3]).GetIndex()).GetAsText() + L"\n ";
+					}
+				}
+				
+				for (LONG j=0;j<points.GetCount();j++){
+					bool b;
+					CVector3 pos(Point(points[j]).GetPosition());
+					CVector3 norm(Point(points[j]).GetNormal(b));
+					norm.NormalizeInPlace();
+					vPoints +=  L" "+ CString(pos[0]) + L" "+  CString(-pos[2]) + L" "+ CString(pos[1])+L"\n"; 
+					vNormals +=  L" "+ CString(norm[0]) + L" "+  CString(-norm[2]) + L" "+ CString(norm[1])+L"\n"; 
+					//vUV +=  L" "+CString(uvValues[j*3+1]) + L" "+ CString(-uvValues[j*3])+L"\n";
+					
+				}
+				
+				
 			}
 			
 			
-			
-			CPointRefArray points(g.GetPoints());
-			for (LONG j=0; j<points.GetCount(); j ++ )
-			{
-				bool b;
-				CVector3 pos1(Point(points[j]).GetPosition());
-				CVector3 norm(Point(points[j]).GetNormal(b));
-				CVector3 pos(MapObjectPositionToWorldSpace(  gt,  pos1));
-				norm.NormalizeInPlace();
-				vPoints +=  L" "+ CString(pos[0]) + L" "+  CString(-pos[2]) + L" "+ CString(pos[1])+L"\n"; 
-				vNormals +=  L" "+ CString(norm[0]) + L" "+  CString(-norm[2]) + L" "+ CString(norm[1])+L"\n"; 
-			}
-			
+			*/
 			CRefArray vImags=m.GetShaders();
 			for (int i=0;i<vImags.GetCount();i++){
 				CRefArray vImags2=Shader(vImags[i]).GetShaders();
@@ -1381,13 +1453,6 @@ int writeLuxsiObj(X3DObject o, CString vType){
 				}
 			}
 			
-		
-			for (LONG j=0; j<indices.GetCount(); j++ )
-			{
-				vUV[indices[j]]=CString(aUV[j].u) + L" "+ CString(aUV[j].v);
-				//app.LogMessage(CString(indices[j]) + L": "+CString(aUV[j].u) + L" "+ CString(aUV[j].u));
-			}
-			
 			//
 			// write 
 			//
@@ -1395,7 +1460,7 @@ int writeLuxsiObj(X3DObject o, CString vType){
 			string::size_type loc = string(CString(o.GetName()).GetAsciiString()).find( "PORTAL", 0 );
 			if (loc != string::npos) {
 				sLight << " PortalShape ";
-				sLight << " \"trianglemesh\" \"integer indices\" [\n";
+				sLight << " \"trianglemesh\"\n \"integer indices\" [\n";
 				sLight << vTris.GetAsciiString();
 				sLight << " ] \"point P\" [\n" ;
 				sLight << vPoints.GetAsciiString();
@@ -1406,9 +1471,9 @@ int writeLuxsiObj(X3DObject o, CString vType){
 				f << " Shape ";
 				
 				if (vIsSubD) {
-					f << "\"loopsubdiv\" \"integer nlevels\" [" <<  vSubDValue << "] \"bool dmnormalsmooth\" [\"true\"] \"bool dmsharpboundary\" [\"false\"]";
+					f << "\"loopsubdiv\" \"integer nlevels\" [" <<  vSubDValue << "] \"bool dmnormalsmooth\" [\"true\"] \"bool dmsharpboundary\" [\"false\"]\n";
 				} else {
-					f << " \"trianglemesh\"";
+					f << " \"trianglemesh\"\n";
 				}
 			
 				f << "\"integer indices\" [\n";
@@ -1416,25 +1481,69 @@ int writeLuxsiObj(X3DObject o, CString vType){
 				f << " ] \"point P\" [\n" ;
 				f << vPoints.GetAsciiString();
 				f << "] ";
+				
 				/*
-				f << " \"normal N\" [\n";
-				f << vNormals.GetAsciiString();
-				*/
 				if(vText){
 					f << " \"float uv\" [\n";
-					app.LogMessage(CString(vUV.GetCount()));
-					for (long i=0;i<vUV.GetCount();i++){
-						f << vUV[i].GetAsciiString()<< "\n";
-					}
+					//app.LogMessage(CString(vUV.GetCount()));
+					//for (long i=0;i<vUV.GetCount();i++){
+					//	f << vUV[i].GetAsciiString()<< "\n";
+					//}
+					f << vUV.GetAsciiString();
 					f << " ]\n";
 				}
-				
+				*/
 				//f << "]";
-			}
-			f << "\nAttributeEnd\n";
+			
+			
 		}
+		f << "\nAttributeEnd #" << o.GetName().GetAsciiString() << "\n";
+
 	}
+	
+	
+	
+	
 	return 0;
+}
+
+int writeLuxsiInstance(X3DObject o){
+	// instance
+	
+	//write source object [won't be displayed]
+	
+	Model m = Model(o).GetInstanceMaster();
+	
+	
+	CRefArray vGroup = X3DObject(m).GetChildren();
+	
+	if ( find(aInstanceList, m.GetName() ) ) {
+	} else {
+		f << "\nObjectBegin \""<< m.GetName().GetAsciiString()<<"\"";
+		for (int i=0;i<vGroup.GetCount();i++){
+			writeLuxsiObj(X3DObject(vGroup[i]),L"instance");	
+		}
+		f << "\nObjectEnd #"<< o.GetName().GetAsciiString()<<"\n";
+		aInstanceList.Add(m.GetName());
+	}
+	
+	f << "\nAttributeBegin #" << o.GetName().GetAsciiString();
+	KinematicState  gs = o.GetKinematics().GetGlobal();
+	//KinematicState  gs = o.GetKinematics().GetLocal();
+	CTransformation gt = gs.GetTransform();
+	CMatrix4 mat4(gt.GetMatrix4());
+	
+	CVector3 axis; 
+	double rot = gt.GetRotationAxisAngle(axis);
+	f << "\nTranslate " << CString(gt.GetPosX()).GetAsciiString() << " " << CString(-gt.GetPosZ()).GetAsciiString() << " "<< CString(gt.GetPosY()).GetAsciiString() << "\n";
+	if (rot!=0){
+	f << "Rotate " << (rot*180/PI) << " "<< CString(axis[0]).GetAsciiString() << " " << CString(-axis[2]).GetAsciiString() << " "<< CString(axis[1]).GetAsciiString() << "\n";
+	}
+	if (gt.GetSclX()==gt.GetSclY()==gt.GetSclZ()==1) {} else {
+		f << "Scale " << CString(gt.GetSclX()).GetAsciiString() << " " << CString(gt.GetSclZ()).GetAsciiString() << " "<< CString(gt.GetSclY()).GetAsciiString() << "\n";
+	}
+	f << "ObjectInstance \"" << Model(o).GetInstanceMaster().GetName().GetAsciiString() <<"\"\n";
+	f << "AttributeEnd #" << o.GetName().GetAsciiString() << "\n\n";
 }
 
 CString readIni(){
@@ -1484,6 +1593,7 @@ void luxsi_write(){
 		emptyArray.Clear();
 		array.Clear();
 		aMatList.Clear();
+		aInstanceList.Clear();
 		
 		aObj.Clear();
 		aSurfaces.Clear();
@@ -1519,10 +1629,10 @@ void luxsi_write(){
 				if (vIsHiddenClouds || (vIsHiddenClouds==false && ((bool)visi.GetParameterValue(L"viewvis")==true && (bool)visi.GetParameterValue(L"rendvis")==true))) aClouds.Add(o);	// visibilty check
 			}
 			if (o.GetType()==L"#model"){
-				// instances
-				CRefArray foundsrcs = Model(o).GetGroups();
-				
-				if ( foundsrcs.GetCount() > LONG(0) ) {
+				// model
+				if (Model(o).GetModelKind()==2){
+					// instances
+					
 					if (vIsHiddenObj || (vIsHiddenObj==false && ((bool)visi.GetParameterValue(L"viewvis")==true && (bool)visi.GetParameterValue(L"rendvis")==true))) aInstance.Add(o); 	// visibilty check
 				}
 			}
@@ -1536,9 +1646,10 @@ void luxsi_write(){
 			
 		} else {
 			
-			app.LogMessage( L"\tObject count: "+CString(aObj.GetCount()));
+			//app.LogMessage( L"\tObject count: "+CString(aObj.GetCount()));
+			//app.LogMessage( L"\tInstance count: "+CString(aInstance.GetCount()));
 			pb.PutValue(0);
-			pb.PutMaximum( aObj.GetCount() );
+			pb.PutMaximum( aObj.GetCount()+aInstance.GetCount() );
 			pb.PutStep(1);
 			pb.PutVisible( true );
 			pb.PutCaption( L"Processing" );
@@ -1563,6 +1674,14 @@ void luxsi_write(){
 				if (pb.IsCancelPressed() ) break;
 				pb.Increment();
 			}
+			
+			for (int i=0;i<aInstance.GetCount();i++) {
+				if (writeLuxsiInstance(aInstance[i])==-1) break;
+
+				if (pb.IsCancelPressed() ) break;
+				pb.Increment();
+			}
+			
 			pb.PutVisible( false );
 			f << "WorldEnd";
 			f.close();
