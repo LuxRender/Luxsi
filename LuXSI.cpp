@@ -645,7 +645,7 @@ CString findInGroup(CString s){
 		}
 	}
 	
-	return 0;
+	return L"";
 }
 
 
@@ -1388,7 +1388,7 @@ int writeLuxsiObj(X3DObject o, CString vType){
 				if (rot!=0){
 				f << "Rotate " << (rot*180/PI) << " "<< CString(axis[0]).GetAsciiString() << " " << CString(-axis[2]).GetAsciiString() << " "<< CString(axis[1]).GetAsciiString() << "\n";
 				}
-				if (gt.GetSclX()==gt.GetSclY()==gt.GetSclZ()==1) {} else {
+				if (gt.GetSclX()==1 && gt.GetSclY()==1 && gt.GetSclZ()==1) {} else {
 					f << "Scale " << CString(gt.GetSclX()).GetAsciiString() << " " << CString(gt.GetSclZ()).GetAsciiString() << " "<< CString(gt.GetSclY()).GetAsciiString() << "\n";
 				}
 		//	}
