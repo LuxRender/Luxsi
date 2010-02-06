@@ -40,6 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="C:\Softimage\Softimage_7.5\XSISDK\include\Core;C:\Softimage\Softimage_7.5\XSISDK\include"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -58,6 +59,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="C:\Softimage\Softimage_7.5\XSISDK\lib\nt-x86\sicppsdk.lib C:\Softimage\Softimage_7.5\XSISDK\lib\nt-x86\sicoresdk.lib"
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
