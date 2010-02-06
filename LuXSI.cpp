@@ -1523,7 +1523,7 @@ int writeLuxsiCloud(X3DObject obj){
 	
 	CRefArray attrs = obj.GetActivePrimitive().GetGeometry().GetICEAttributes();
 	
-	for( ULONG i = 0; i<attrs.GetCount(); i++ ) {
+	for( int i = 0; i<attrs.GetCount(); i++ ) {
 			ICEAttribute attr = attrs[i];
 			/*
 			xsi.LogMessage( L"*******************************************************************" );
@@ -1552,7 +1552,7 @@ int writeLuxsiCloud(X3DObject obj){
 		
 	
 		
-	for (int i=0;i<aPointPosition.GetCount();i++){
+	for (unsigned int i=0;i<aPointPosition.GetCount();i++){
 		// get all points
 		
 		f << "\nAttributeBegin #\"" << obj.GetName().GetAsciiString() << (int)aID[i] << "\" \n";
@@ -1599,7 +1599,7 @@ int writeLuxsiInstance(X3DObject o){
 	if (rot!=0){
 	f << "Rotate " << (rot*180/PI) << " "<< CString(axis[0]).GetAsciiString() << " " << CString(-axis[2]).GetAsciiString() << " "<< CString(axis[1]).GetAsciiString() << "\n";
 	}
-	if (gt.GetSclX()==gt.GetSclY()==gt.GetSclZ()==1) {} else {
+	if (gt.GetSclX()==1 && gt.GetSclY()==1 && gt.GetSclZ()==1) {} else {
 		f << "Scale " << CString(gt.GetSclX()).GetAsciiString() << " " << CString(gt.GetSclZ()).GetAsciiString() << " "<< CString(gt.GetSclY()).GetAsciiString() << "\n";
 	}
 	f << "ObjectInstance \"" << Model(o).GetInstanceMaster().GetName().GetAsciiString() <<"\"\n";
@@ -1786,8 +1786,8 @@ void luxsi_execute(){
 			#else
 				// win
 				
-				char pfad[500];
-				char options[500];
+				//char pfad[500];
+				//char options[500];
 				
 				
 				loader(vLuXSIPath.GetAsciiString(),replace(' "'+vFileObjects.GetAsciiString()+'"').c_str());
