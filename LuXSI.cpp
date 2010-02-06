@@ -24,6 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <xsi_application.h>
 #include <xsi_pluginregistrar.h>
 #include <xsi_geometryaccessor.h>
+#include <xsi_iceattribute.h>
+#include <xsi_iceattributedataarray.h>
 #include <xsi_menu.h> 
 #include <sstream>
 #include <fstream>
@@ -80,10 +82,10 @@ using namespace std;
 void writeLuxsiBasics();
 void writeLuxsiCam(X3DObject o);
 void writeLuxsiLight(X3DObject o);
+int writeLuxsiCloud(X3DObject o);
 int writeLuxsiInstance(X3DObject o);
-
 int writeLuxsiObj(X3DObject o);
-void writeClouds(X3DObject o);
+
 void writeLuxsiShader();
 void luxsi_write();
 void luxsi_execute();
@@ -1508,6 +1510,63 @@ int writeLuxsiObj(X3DObject o, CString vType){
 	return 0;
 }
 
+int writeLuxsiCloud(X3DObject obj){
+	//
+	// Writes pointclouds
+	//	
+	
+	ICEAttribute attr;
+	CICEAttributeDataArrayVector3f aPointPosition;
+	CICEAttributeDataArrayLong aID;
+	CICEAttributeDataArrayFloat aSize;
+	CICEAttributeDataArrayVector3f aVel;
+	
+	CRefArray attrs = obj.GetActivePrimitive().GetGeometry().GetICEAttributes();
+	
+	for( ULONG i = 0; i<attrs.GetCount(); i++ ) {
+			ICEAttribute attr = attrs[i];
+			/*
+			xsi.LogMessage( L"*******************************************************************" );
+			xsi.LogMessage( L"Name: " + attr.GetName() );
+			xsi.LogMessage( L"DataType: " + CString(attr.GetDataType()) );
+			xsi.LogMessage( L"StructType: " + CString(attr.GetStructureType()) );
+			xsi.LogMessage( L"ContextType: " + CString(attr.GetContextType()) );
+			xsi.LogMessage( L"IsConstant: " + CString(attr.IsConstant()) );
+			xsi.LogMessage( L"Readonly: " + CString(attr.IsReadonly()) );
+			xsi.LogMessage( L"AttributeCategory: " + CString(attr.GetAttributeCategory()) );
+			xsi.LogMessage( L"Element count: " + CString(attr.GetElementCount()) );
+			*/
+			if (attr.GetName() == L"PointPosition"){
+				attr.GetDataArray(aPointPosition);
+			}
+			if (attr.GetName() == L"ID"){
+				attr.GetDataArray(aID);
+			}
+			if (attr.GetName() == L"Size"){
+				attr.GetDataArray(aSize);
+			}
+			if (attr.GetName() == L"PointVelocity"){
+				attr.GetDataArray(aVel);
+			}
+		}
+		
+	
+		
+	for (int i=0;i<aPointPosition.GetCount();i++){
+		// get all points
+		
+		f << "\nAttributeBegin #\"" << obj.GetName().GetAsciiString() << (int)aID[i] << "\" \n";
+		f << "  Translate " << (float)aPointPosition[i][0] << " " << (float)aPointPosition[i][1] << " "<< (float)aPointPosition[i][2] << "\n";
+		f << "  Material \"matte\" \"color Kd\" [0 0.8 0.8 ]\n";
+		f << "  Shape \"sphere\" \"float radius\" [" << (float)aSize[i] << "]\n";
+		f << "AttributeEnd #"<< obj.GetName().GetAsciiString()<<"\n";
+		
+	}	
+	
+	return 0;
+}
+
+
 int writeLuxsiInstance(X3DObject o){
 	// instance
 	
@@ -1627,7 +1686,7 @@ void luxsi_write(){
 			if (o.GetType()==L"surfmsh"){
 				if (vIsHiddenSurfaces || (vIsHiddenSurfaces==false && ((bool)visi.GetParameterValue(L"viewvis")==true && (bool)visi.GetParameterValue(L"rendvis")==true))) aSurfaces.Add(o);	// visibilty check
 			}
-			if (o.GetType()==L"cloud"){
+			if (o.GetType()==L"pointcloud"){
 				if (vIsHiddenClouds || (vIsHiddenClouds==false && ((bool)visi.GetParameterValue(L"viewvis")==true && (bool)visi.GetParameterValue(L"rendvis")==true))) aClouds.Add(o);	// visibilty check
 			}
 			if (o.GetType()==L"#model"){
@@ -1673,6 +1732,11 @@ void luxsi_write(){
 			
 			for (int i=0;i<aObj.GetCount();i++) {
 				if (writeLuxsiObj(aObj[i],L"obj")==-1) break;
+				if (pb.IsCancelPressed() ) break;
+				pb.Increment();
+			}
+			for (int i=0;i<aClouds.GetCount();i++) {
+				if (writeLuxsiCloud(aClouds[i])==-1) break;
 				if (pb.IsCancelPressed() ) break;
 				pb.Increment();
 			}
