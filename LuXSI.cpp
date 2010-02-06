@@ -1,7 +1,7 @@
 /*
 LuXSI - Softimage XSI Export plug-in for the LuxRender (http://www.luxrender.org) renderer
 
-Copyright (C) 2008  Michael Gangolf
+Copyright (C) 2010  Michael Gangolf
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -1206,6 +1206,7 @@ void writeLuxsiShader(){
 				shaderString += L"  \"float sigma\" [0]\n";
 			} else if (vMatID==L"material-strauss"){
 				s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
+				shaderType=L"matte";
 				shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
 				shaderString += L"  \"float sigma\" [0]\n";
 			} else {
@@ -1544,6 +1545,7 @@ int writeLuxsiInstance(X3DObject o){
 	}
 	f << "ObjectInstance \"" << Model(o).GetInstanceMaster().GetName().GetAsciiString() <<"\"\n";
 	f << "AttributeEnd #" << o.GetName().GetAsciiString() << "\n\n";
+	return 0;
 }
 
 CString readIni(){
