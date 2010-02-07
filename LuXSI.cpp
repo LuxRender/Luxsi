@@ -17,6 +17,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
+#pragma warning (disable : 4127) // conditional expression is constant
+#pragma warning (disable : 4389) // signed/unsigned mismatch
+#pragma warning (disable : 4714) // marked as __forceinline not inlined
+#pragma warning (disable : 4244) // conversion ... possible loss of data
+#pragma warning (disable : 4245) // signed/unsigned mismatch
+
 #include <xsi_segment.h>
 #include <xsi_materiallibrary.h>
 #include <xsi_particlecloud.h> 
@@ -261,12 +267,6 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
 	aPresets[12] = L"Bucket - Bidir Path Tracing (interior)" ; aPresets[13] = 6;
 	aPresets[14] = L"Bucket - Path Tracing (exterior)" ; aPresets[15] = 7;
 
-	/*
-	aPresets[16] = L"Anim - Distributed/GI low Q" ; aPresets[17] = 8;
-	aPresets[18] = L"Anim - Distributed/GI medium Q" ; aPresets[19] = 9;
-	aPresets[20] = L"Anim - Distributed/GI high Q" ; aPresets[21] = 10;
-	aPresets[22] = L"Anim - Distributed/GI very high Q" ; aPresets[23] = 11;
-	*/
 	lay.AddEnumControl(L"presets",aPresets,L"Render Presets",siControlCombo ) ;
 	
 	
@@ -725,7 +725,6 @@ void writeLuxsiBasics(){
 		case 3: 
 			// path
 			f << "  \"integer maxdepth\" ["<< vMaxDepth << "] \n";
-			//f << "\"float rrcontinueprob\" ["<<vrrprob << "] ";
 			break;
 		case 4: break;
 	}
@@ -813,7 +812,6 @@ void writeLuxsiCam(X3DObject o){
 	CTransformation localTransformation = o2.GetKinematics().GetLocal().GetTransform();
 	KinematicState  gs = o2.GetKinematics().GetGlobal();
 	CTransformation gt = gs.GetTransform();
-	//MapObjectPoseToWorldSpace(  gt, localTransformation);
 	CVector3 translation(localTransformation.GetTranslation());
 	bool vDof=false;
 	
@@ -894,8 +892,6 @@ void writeLuxsiLight(X3DObject o){
 		//Get Interest
 		li= X3DObject(o.GetParent()).GetChildren()[1];
 		CTransformation lt = li.GetKinematics().GetLocal().GetTransform();
-		//KinematicState  gs2 = li.GetKinematics().GetGlobal();
-		//CTransformation gt2 = gs2.GetTransform();
 		intPos=lt.GetTranslation();
 		
 		CRefArray shad(Light(o).GetShaders());
@@ -1247,22 +1243,6 @@ void writeLuxsiShader(){
 		f << shaderString.GetAsciiString();
 		
 		
-		/*
-		CValue tmp;
-		switch (ret) {
-		case 1: tmp=L"\"texture Kr\" \"Kr-" + m.GetName()+L"\" \"texture Kt\" \"Kt-"+ m.GetName()+L"\" \"texture index\" \"index-"+ m.GetName()+L"\" \"texture cauchyb\" \"cauchyb-"+ m.GetName()+L"\" ";break;
-		case 2: tmp=L"\"texture Kd\" \"Kd-"+m.GetName()+ L"\" \"texture Ks\" \"Ks-"+m.GetName()+L"\" \"texture uroughness\" \"uroughness-"+m.GetName()+L"\" \"texture vroughness\" \"vroughness-"+m.GetName()+L"\" ";break;
-		case 3: tmp=L"\"texture Kr\" \"Kr-"+m.GetName()+ L"\" \"texture Ks\" \"Ks-"+m.GetName()+L"\" \"texture uroughness\" \"uroughness-"+m.GetName()+L"\" \"texture vroughness\" \"vroughness-"+m.GetName()+L"\"";break;
-		case 4: tmp=L"\"texture Kd\" \"Kd-"+m.GetName()+ L"\" \"texture sigma\" \"sigma-"+ m.GetName()+L"\"";break;
-		case 6: tmp=L"\"texture Kd\" \"Kd-"+m.GetName()+ L"\" \"texture Ks1\" \"Ks1-"+m.GetName()+ L"\" \"texture Ks2\" \"Ks2-"+m.GetName()+ L"\" \"texture Ks3\" \"Ks3-"+m.GetName()+ L"\" \"texture R1\" \"R1-"+m.GetName()+ L"\" \"texture R2\" \"R2-"+m.GetName()+ L"\" \"texture R3\" \"R3-"+m.GetName()+ L"\" \"texture M1\" \"M1-"+m.GetName()+ L"\" \"texture M2\" \"M2-"+m.GetName()+ L"\" \"texture M3\" \"M3-"+m.GetName()+ L"\"";break;
-		case 7: tmp=L"\"texture Kr\" \"Kr-" + m.GetName()+L"\" \"texture Kt\" \"Kt-"+ m.GetName()+L"\" \"texture index\" \"index-"+ m.GetName()+L"\" \"texture uroughness\" \"uroughness-"+m.GetName()+L"\" \"texture vroughness\" \"vroughness-"+m.GetName()+L"\" \"texture cauchyb\" \"cauchyb-"+ m.GetName()+L"\" ";break;
-		case 8: tmp=L"\"texture Kr\" \"Kr-" + m.GetName()+L"\" ";break;
-		case 9: tmp=L"\"texture name\" \"name-" + m.GetName()+L"\" \"texture uroughness\" \"uroughness-"+m.GetName()+L"\" \"texture vroughness\" \"roughness-"+m.GetName()+L"\" ";break;
-		case 10: tmp=L"\"texture Kr\" \"Kr-"+m.GetName()+ L"\" \"texture Kt\" \"Kt-"+m.GetName()+ L"\" \"texture sigma\" \"sigma-"+ m.GetName()+L"\" ";break;
-		}
-		*/
-		
-		
 	}
 }
 
@@ -1589,7 +1569,6 @@ int writeLuxsiInstance(X3DObject o){
 	
 	f << "\nAttributeBegin #" << o.GetName().GetAsciiString();
 	KinematicState  gs = o.GetKinematics().GetGlobal();
-	//KinematicState  gs = o.GetKinematics().GetLocal();
 	CTransformation gt = gs.GetTransform();
 	CMatrix4 mat4(gt.GetMatrix4());
 	
@@ -1761,21 +1740,22 @@ void luxsi_write(){
 
 
 #if defined(_WIN32) || defined(_WIN64)
-	void loader(const char szExe[], const char szArgs[])
+	void loader(const char szArgs[])
 	{
 		//HANDLE hFile ;
 		PROCESS_INFORMATION  pi;
 		// start a program in windows
 		STARTUPINFO  si = { sizeof(si) };
-		CreateProcessA(szExe, (LPSTR)szArgs, 0, 0, FALSE, 0, 0, 0, LPSTARTUPINFOA(&si), &pi);
+		CreateProcess(NULL, (LPSTR)szArgs, 0, 0, FALSE, 0, 0, 0, LPSTARTUPINFOA(&si), &pi);
 	}
-#endif
+#endif	
+	
 
 void luxsi_execute(){
 	
 	if (vLuXSIPath!=L""){
 		if (vExportDone) {
-			app.LogMessage(vLuXSIPath +L" " + vFileObjects );
+			//app.LogMessage(vLuXSIPath +L" " + vFileObjects );
 			
 			#ifdef __unix__
 				pid_t pid = fork();
@@ -1786,11 +1766,10 @@ void luxsi_execute(){
 			#else
 				// win
 				
-				//char pfad[500];
-				//char options[500];
 				
-				
-				loader(vLuXSIPath.GetAsciiString(),replace(' "'+vFileObjects.GetAsciiString()+'"').c_str());
+				CString exec = vLuXSIPath +" \""+ vFileObjects + "\"";
+				app.LogMessage(exec);
+				loader(exec.GetAsciiString());
 			#endif 
 		
 		}
