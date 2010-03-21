@@ -1229,6 +1229,7 @@ void writeLuxsiShader(){
 					CValue vFileName = vImgClipSrc.GetParameterValue( L"path");
 					
 					f << "Texture \"Kd-"<< sname << "\" \"color\" \"imagemap\" \"string filename\" [\"" << replace(vFileName.GetAsText().GetAsciiString()) << "\"] \"string wrap\" [\"repeat\"] \"string filtertype\" [\"bilinear\"] \"string mapping\" [\"uv\"] \"float vscale\" [-1.0]\n";
+					shaderString += L"  \"texture Kd\" [\"Kd-"+ CString(m.GetName()) +L"\"]\n";
 					vText=true;
 				}
 			}
@@ -1289,10 +1290,10 @@ int writeLuxsiObj(X3DObject o, CString vType){
 	
 	
 	ga = PolygonMesh(g).GetGeometryAccessor();
-	CRefArray gaUV = ga.GetUVs();
-	ClusterProperty uv(gaUV[0]);
-	CFloatArray uvValues;
-	uv.GetValues( uvValues );
+	//CRefArray gaUV = ga.GetUVs();
+	//ClusterProperty uv(gaUV[0]);
+	//CFloatArray uvValues;
+	//uv.GetValues( uvValues );
 	
 	ga.GetVertexPositions(point_count);
 	ga.GetTriangleVertexIndices(tri_count); 
@@ -1375,56 +1376,55 @@ int writeLuxsiObj(X3DObject o, CString vType){
 			
 			CTriangleRefArray triangles(g.GetTriangles());
 			CLongArray indices( triangles.GetIndexArray() );
-			//CUVArray aUV ( triangles.GetUVArray() );
+				
+			CVector3Array allPoints(triangles.GetCount()*3);
+			CVector3Array allUV(triangles.GetCount()*3);
 			
+			long index=0;
+			for (int i=0; i<triangles.GetCount();i++){
+				Triangle triangle(triangles.GetItem(i));
+				for (int j=0;j<triangle.GetPoints().GetCount();j++){
+					TriangleVertex vertex0(triangle.GetPoints().GetItem(j));
+					CVector3 pos(vertex0.GetPosition());
+					CUV uvs(vertex0.GetUV());
+					
+					
+					long arrayPos=index++;
+					/*
+					if (triangle.GetPolygonIndex()>0) {
+						arrayPos= vertex0.GetIndex()*triangle.GetPolygonIndex();
+					} else {
+						arrayPos= vertex0.GetIndex();
+					}
+					*/
+					
+					allPoints[arrayPos] = pos;
+					allUV[arrayPos] = CVector3(uvs.u, uvs.v,0);
+					
+					vTris += CValue(arrayPos).GetAsText()+L" ";
+					
+					
+					app.LogMessage( L"Index: " + CValue(vertex0.GetIndex()).GetAsText() ); 
+					app.LogMessage( L"Vertex: " + CValue(pos.GetX()).GetAsText() + L"," + CValue(pos.GetY()).GetAsText() + L"," + CValue(pos.GetZ()).GetAsText() ); 
+					app.LogMessage( L"UV: " + CValue(uvs.u).GetAsText() + L"," + CValue(uvs.v).GetAsText() ); 
+					app.LogMessage( L" " ); 
+					
+				}
+				vTris += L"\n";
+			}
+			
+			/*	
 			for ( LONG i=0; i<indices.GetCount(); i+=3 )	{
 				vTris += L" "+ CValue(indices[i]).GetAsText() + L" "+CValue(indices[i+1]).GetAsText() + L" "+CValue(indices[i+2]).GetAsText() + L" "  + L"\n ";
 			}
-				
-			
-			for (LONG j=0;j<point_count.GetCount();j+=3){
-					//bool b;
-					//CVector3 pos(Point(points[j]).GetPosition());
-					//CVector3 norm(Point(points[j]).GetNormal(b));
-					//norm.NormalizeInPlace();
-					vPoints +=  L" "+ CString(point_count[j]) + L" "+  CString(-point_count[j+2]) + L" "+ CString(point_count[j+1])+L"\n"; 
-					//vNormals +=  L" "+ CString(norm[0]) + L" "+  CString(-norm[2]) + L" "+ CString(norm[1])+L"\n"; 
-					//vUV +=  L" "+CString(uvValues[j*3+1]) + L" "+ CString(-uvValues[j*3])+L"\n";
-					
-				}
-			/*
-			CPointRefArray points;
-			LONG lFacetCount = facets.GetCount();
-				
-			for ( LONG i=0; i<lFacetCount; i++ )	{
-				Facet facet(facets[i]);
-				CSampleRefArray samples( facet.GetSamples() );
-				points = facet.GetPoints() ;
-				
-				LONG lSampleCount = samples.GetCount();
-				for (LONG j=0; j<lSampleCount; j+=lSampleCount)	{
-					vTris += L" "+ CValue(Sample(samples[j]).GetIndex()).GetAsText()+ L" " + CValue(Sample(samples[j+1]).GetIndex()).GetAsText()+ L" "+ CValue(Sample(samples[j+2]).GetIndex()).GetAsText() + L"\n ";
-					if (lSampleCount==4) {
-						vTris += L" "+ CValue(Sample(samples[j]).GetIndex()).GetAsText()+ L" " + CValue(Sample(samples[j+2]).GetIndex()).GetAsText()+ L" "+ CValue(Sample(samples[j+3]).GetIndex()).GetAsText() + L"\n ";
-					}
-				}
-				
-				for (LONG j=0;j<points.GetCount();j++){
-					bool b;
-					CVector3 pos(Point(points[j]).GetPosition());
-					CVector3 norm(Point(points[j]).GetNormal(b));
-					norm.NormalizeInPlace();
-					vPoints +=  L" "+ CString(pos[0]) + L" "+  CString(-pos[2]) + L" "+ CString(pos[1])+L"\n"; 
-					vNormals +=  L" "+ CString(norm[0]) + L" "+  CString(-norm[2]) + L" "+ CString(norm[1])+L"\n"; 
-					//vUV +=  L" "+CString(uvValues[j*3+1]) + L" "+ CString(-uvValues[j*3])+L"\n";
-					
-				}
-				
-				
+			*/
+			app.LogMessage(L"count: "+CValue(allPoints.GetCount()).GetAsText());
+			for (LONG j=0;j<allPoints.GetCount();j++){
+					vPoints +=  L" "+ CString(allPoints[j][0]) + L" "+  CString(-allPoints[j][2]) + L" "+ CString(allPoints[j][1])+L"\n"; 
+					vUV +=  L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1])+L"\n"; 
 			}
 			
 			
-			*/
 			CRefArray vImags=m.GetShaders();
 			for (int i=0;i<vImags.GetCount();i++){
 				CRefArray vImags2=Shader(vImags[i]).GetShaders();
@@ -1465,18 +1465,15 @@ int writeLuxsiObj(X3DObject o, CString vType){
 				f << vPoints.GetAsciiString();
 				f << "] ";
 				
-				/*
+				
 				if(vText){
 					f << " \"float uv\" [\n";
-					//app.LogMessage(CString(vUV.GetCount()));
-					//for (long i=0;i<vUV.GetCount();i++){
-					//	f << vUV[i].GetAsciiString()<< "\n";
-					//}
 					f << vUV.GetAsciiString();
 					f << " ]\n";
 				}
-				*/
-				//f << "]";
+				
+				
+				
 			
 			
 		}
@@ -1595,19 +1592,19 @@ CString readIni(){
 	CString iniPath;
 	
 	iniPath = app.GetInstallationPath(siUserPath);
-	app.LogMessage(L"userdir:"+ iniPath);
+	//app.LogMessage(L"userdir:"+ iniPath);
 	#ifdef __unix__
 		iniPath += L"/LuXSI.ini";
 	#else
 		iniPath += L"\\LuXSI.ini";
 	#endif
-	app.LogMessage(L""+iniPath);
+	//app.LogMessage(L""+iniPath);
 	load.open( iniPath.GetAsciiString() );
 	
 	while(load.get(x)) {
       data+=x;
    }
-   app.LogMessage(L""+CString(data));
+   //app.LogMessage(L""+CString(data));
    load.close();
    return data;
 }
@@ -1645,7 +1642,7 @@ void luxsi_write(){
 		array += root.FindChildren( L"", L"", emptyArray, true );
 		for ( int i=0; i<array.GetCount();i++ ){
 			X3DObject o(array[i]);
-			app.LogMessage( L"\tObject name: " + o.GetName() + L":" +o.GetType() + L" parent:"+X3DObject(o.GetParent()).GetType());
+			//app.LogMessage( L"\tObject name: " + o.GetName() + L":" +o.GetType() + L" parent:"+X3DObject(o.GetParent()).GetType());
 			Property visi=o.GetProperties().GetItem(L"Visibility");
 			// Collection objects
 			if (o.GetType()==L"polymsh"){
@@ -1740,8 +1737,7 @@ void luxsi_write(){
 
 
 #if defined(_WIN32) || defined(_WIN64)
-	void loader(const char szArgs[])
-	{
+void loader(const char szArgs[]){
 		//HANDLE hFile ;
 		PROCESS_INFORMATION  pi;
 		// start a program in windows
@@ -1755,21 +1751,24 @@ void luxsi_execute(){
 	
 	if (vLuXSIPath!=L""){
 		if (vExportDone) {
-			//app.LogMessage(vLuXSIPath +L" " + vFileObjects );
+			app.LogMessage(vLuXSIPath +L" " + vFileObjects );
 			
 			#ifdef __unix__
-				pid_t pid = fork();
-				if( 0 == pid ) {
-					system ( (vLuXSIPath +L" " + vFileObjects).GetAsciiString());
-					exit(0); 
-				}
+				 //if(!fork()) {
+					 app.LogMessage(L"hier");
+					 system("kedit");
+				 //}
+
+				//	exit(0); 
+				//}
+				
 			#else
 				// win
 				
 				
 				CString exec = vLuXSIPath +" \""+ vFileObjects + "\"";
 				app.LogMessage(exec);
-				loader(exec.GetAsciiString());
+				//loader(exec.GetAsciiString());
 			#endif 
 		
 		}
