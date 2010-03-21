@@ -1090,6 +1090,7 @@ void writeLuxsiShader(){
 				shaderString += L"  \"color Kr\" [" + CString(sp_red) + L" "  + CString(sp_green) +  L" "  + CString(sp_blue) + L"]\n";
 				shaderString += L"  \"float index\" [" + CString((float)s.GetParameter(L"refr_ior").GetValue()) + L"]\n";
 				shaderString += L"  \"float cauchyb\" [0]\n";
+				shaderType=L"glass";
 				
 				if ((float)s.GetParameter(L"refr_gloss").GetValue()<1 ) {
 					shaderType=L"roughglass";
@@ -1379,6 +1380,7 @@ int writeLuxsiObj(X3DObject o, CString vType){
 				
 			CVector3Array allPoints(triangles.GetCount()*3);
 			CVector3Array allUV(triangles.GetCount()*3);
+			CVector3Array allNormals(triangles.GetCount()*3);
 			
 			long index=0;
 			for (int i=0; i<triangles.GetCount();i++){
@@ -1386,6 +1388,7 @@ int writeLuxsiObj(X3DObject o, CString vType){
 				for (int j=0;j<triangle.GetPoints().GetCount();j++){
 					TriangleVertex vertex0(triangle.GetPoints().GetItem(j));
 					CVector3 pos(vertex0.GetPosition());
+					CVector3 normal(vertex0.GetNormal());
 					CUV uvs(vertex0.GetUV());
 					
 					
@@ -1399,15 +1402,17 @@ int writeLuxsiObj(X3DObject o, CString vType){
 					*/
 					
 					allPoints[arrayPos] = pos;
+					allNormals[arrayPos] = normal;
 					allUV[arrayPos] = CVector3(uvs.u, uvs.v,0);
 					
 					vTris += CValue(arrayPos).GetAsText()+L" ";
 					
-					
+					/*
 					app.LogMessage( L"Index: " + CValue(vertex0.GetIndex()).GetAsText() ); 
 					app.LogMessage( L"Vertex: " + CValue(pos.GetX()).GetAsText() + L"," + CValue(pos.GetY()).GetAsText() + L"," + CValue(pos.GetZ()).GetAsText() ); 
 					app.LogMessage( L"UV: " + CValue(uvs.u).GetAsText() + L"," + CValue(uvs.v).GetAsText() ); 
 					app.LogMessage( L" " ); 
+					*/
 					
 				}
 				vTris += L"\n";
@@ -1422,6 +1427,7 @@ int writeLuxsiObj(X3DObject o, CString vType){
 			for (LONG j=0;j<allPoints.GetCount();j++){
 					vPoints +=  L" "+ CString(allPoints[j][0]) + L" "+  CString(-allPoints[j][2]) + L" "+ CString(allPoints[j][1])+L"\n"; 
 					vUV +=  L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1])+L"\n"; 
+					vNormals +=  L" "+ CString(allNormals[j][0]) + L" "+  CString(-allNormals[j][2]) + L" "+ CString(allNormals[j][1])+L"\n"; 
 			}
 			
 			
@@ -1454,7 +1460,7 @@ int writeLuxsiObj(X3DObject o, CString vType){
 				f << " Shape ";
 				
 				if (vIsSubD) {
-					f << "\"loopsubdiv\" \"integer nlevels\" [" <<  vSubDValue << "] \"bool dmnormalsmooth\" [\"true\"] \"bool dmsharpboundary\" [\"false\"]\n";
+					f << "\"loopsubdiv\" \"integer nlevels\" [" <<  vSubDValue << "] \"bool dmnormalsmooth\" [\"false\"] \"bool dmsharpboundary\" [\"true\"]\n";
 				} else {
 					f << " \"trianglemesh\"\n";
 				}
@@ -1464,8 +1470,11 @@ int writeLuxsiObj(X3DObject o, CString vType){
 				f << " ] \"point P\" [\n" ;
 				f << vPoints.GetAsciiString();
 				f << "] ";
-				
-				
+				if (vIsSubD) {
+					f << " \"normal N\" [\n" ;
+					f << vNormals.GetAsciiString();
+					f << "] ";
+				}
 				if(vText){
 					f << " \"float uv\" [\n";
 					f << vUV.GetAsciiString();
