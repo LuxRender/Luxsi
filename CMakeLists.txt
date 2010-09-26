@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 2.4)
+include_directories(/usr/Softimage/Softimage_2011_SP1/XSISDK/include)
+set(CMAKE_C_FLAGS "-DNDEBUG -03 -fPIC ")
+set(CMAKE_CXX_FLAGS "-fPIC -shared -L/usr/Softimage/Softimage_2011_SP1/Application/bin -L/usr/Softimage/Softimage_2011_SP1/XSISDK/lib -lsicppsdk -lsicoresdk")
+add_executable(LuXSI.so LuXSI.cpp)
+add_executable(PLY.so PLY.cpp)
