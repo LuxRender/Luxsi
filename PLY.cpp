@@ -29,7 +29,8 @@ using namespace XSI;
 using namespace std;
 using namespace MATH;
 
-
+CString vFileObjects="";
+CString path="";
 Application app;
 Project proj = app.GetActiveProject();
 Scene scn = proj.GetActiveScene();
@@ -115,6 +116,8 @@ SICALLBACK PLY_Define( CRef& in_ctxt ) {
 	Context ctxt( in_ctxt );
 	Parameter oParam;
 	prop = ctxt.GetSource();
+	prop.AddParameter( L"fObjects", CValue::siString, siPersistable, L"", L"", vFileObjects, oParam ) ;
+
 	return CStatus::OK;
 }
 
@@ -123,6 +126,13 @@ SICALLBACK PLY_DefineLayout( CRef& in_ctxt ){
     lay.Clear();
 	
 	lay.AddTab(L"Main");
+	
+	
+	lay.AddItem(L"fObjects",L"Save as",siControlFilePath);
+	PPGItem it = lay.GetItem( L"fObjects" );
+	it.PutAttribute( siUIFileFilter, L"LuXSI Scenes|*.snc" ) ;
+	
+	
 	lay.AddButton(L"exe_ply",L"Export");
 	
 	return CStatus::OK;
@@ -158,6 +168,12 @@ SICALLBACK PLY_PPGEvent( const CRef& in_ctxt )
 		Parameter changed = ctxt.GetSource() ;	
 		CustomProperty prop = changed.GetParent() ;	
 		CString   paramName = changed.GetScriptName() ; 
+		
+		if (paramName==L"fObjects"){
+			vFileObjects=changed.GetValue();
+		} 
+		
+		
 	}
 	
 	return CStatus::OK ;
@@ -249,7 +265,7 @@ void outputCamera(){
 	
 }
 
-void outputObjects(X3DObject o){
+void outputObjects(X3DObject o, CString fname){
 	// gets a geometry accessor object with default parameters
 	Geometry g(o.GetActivePrimitive().GetGeometry());
     CGeometryAccessor ga = PolygonMesh(g).GetGeometryAccessor();
@@ -272,7 +288,7 @@ void outputObjects(X3DObject o){
 		sPos += CString(vPos[i]) + " " + CString(vPos[i+1]) + " " + CString(vPos[i+2]) + " 0 0 0\n" ;
 	} 
 
-	CString s= "/home/miga/test_"+CString(o.GetName())+".ply";
+	CString s= fname+".ply";
 	_fileObjects.open (s.GetAsciiString());
 	writeFile(1,"ply");
 	writeFile(1,"format ascii 1.0");
@@ -296,13 +312,18 @@ void exportFile(){
 	CRefArray array;
 	CStringArray emptyArray;		
 	emptyArray.Clear();
-	_fileScene.open ("/home/miga/test.scn");
+
+	int loc_end=(int)vFileObjects.ReverseFindString(CString("."));
+	int loc_start=(int)vFileObjects.ReverseFindString(CString("/")) + 1;
+	CString fname = vFileObjects.GetSubString(loc_start,loc_end-loc_start);
+	path = vFileObjects.GetSubString(0,loc_start);
 	
+	_fileScene.open (vFileObjects.GetAsciiString());
 	outputCamera();
 	writeFile(0,"scene.materials.matte.whitematte = 0.75 0.75 0.75");
 	writeFile(0,"scene.materials.light.whitelight = 120.0 120.0 120.0");
 	
-	writeFile(0,"#scene.objects.whitelight.all = test_lights.ply");
+	writeFile(0,"#scene.objects.whitelight.all = "+fname+"_lights.ply");
 	
 	
 	array.Clear();
@@ -314,8 +335,8 @@ void exportFile(){
 		
 		// Collection objects
 		if (o.GetType()==L"polymsh"){
-			writeFile(0,"scene.objects.whitematte.all = test_"+o.GetName()+".ply");
-			outputObjects(o);
+			writeFile(0,"scene.objects.whitematte.all = "+fname+"_"+o.GetName()+".ply");
+			outputObjects(o, path+fname+"_"+o.GetName());
 		}
 	}
 	
