@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #pragma warning (disable : 4714) // marked as __forceinline not inlined
 #pragma warning (disable : 4244) // conversion ... possible loss of data
 #pragma warning (disable : 4245) // signed/unsigned mismatch
+#pragma warning (disable : 4996) // strcpy/unsigned mismatch
 
 #include <xsi_segment.h>
 #include <xsi_materiallibrary.h>
@@ -47,14 +48,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <xsi_ppglayout.h>
 #include <xsi_ppgeventcontext.h>
 #include <xsi_light.h> 
-#include <xsi_polygonmesh.h> 
 #include <xsi_texture.h> 
 #include <xsi_imageclip2.h> 
 #include <xsi_progressbar.h> 
 #include <xsi_uitoolkit.h> 
 #include <xsi_pass.h> 
 #include <xsi_scene.h> 
-#include <xsi_nurbssurfacemesh.h> 
 #include <xsi_nurbssurface.h>
 #include <xsi_controlpoint.h> 
 #include <xsi_ogllight.h> 
@@ -62,6 +61,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <xsi_polygonface.h>
 #include <xsi_vertex.h>
 #include <xsi_polygonnode.h>
+#include <xsi_polygonmesh.h>
 #include <xsi_utils.h>
 #include <math.h>
 #include <string.h>
@@ -91,6 +91,7 @@ void writeLuxsiLight(X3DObject o);
 int writeLuxsiCloud(X3DObject o);
 int writeLuxsiInstance(X3DObject o);
 int writeLuxsiObj(X3DObject o);
+int writeSubDivObj(X3DObject o); //, CString vType)
 
 void writeLuxsiShader();
 void luxsi_write();
@@ -107,11 +108,11 @@ CustomProperty prop ;
 
 
 int vBounces=10,vPixelsamples=2,vSampler=2,vPresets=0,vDis=8,vThreads=2,vEye_depth=2,vLight_depth=2,vmaxRejects=256,vSurf=3,vXRes=800,vYRes=600,vFilt=2,vMaxDepth=256,vSamples=4,vSave=120,vPixelsampler=1;
-bool vMLT=true,vIsLinux=true,vIsGI=true,vRrft=true,vProg=true,vIsCaustic=false,vIsHiddenCam=false,vIsHiddenLight=false,vIsHiddenObj=false, vExportDone=false;
-bool vResume=false,vUseJitter=true,vIsHiddenSurfaces=false,vSFPreview=true,vIsHiddenClouds=false,vExpOne=true,vAmbBack=false,vExr=true,vPng=false,vTga=true;
+bool vMLT=true,vIsLinux=true,vIsGI=true,vRrft=true,vProg=true,vIsCaustic=false,vIsHiddenCam=true,vIsHiddenLight=true,vIsHiddenObj=true, vExportDone=false;
+bool vResume=false,vUseJitter=true,vIsHiddenSurfaces=false,vSFPreview=true,vIsHiddenClouds=false,vExpOne=true,vAmbBack=false,vExr=false,vPng=true,vTga=false;
 float vCSize=0.4f,vGITolerance=0.025f,vSpacingX=0.1f,vSpacingY=0.1f,vContrast=2.2f;
 float vmutation=0.1f, vrrprob=0.65f;
-
+bool vSmooth_mesh=false; //----//---->
 CRefArray aGroups;
 CStringArray aMatList,aInstanceList;
 
@@ -127,9 +128,10 @@ XSIPLUGINCALLBACK CStatus XSILoadPlugin( PluginRegistrar& in_reg )
 	in_reg.PutURL(L"http://www.migaweb.de");
 	in_reg.PutVersion(0,6);
 	in_reg.RegisterProperty(L"LuXSI");
-	in_reg.RegisterMenu(siMenuMainFileExportID,L"LuXSI_Menu",false,false);
-	//RegistrationInsertionPoint - do not remove this line
-	
+	in_reg.RegisterMenu(siMenuTbRenderRenderID,L"LuXSI_Menu",false,false);
+	//in_reg.RegisterMenu(siMenuMainFileExportID,L"LuXSI_Menu",false,false);
+	//RegistrationInsertionPoint - do not remove this line // siMenuTbRenderRenderID
+	// Luxsi is "renderer and exporter.." :)
 	return CStatus::OK;
 }
 
@@ -153,9 +155,10 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 	prop.AddParameter(L"use_hidden_light",CValue::siBool,siPersistable,L"",L"",vIsHiddenLight,CValue(),CValue(),CValue(),CValue(),oParam);
 	prop.AddParameter(L"use_hidden_cam",CValue::siBool,siPersistable,L"",L"",vIsHiddenCam,CValue(),CValue(),CValue(),CValue(),oParam);
 	prop.AddParameter(L"exp_one",CValue::siBool,siPersistable,L"",L"",vExpOne,CValue(),CValue(),CValue(),CValue(),oParam);
-	
-	prop.AddParameter(L"Width",CValue::siInt4,siPersistable,L"",L"",vXRes,0l,2048l,0l,1024l,oParam);
-	prop.AddParameter(L"Height",CValue::siInt4,siPersistable,L"",L"",vYRes,0l,2048l,0l,768l,oParam);
+	prop.AddParameter(L"smooth_mesh",CValue::siBool,siPersistable,L"",L"",vSmooth_mesh,CValue(),CValue(),CValue(),CValue(),oParam);
+
+	prop.AddParameter(L"Width",CValue::siInt4,siPersistable,L"",L"",vXRes,0,2048,0,1024,oParam);
+	prop.AddParameter(L"Height",CValue::siInt4,siPersistable,L"",L"",vYRes,0,2048,0,768,oParam);
 	prop.AddParameter(L"gamma",CValue::siFloat,siPersistable,L"",L"",vContrast,0,10,0,3,oParam);
 	prop.AddParameter(L"max_depth",CValue::siInt4,siPersistable,L"",L"",vMaxDepth,0,4096,0,1024,oParam);
 	prop.AddParameter(L"samples",CValue::siInt4,siPersistable,L"",L"",vSamples,0,1024,0,128,oParam);
@@ -172,8 +175,8 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 	prop.AddParameter( L"eye_depth", CValue::siInt4, siPersistable, L"", L"",vEye_depth, oParam ) ;
 	prop.AddParameter( L"light_depth", CValue::siInt4, siPersistable, L"", L"",vLight_depth, oParam ) ;
 	
-	prop.AddParameter(L"savint",CValue::siInt4,siPersistable,L"",L"",vSave,0l,200l,0l,200l,oParam);
-	prop.AddParameter(L"disint",CValue::siInt4,siPersistable,L"",L"",vDis,0l,200l,0l,200l,oParam);
+	prop.AddParameter(L"savint",CValue::siInt4,siPersistable,L"",L"",vSave,0,200,0,200,oParam);
+	prop.AddParameter(L"disint",CValue::siInt4,siPersistable,L"",L"",vDis,0,200,0,200,oParam);
 	prop.AddParameter(L"AmbBack",CValue::siBool,siPersistable,L"",L"",vAmbBack,CValue(),CValue(),CValue(),CValue(),oParam);
 	
 	prop.AddParameter(L"save_exr",CValue::siBool,siPersistable,L"",L"",vExr,CValue(),CValue(),CValue(),CValue(),oParam);
@@ -182,8 +185,8 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 	
 	prop.AddParameter(L"mlt",CValue::siBool,siPersistable,L"",L"",vMLT,CValue(),CValue(),CValue(),CValue(),oParam);
 	prop.AddParameter(L"resume",CValue::siBool,siPersistable,L"",L"",vResume,CValue(),CValue(),CValue(),CValue(),oParam);
-	prop.AddParameter(L"maxrej",CValue::siInt4,siPersistable,L"",L"",vmaxRejects,0l,10048l,0l,512l,oParam);
-	prop.AddParameter(L"mutation",CValue::siFloat,siPersistable,L"",L"",vmutation,0l,1l,0l,1l,oParam);
+	prop.AddParameter(L"maxrej",CValue::siInt4,siPersistable,L"",L"",vmaxRejects,0,10048,0,512,oParam);
+	prop.AddParameter(L"mutation",CValue::siFloat,siPersistable,L"",L"",vmutation,0,1,0,1,oParam);
 	
 	// set temp filename
 	CString objPath;
@@ -215,33 +218,33 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
 	
 	lay.AddGroup(L"Image");
 	lay.AddRow();
-	lay.AddItem(L"Width");
-	lay.AddItem(L"Height");
+		lay.AddItem(L"Width");
+		lay.AddItem(L"Height");
 	lay.EndRow();
-	lay.AddItem(L"gamma",L"Gamma");
+		lay.AddItem(L"gamma",L"Gamma");
 	lay.EndRow();
 	CValueArray vItem2(10);
-	vItem2[0] = L"box" ; vItem2[1] = 0;
-	vItem2[2] = L"gaussian" ; vItem2[3] = 1;
-	vItem2[4] = L"mitchell" ; vItem2[5] = 2;
-	vItem2[6] = L"sinc" ; vItem2[7] = 3;
-	vItem2[8] = L"triangle" ; vItem2[9] = 4;
+		vItem2[0] = L"box" ; vItem2[1] = 0;
+		vItem2[2] = L"gaussian" ; vItem2[3] = 1;
+		vItem2[4] = L"mitchell" ; vItem2[5] = 2;
+		vItem2[6] = L"sinc" ; vItem2[7] = 3;
+		vItem2[8] = L"triangle" ; vItem2[9] = 4;
 	lay.AddEnumControl(L"Filt",vItem2,L"Filter",siControlCombo ) ;
 	lay.AddItem(L"disint",L"Display Interval");
 	lay.EndGroup();
 	
 	lay.AddGroup(L"Export hidden...");
-	lay.AddItem(L"use_hidden_obj", L"Objects");
-	lay.AddItem(L"use_hidden_cam", L"Cameras");
-	lay.AddItem(L"use_hidden_light", L"Lights");
+		lay.AddItem(L"use_hidden_obj", L"Objects");
+		lay.AddItem(L"use_hidden_cam", L"Cameras");
+		lay.AddItem(L"use_hidden_light", L"Lights");
+		lay.AddItem(L"smooth_mesh", L"Export smooth meshes"); //----//---->
 	lay.EndGroup();
 	
 	lay.AddGroup(L"Save as");
-	lay.AddItem(L"save_tga", L"TGA");
-	lay.AddItem(L"save_exr", L"EXR");
-	lay.AddItem(L"save_png", L"PNG");
-	lay.AddItem(L"savint",L"Interval");
-	
+		lay.AddItem(L"save_tga", L"TGA");
+		lay.AddItem(L"save_exr", L"EXR");
+		lay.AddItem(L"save_png", L"PNG");
+		lay.AddItem(L"savint",L"Interval");
 	lay.EndGroup();
 	
 	lay.AddItem(L"fObjects",L"Filename",siControlFilePath);
@@ -507,65 +510,41 @@ void update_LuXSI_values(CString paramName, Parameter changed,PPGLayout lay){
 		Parameter(prop.GetParameters().GetItem( L"mutation" )).PutValue(vmutation); 
 	}
 	
-	if (paramName==L"Width"){
-		vXRes=changed.GetValue();
-	} else if (paramName==L"Height"){
-		vYRes=changed.GetValue();
-	} else if (paramName==L"Filt"){
-		vFilt=changed.GetValue();
-	} else if (paramName==L"gamma"){
-		vContrast=changed.GetValue();
-	} else if (paramName==L"use_hidden_obj"){
-		vIsHiddenObj=changed.GetValue();
-	} else if (paramName==L"use_hidden_surf"){
-		vIsHiddenSurfaces=changed.GetValue();
-	} else if (paramName==L"use_hidden_clouds"){
-		vIsHiddenClouds=changed.GetValue();
-	} else if (paramName==L"use_hidden_cam"){
-		vIsHiddenCam=changed.GetValue();
-	} else if (paramName==L"use_hidden_light"){
-		vIsHiddenLight=changed.GetValue();
-	}  else if (paramName==L"fObjects"){
-		vFileObjects=changed.GetValue();
-	}  else if (paramName==L"max_depth"){
-		vMaxDepth=changed.GetValue();
-	} else if (paramName==L"progressive"){
-		vProg=changed.GetValue();
-	} else if (paramName==L"pixelsamples"){
-		vSamples=changed.GetValue();
-	}  else if (paramName==L"rrft"){
-		vRrft=changed.GetValue();
-	}  else if (paramName==L"savint"){
-		vSave=changed.GetValue();
-	} else if (paramName==L"mlt"){
-		vMLT=changed.GetValue();
-	}else if (paramName==L"AmbBack"){
-		vAmbBack=changed.GetValue();
-	} else if (paramName==L"maxrej"){
-		vmaxRejects=changed.GetValue();
-	} else if (paramName==L"save_png"){
-		vPng=changed.GetValue();
-	} else if (paramName==L"save_exr"){
-		vExr=changed.GetValue();
-	} else if (paramName==L"save_tga"){
-		vTga=changed.GetValue();
-	} else if (paramName==L"pixelsampler"){
-		vPixelsampler=changed.GetValue();
-	}else if (paramName==L"sintegrator"){
-		vSurf=changed.GetValue();
-	}else if (paramName==L"disint"){
-		vDis=changed.GetValue();
-	}else if (paramName==L"light_depth"){
-		vLight_depth=changed.GetValue();
-	}else if (paramName==L"eye_depth"){
-		vEye_depth=changed.GetValue();
-	}else if (paramName==L"fLuxPath"){
-		vLuXSIPath=changed.GetValue();
+	if (paramName==L"Width"){vXRes=changed.GetValue();
+	} else if (paramName==L"Height"){vYRes=changed.GetValue();
+	} else if (paramName==L"Filt"){vFilt=changed.GetValue();
+	} else if (paramName==L"gamma"){vContrast=changed.GetValue();
+	//----/ hidden objects /------>
+	} else if (paramName==L"use_hidden_obj"){vIsHiddenObj=changed.GetValue();
+	} else if (paramName==L"use_hidden_surf"){vIsHiddenSurfaces=changed.GetValue();
+	} else if (paramName==L"use_hidden_clouds"){vIsHiddenClouds=changed.GetValue();
+	} else if (paramName==L"use_hidden_cam"){vIsHiddenCam=changed.GetValue();
+	} else if (paramName==L"use_hidden_light"){vIsHiddenLight=changed.GetValue();
+	} else if (paramName==L"smooth_mesh"){ vSmooth_mesh=changed.GetValue();
+
+	} else if (paramName==L"fObjects"){vFileObjects=changed.GetValue();
+	} else if (paramName==L"max_depth"){vMaxDepth=changed.GetValue();
+	} else if (paramName==L"progressive"){vProg=changed.GetValue();
+	} else if (paramName==L"pixelsamples"){vSamples=changed.GetValue();
+	} else if (paramName==L"rrft"){vRrft=changed.GetValue();
+	} else if (paramName==L"savint"){vSave=changed.GetValue();
+	} else if (paramName==L"mlt"){vMLT=changed.GetValue();
+	} else if (paramName==L"AmbBack"){vAmbBack=changed.GetValue();
+	} else if (paramName==L"maxrej"){vmaxRejects=changed.GetValue();
+	//----/ save images /---->
+	} else if (paramName==L"save_png"){vPng=changed.GetValue();
+	} else if (paramName==L"save_exr"){vExr=changed.GetValue();
+	} else if (paramName==L"save_tga"){vTga=changed.GetValue();
+
+	} else if (paramName==L"pixelsampler"){vPixelsampler=changed.GetValue();
+	} else if (paramName==L"sintegrator"){vSurf=changed.GetValue();
+	} else if (paramName==L"disint"){vDis=changed.GetValue();
+	} else if (paramName==L"light_depth"){vLight_depth=changed.GetValue();
+	} else if (paramName==L"eye_depth"){vEye_depth=changed.GetValue();
+	} else if (paramName==L"fLuxPath"){vLuXSIPath=changed.GetValue();
 		
-	}else if (paramName==L"mutation"){
-		vmutation=changed.GetValue();
-	}else if (paramName==L"resume"){
-		vResume=changed.GetValue();
+	} else if (paramName==L"mutation"){vmutation=changed.GetValue();
+	} else if (paramName==L"resume"){vResume=changed.GetValue();
 	}
 }
 
@@ -664,8 +643,6 @@ void writeLuxsiBasics(){
 	char aSurf[5][16]={"bidirectional","distributedpath","emission","path","single"};
 	
 	string fname=vFileObjects.GetAsciiString();
-	
-
 	int loc=(int)fname.rfind(".");
 	
 	f << "Film \"fleximage\"\n";
@@ -692,7 +669,7 @@ void writeLuxsiBasics(){
 	
 	f << "  \"bool write_resume_flm\" [\""<< aBool[vResume] << "\"]\n";
 	f << "  \"bool premultiplyalpha\" [\"false\"]\n";
-	f << "  \"integer haltspp\" [0]\n";
+	f << "  \"integer haltspp\" [0]\n"; // TODO
 	
 	
 	f << "  \"float gamma\" [" << vContrast << "]\n\n";
@@ -728,10 +705,10 @@ void writeLuxsiBasics(){
 			break;
 		case 4: break;
 	}
-	f << "\nAccelerator \"tabreckdtree\"\n";
+	f << "\nAccelerator \"tabreckdtree\"\n";// TODO..
 	f << "  \"integer intersectcost\" [80]\n";
 	f << "  \"integer traversalcost\" [1]\n";
-	f << "  \"float emptybonus\" [0.200000]\n";
+	f << "  \"float emptybonus\" [0.500000]\n";
 	f << "  \"integer maxprims\" [1]\n";
 	f << "  \"integer maxdepth\" [-1]\n\n";
 	
@@ -765,6 +742,7 @@ void writeLuxsiBasics(){
 		f << "AttributeBegin\n";
 		f << "LightSource \"infinite\" \"color L\" [1 1 1] \"integer nsamples\" [1]\n";
 		f << "\"string mapname\" [\"" << replace(vHDRI.GetAsciiString()) << "\"]\n";
+		f << "AttributeEnd \n";
 	} else if (vAmbBack) {
 			//
 			// TODO: check if there is a C++ way to read AmbientLighting color
@@ -782,6 +760,7 @@ void writeLuxsiBasics(){
 			
 		f << "AttributeBegin\n";
 		f << "LightSource \"infinite\" \"color L\" [" <<CString(red).GetAsciiString()<<" " <<CString(green).GetAsciiString()<<" " <<CString(blue).GetAsciiString()<< "] \"integer nsamples\" [1]\n";
+		f << "AttributeEnd \n";
 	}	
 }
 
@@ -800,7 +779,7 @@ void writeLuxsiCam(X3DObject o){
 		c=o.GetChildren()[0];
 	}
 	
-	CVector3 vnegZ(0,0,1);
+	CVector3 vnegZ(0,0,-1);
 
 	// Operations to calculate look at position.
 	vnegZ.MulByMatrix3InPlace(c.GetKinematics().GetGlobal().GetTransform().GetRotationMatrix3());
@@ -850,11 +829,21 @@ void writeLuxsiCam(X3DObject o){
 	double x,y,z;
 	vnegZ.Get( x,y,z );
 	
-	CVector3 new_pos = convertMatrix(gt.GetTranslation());
-	CVector3 new_pos_ci = convertMatrix(ci_gt.GetTranslation());
+	//----/ new feature; ortographic camera /---->
+	CString vProj=L"";
+	if (c.GetParameterValue(CString(L"proj"))==1) {vProj=L"perspective" ;}
+	else { vProj=L"orthographic";}
+	//----/ end /---->
 	
-	f << "LookAt " << CString(new_pos.GetX()).GetAsciiString() << " " <<CString(new_pos.GetY()).GetAsciiString() << " " << CString(new_pos.GetZ()).GetAsciiString() << " " << CString(new_pos_ci.GetX()).GetAsciiString() << " " <<CString(new_pos_ci.GetY()).GetAsciiString() << " " << CString(new_pos_ci.GetZ()).GetAsciiString()  << " 0 0 " << 	CString(up.GetZ()).GetAsciiString() << "\n";
-	f << "Camera \"perspective\" \"float fov\" [" << vfov << "] \"float lensradius\" ["<< CString(vLensr).GetAsciiString()  <<"] \"float focaldistance\" ["<< CString(vFdist).GetAsciiString() <<"]"; 
+	CVector3 new_pos = gt.GetTranslation();
+	CVector3 new_pos_ci = ci_gt.GetTranslation();
+
+	// are not need "CString" type, CVector3 is a double precision floating point x,y,z coordinates.
+	//f << "LookAt " << CString(new_pos.GetX()).GetAsciiString() << " " <<CString(new_pos.GetY()).GetAsciiString() << " " << CString(new_pos.GetZ()).GetAsciiString() << "\n";
+	f << "LookAt " << new_pos.GetX() << " " << new_pos.GetY() << " " << new_pos.GetZ() << "\n";
+	f << "       "<< new_pos_ci.GetX() << " " << new_pos_ci.GetY() << " " << new_pos_ci.GetZ() <<"\n";
+	f << "       0 1 0 \n"; //<< CString(up.GetZ()).GetAsciiString() << "\n"; // not working correct
+	f << "Camera \"" << vProj.GetAsciiString() <<"\" \"float fov\" [" << vfov << "] \"float lensradius\" ["<< CString(vLensr).GetAsciiString()  <<"] \"float focaldistance\" ["<< CString(vFdist).GetAsciiString() <<"]"; 
 	f << "\n\n";
 }
 
@@ -893,15 +882,16 @@ void writeLuxsiLight(X3DObject o){
 		li= X3DObject(o.GetParent()).GetChildren()[1];
 		CTransformation lt = li.GetKinematics().GetLocal().GetTransform();
 		intPos=lt.GetTranslation();
-		
 		CRefArray shad(Light(o).GetShaders());
 		Shader s(shad[0]);
 				
 		f << "\nLightSource \"spot\"\n";
-		f << "  \"point from\" [" << (float)translation.GetX() << " " << (float)translation.GetY() << " "  << (float)translation.GetZ()  << "] \"point to\" ["<< (float)intPos.GetX() << " " << (float)intPos.GetY() << " "<< (float)intPos.GetZ() << "]\n";
+		f << "  \"point from\" [" << (float)translation.GetX() << " " << (float)translation.GetY() << " "  << (float)translation.GetZ()  << "] \n";
+		f << "  \"point to\" ["<< (float)intPos.GetX() << " " << (float)intPos.GetY() << " "<< (float)intPos.GetZ() << "]\n";
 		f << "  \"float coneangle\" [" << (float)o.GetParameterValue((L"LightCone")) << "]\n";
 		f << "  \"float conedeltaangle\" [" << ((float)o.GetParameterValue(L"LightCone")- (float)s.GetParameter(L"spread").GetValue() ) << "]\n";
-		f << "  \"color I\" [" << a << "  " << b << "  " << c << "] \"float gain\" ["  << (float)s.GetParameterValue(L"intensity") << "]\n";
+		f << "  \"color \" [" << a << "  " << b << "  " << c << "] \"float gain\" ["  << (float)s.GetParameterValue(L"intensity") << "]\n";
+	
 	} else if  (myOGLLight.GetType()==siLightInfinite ) {
 		//
 		//sunlight
@@ -910,7 +900,8 @@ void writeLuxsiLight(X3DObject o){
 		
 		f << "\nLightSource \"sunsky\"\n";
 		f << "  \"integer nsamples\" [4]\n";
-		f << "  \"vector sundir\" [ "<< (float)sunTransMat.GetValue(2,0) << " " << -(float)sunTransMat.GetValue(2,2) << " " << (float)sunTransMat.GetValue(2,1) << " ] \"float gain\" [" << (float)s.GetParameterValue(L"intensity") << "]\n";
+		f << "  \"vector sundir\" [ "<< (float)sunTransMat.GetValue(2,0) << " " << (float)sunTransMat.GetValue(2,1) << " " << (float)sunTransMat.GetValue(2,2) << " ]\n";
+		f << "  \"float gain\" [" << (float)s.GetParameterValue(L"intensity") << "]\n";
 		
 	} else {
 		//
@@ -922,7 +913,8 @@ void writeLuxsiLight(X3DObject o){
 		CTransformation gt2 = gs2.GetTransform();
 		intPos=gt2.GetTranslation();
 		f << "\nLightSource \"point\"\n";
-		f << "  \"point from\" [" << intPos.GetX() << " " << intPos.GetY() << " " << intPos.GetZ() << "] \"color I\" [" << a << "  " << b << "  " << c << "] \"float gain\" ["<< (float)s.GetParameterValue(L"intensity") << "]\n";
+		f << "  \"point from\" [" << intPos.GetX() << " " << intPos.GetY() << " " << intPos.GetZ() << "]\n";
+		f << "  \"color I\" [" << a << "  " << b << "  " << c << "] \"float gain\" ["<< (float)s.GetParameterValue(L"intensity") << "]\n";
 		
 	}
 }
@@ -957,6 +949,7 @@ void writeLuxsiShader(){
 		Texture vTexture;
 		CString shaderString;	
 		CString shaderType;
+		CString vFileBump;
 	
 		float b_red=0.0f,b_green=0.0f,b_blue=0.0f,b_alpha=0.0f,red=0.0f,green=0.0f,blue=0.0f,alpha=0.0f,sp_red=0.0f,sp_green=0.0f,sp_blue=0.0f,sp_alpha=0.0f,vModScale=0.0f,refl_red=0.0f,refl_green=0.0f,refl_blue=0.0f,refl_alpha=0.0f;
 		float mRough=0.0f;
@@ -964,6 +957,7 @@ void writeLuxsiShader(){
 		Shader vBumpTex;
 		bool vIsSet=false;
 		bool vText=false,vIsSubD=true;
+		bool vNorm=false; //----/ vNorm /---->
 		CValue vDiffType,vMore,vCol,vMore2,vMore3,vTexStr,vMore1,vMore4,vMore5;
 		Material m( materials[i] );
 		
@@ -1228,10 +1222,42 @@ void writeLuxsiShader(){
 					ImageClip2 vImgClip(vTexture.GetImageClip() );
 					Source vImgClipSrc(vImgClip.GetSource());
 					CValue vFileName = vImgClipSrc.GetParameterValue( L"path");
+			
+					vNorm=false; //default
+					//----/test for bump_map image /---------------------> ||(bool)s.GetParameterValue("inuse")
 					
-					f << "Texture \"Kd-"<< sname << "\" \"color\" \"imagemap\" \"string filename\" [\"" << replace(vFileName.GetAsText().GetAsciiString()) << "\"] \"string wrap\" [\"repeat\"] \"string filtertype\" [\"bilinear\"] \"string mapping\" [\"uv\"] \"float vscale\" [-1.0]\n";
-					shaderString += L"  \"texture Kd\" [\"Kd-"+ CString(m.GetName()) +L"\"]\n";
+					if ((bool)vTexture.GetParameterValue(L"bump_inuse")!=false) { vNorm=true; 
+					vFileBump = vImgClip.GetFileName().GetAsciiString();
+					} else { vText=true; 
+					}
+				
+					if (vText){
+						f << "\nTexture \"" << sname << "::Kd""\" \"color\" \"imagemap\" \n"; 
+						f << "	\"string wrap\" [\"repeat\"] \n";//TODO; create option menu
+						f << "	\"string filename\" [\"" << replace(vFileName.GetAsText().GetAsciiString()) << "\"] \n"; 
+						f << "	\"float gamma\" ["<< vContrast <<"]\n";
+						f << "	\"float gain\" [1.000000]\n";
+						f << "	\"string filtertype\" [\"bilinear\"] \n";// TODO; create option  menu
+						f << "	\"string mapping\" [\"uv\"] \n";// TODO; create option menu
+						f << "	\"float vscale\" [-1.0]\n";
+						f << "	\"float uscale\" [1.0] \n";
+						//"float udelta" [0.000000]
+						//"float vdelta" [1.000000]
+						f << "Texture \""<< sname <<"::Kd.scale""\" \"color\" \"scale\" \"texture tex1\" [\""<< sname <<"::Kd\"] \"color tex2\" [0.800000 0.800000 0.800000] \n";
+						shaderString += L"  \"texture Kd\" [\""+ CString(m.GetName()) +L"::Kd\"]\n";
 					vText=true;
+					} 
+				/*	if (vNorm){// code for bumpmap image map, inspire by luxblend // not tested
+						f << "\nTexture \""<< sname << "::dispmap""\" \"float\" \"imagemap\" \n"; 
+						f << "  \"string wrap\" [\"repeat\"] \n";
+						f << "  \"string chanel\" [\"mean\"] \n";
+						f << "	\"string filename\" [\"" << replace(vFileBump.GetAsciiString()) << "\"] \n";
+						f << "	\"string filtertype\" [\"bilinear\"] \n";
+						f << "	\"string mapping\" [\"uv\"] \n";
+						f << "  \"float vscale\" [-1.0] \"float uscale\" [1.0] \n";
+						f << " Texture \""<< sname << "::dispmap.scale""\" \"float\" \"scale\" \"texture tex1\"  [\""<< sname << "::bumpmap:amount\"] \"float tex1\" [0.0] \"float tex2\" [0.05] \n";
+						//shaderString += L"  \"texture Kd\" [\""+ CString(m.GetName()) +L"::bumpmap\"]\n";
+					}*/
 				}
 			}
 		}
@@ -1258,7 +1284,7 @@ int writeLuxsiObj(X3DObject o, CString vType){
 	fooArgs[0] = L"" ;
 	CValue retVal=false ;
 	CDoubleArray point_count;
-	CFloatArray normals;
+	//CFloatArray _normals;
 	CLongArray tri_count,nod,out;
 	bool vIsMeshLight=false;
 	bool vIsSet=false;
@@ -1275,65 +1301,140 @@ int writeLuxsiObj(X3DObject o, CString vType){
 	CString vUV=L"",vNormals=L"",vTris=L"",vMod=L"",vPoints=L"";
 	CFacetRefArray facets( g.GetFacets() );
 
-	int vSubDValue=1;
+	//----//----------->
+	CGeometryAccessor in_ga;
+	CString wFaceIdx;
+	CString wVertex;
+	CString wNorVect;
+	CString wNorIdx;
+	CString wUvVect;
+	//----//----------->
+
+	//LONG vSubDValue=0;
+	LONG subdLevel=0; // my code
 	
 	Property geopr=o.GetProperties().GetItem(L"Geometry Approximation");
 	if ((int)geopr.GetParameterValue(L"gapproxmordrsl")>0 || (int)geopr.GetParameterValue(L"gapproxmosl")>0) {
 		vIsSubD=true;
-		if ((int)geopr.GetParameterValue(L"gapproxmordrsl")>0) {
-			vSubDValue=(int)geopr.GetParameterValue(L"gapproxmordrsl")+1;
+		if ((int)geopr.GetParameterValue(L"gapproxmordrsl")>0) {//
+			subdLevel=(int)geopr.GetParameterValue(L"gapproxmordrsl");// modif..
 		} else {
-			vSubDValue=(int)geopr.GetParameterValue(L"gapproxmosl")+1;
+			subdLevel=(int)geopr.GetParameterValue(L"gapproxmosl");//
 		}
 	} else {
 		vIsSubD=false;
 	}
-	
+	//----/ my modifications /------>
+	siConstructionMode constmode = (siConstructionModeModeling);
+	siSubdivisionRuleType subdmode = (siCatmullClark);
+	//----/ added /------>
 	
 	ga = PolygonMesh(g).GetGeometryAccessor();
-	//CRefArray gaUV = ga.GetUVs();
-	//ClusterProperty uv(gaUV[0]);
-	//CFloatArray uvValues;
-	//uv.GetValues( uvValues );
-	
 	ga.GetVertexPositions(point_count);
 	ga.GetTriangleVertexIndices(tri_count); 
-	
 	ga.GetTriangleNodeIndices(nod); 
-	ga.GetNodeNormals(normals);
+	//ga.GetNodeNormals(_normals);
 	
 	CLongArray pvCount;
 	CLongArray vIndices;
+
 	ga.GetTriangleNodeIndices(vIndices);
-	
 	ga.GetPolygonVerticesCount(pvCount);
+
 	long nPolyCount = ga.GetPolygonCount();
 	
-	
-	//app.LogMessage(L"GA Stuff:" + CString(pvCount) + L" " + CString(vIndices.GetCount()) + L" " + CString(nod.GetCount()));
-	//Cube: vIndices.GetCount()=24 ----  nod.GetCount()=36
-	
-	//CRefArray cls = o.GetActivePrimitive().GetGeometry().GetClusters();	// get clusters
 	CTransformation localTransformation = ga.GetTransform();
-	KinematicState  gs = o.GetKinematics().GetGlobal();
-	//KinematicState  gs = o.GetKinematics().GetLocal();
+	KinematicState  gs = o.GetKinematics().GetLocal();
 	CTransformation gt = gs.GetTransform();
 	CMatrix4 mat4(gt.GetMatrix4());
 	
 	CVector3 axis; 
 	double rot = gt.GetRotationAxisAngle(axis);
+	//----/ my code for subd. meshes /-------------->
+// implementado del ejemplo del XSISDK, import-export
+
+//----//write polygon face_indices -gettrianglecount//--------->
+	in_ga = PolygonMesh(g).GetGeometryAccessor(constmode, subdmode, subdLevel);
+	CLongArray triVtxIdxArray;
+	in_ga.GetTriangleVertexIndices(triVtxIdxArray);
+		CLongArray triSizeArray(in_ga.GetTriangleCount());
+	//----/ triangulate polygons /----->
+	CLongArray numVertArray;
+	in_ga.GetPolygonVerticesCount(numVertArray);
+	//----/ end /-------->
+		for (LONG i=0, offset=0; i<triSizeArray.GetCount(); i++)
+		{	
+			wFaceIdx += L" "+ CString(triVtxIdxArray[offset]);
+			wFaceIdx += L" "+ CString(triVtxIdxArray[offset+1]);
+			wFaceIdx += L" "+ CString(triVtxIdxArray[offset+2]) + L" \n ";
+			offset += 3;
+		if (numVertArray==4){
+			wFaceIdx += L" "+ CString(triVtxIdxArray[offset+0]); 
+			wFaceIdx += L" "+ CString(triVtxIdxArray[offset+2]);
+			wFaceIdx += L" "+ CString(triVtxIdxArray[offset+3]) + L" \n ";
+			offset += 3 ;
+			} 
+		}
+
+//----// polygon points_vectors positions -getvertexcount //----------->
+		
+	CDoubleArray vtxPosArray;
+	in_ga.GetVertexPositions(vtxPosArray);
 	
+	LONG nVals = vtxPosArray.GetCount()/3;
+	for ( LONG i=0, nCurrent=0; i<nVals; i++ )
+	{
+		wVertex += L" "+ CString(vtxPosArray[nCurrent]);
+		wVertex += L" "+ CString(vtxPosArray[nCurrent+1]);
+		wVertex += L" "+ CString(vtxPosArray[nCurrent+2]) + L" \n ";		
+		nCurrent += 3;
+	}
+//----//polygon node normal_vectors -getnodecount //------------->
+	CFloatArray nodeArray;
+	in_ga.GetNodeNormals(nodeArray);
 	
-	//app.LogMessage(L"Clusters: "+CString(cls.GetCount()));
+	LONG norVals = nodeArray.GetCount()/3;
+	for ( LONG i=0, normCurrent=0; i<norVals; i++ )
+	{
+		wNorVect += L" "+ CString(nodeArray[normCurrent]);
+		wNorVect += L" "+ CString(nodeArray[normCurrent+1]);
+		wNorVect += L" "+ CString(nodeArray[normCurrent+2]) + L" \n ";
+		normCurrent += 3;
+	}
+	//----// normal_indices -gettrianglecount //---------->
+	CLongArray triNodeIdxArray;
+	in_ga.GetTriangleNodeIndices(triNodeIdxArray);
 	
-	
-	
+	for (LONG i=0, offset=0; i<triSizeArray.GetCount(); i++)
+	{	
+		wNorIdx += L" "+ CString(triNodeIdxArray[offset]);
+		wNorIdx += L" "+ CString(triNodeIdxArray[offset+1]);
+		wNorIdx += L" "+ CString(triNodeIdxArray[offset+2]) + L"> \n ";
+		offset += 3; 
+	}
+	//----// uv_vectors -getnodecount//---------->
+	CRefArray uvs = in_ga.GetUVs();
+	LONG nUVs = uvs.GetCount();
+	 // iterate over the uv data
+        for ( LONG i=0; i<nUVs; i++ )
+		{
+            ClusterProperty uv(uvs[i]);
+		 // get the values
+            CFloatArray uvValues;
+            uv.GetValues( uvValues );
+
+            // log the values
+            LONG nValues = uvValues.GetCount();
+            for ( LONG idxElem=0; idxElem<nValues; idxElem += 3)
+            {
+              wUvVect += L"   "+  CString(uvValues[idxElem]);
+			  wUvVect += L" "+ CString(uvValues[idxElem+1]) + L"\n";
+			 }
+        }
+//----/end to modif. /---->
+	/////////////-------------->
 	if (point_count.GetCount()>0 || tri_count.GetCount()>0) {
-		
 		f << "\nAttributeBegin #" << o.GetName().GetAsciiString();
-		
-		
-		
 		if ((float)s.GetParameter(L"inc_inten").GetValue()>0) {
 			// check for Meshlight
 			vIsMeshLight=true;
@@ -1349,29 +1450,21 @@ int writeLuxsiObj(X3DObject o, CString vType){
 			f << "\"\n";
 			f << "\nAreaLightSource \"area\" \"integer nsamples\" [1] \"color L\" ["<<(red*(float)s.GetParameterValue(L"inc_inten")) <<" "<<(green*(float)s.GetParameterValue(L"inc_inten")) <<" "<<(blue*(float)s.GetParameterValue(L"inc_inten"))<<"] \"float gain\" [" << (float)s.GetParameterValue(L"inc_inten") << "] \n";
 			
-			
-			
 		} else {
 			//shader = writeLuxsiShader(o);
 			f << "\nNamedMaterial \""<< m.GetName().GetAsciiString() <<"\"\n";
 		}
-		
-		
-		
-		
-			
-			//
 			// write triangles
-			//
+		
 			if (vType==L"instance") {
 				f << "Identity\n";
 			}
-				f << "Translate " << CString(gt.GetPosX()).GetAsciiString() << " " << CString(-gt.GetPosZ()).GetAsciiString() << " "<< CString(gt.GetPosY()).GetAsciiString() << "\n";
+				f << "Translate " << CString(gt.GetPosX()).GetAsciiString() << " " << CString(gt.GetPosY()).GetAsciiString() << " "<< CString(gt.GetPosZ()).GetAsciiString() << "\n";
 				if (rot!=0){
-				f << "Rotate " << (rot*180/PI) << " "<< CString(axis[0]).GetAsciiString() << " " << CString(-axis[2]).GetAsciiString() << " "<< CString(axis[1]).GetAsciiString() << "\n";
+				f << "Rotate " << (rot*180/PI) << " "<< CString(axis[0]).GetAsciiString() << " " << CString(axis[1]).GetAsciiString() << " "<< CString(axis[2]).GetAsciiString() << "\n";
 				}
 				if (gt.GetSclX()==1 && gt.GetSclY()==1 && gt.GetSclZ()==1) {} else {
-					f << "Scale " << CString(gt.GetSclX()).GetAsciiString() << " " << CString(gt.GetSclZ()).GetAsciiString() << " "<< CString(gt.GetSclY()).GetAsciiString() << "\n";
+					f << "Scale " << CString(gt.GetSclX()).GetAsciiString() << " " << CString(gt.GetSclY()).GetAsciiString() << " "<< CString(gt.GetSclZ()).GetAsciiString() << "\n";
 				}
 		//	}
 			
@@ -1392,44 +1485,23 @@ int writeLuxsiObj(X3DObject o, CString vType){
 					CUV uvs(vertex0.GetUV());
 					
 					
-					long arrayPos=index++;
-					/*
-					if (triangle.GetPolygonIndex()>0) {
-						arrayPos= vertex0.GetIndex()*triangle.GetPolygonIndex();
-					} else {
-						arrayPos= vertex0.GetIndex();
-					}
-					*/
+					int arrayPos=index++;
 					
 					allPoints[arrayPos] = pos;
 					allNormals[arrayPos] = normal;
 					allUV[arrayPos] = CVector3(uvs.u, uvs.v,0);
-					
 					vTris += CValue(arrayPos).GetAsText()+L" ";
 					
-					/*
-					app.LogMessage( L"Index: " + CValue(vertex0.GetIndex()).GetAsText() ); 
-					app.LogMessage( L"Vertex: " + CValue(pos.GetX()).GetAsText() + L"," + CValue(pos.GetY()).GetAsText() + L"," + CValue(pos.GetZ()).GetAsText() ); 
-					app.LogMessage( L"UV: " + CValue(uvs.u).GetAsText() + L"," + CValue(uvs.v).GetAsText() ); 
-					app.LogMessage( L" " ); 
-					*/
-					
-				}
-				vTris += L"\n";
+					}
+				vTris += L"\n"; 
 			}
 			
-			/*	
-			for ( LONG i=0; i<indices.GetCount(); i+=3 )	{
-				vTris += L" "+ CValue(indices[i]).GetAsText() + L" "+CValue(indices[i+1]).GetAsText() + L" "+CValue(indices[i+2]).GetAsText() + L" "  + L"\n ";
-			}
-			*/
 			app.LogMessage(L"count: "+CValue(allPoints.GetCount()).GetAsText());
 			for (LONG j=0;j<allPoints.GetCount();j++){
-					vPoints +=  L" "+ CString(allPoints[j][0]) + L" "+  CString(-allPoints[j][2]) + L" "+ CString(allPoints[j][1])+L"\n"; 
-					vUV +=  L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1])+L"\n"; 
-					vNormals +=  L" "+ CString(allNormals[j][0]) + L" "+  CString(-allNormals[j][2]) + L" "+ CString(allNormals[j][1])+L"\n"; 
+					vPoints +=  L" "+ CString(allPoints[j][0]) + L" "+  CString(allPoints[j][1]) + L" "+ CString(allPoints[j][2])+L"\n"; 
+					vUV +=  L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]) + L"\n"; 
+					vNormals +=  L" "+ CString(allNormals[j][0]) + L" "+  CString(allNormals[j][1]) + L" "+ CString(allNormals[j][2])+L"\n"; 
 			}
-			
 			
 			CRefArray vImags=m.GetShaders();
 			for (int i=0;i<vImags.GetCount();i++){
@@ -1442,9 +1514,7 @@ int writeLuxsiObj(X3DObject o, CString vType){
 				}
 			}
 			
-			//
 			// write 
-			//
 			
 			string::size_type loc = string(CString(o.GetName()).GetAsciiString()).find( "PORTAL", 0 );
 			if (loc != string::npos) {
@@ -1459,39 +1529,50 @@ int writeLuxsiObj(X3DObject o, CString vType){
 			} else {
 				f << " Shape ";
 				
-				if (vIsSubD) {
-					f << "\"loopsubdiv\" \"integer nlevels\" [" <<  vSubDValue << "] \"bool dmnormalsmooth\" [\"false\"] \"bool dmsharpboundary\" [\"true\"]\n";
+				if (vIsSubD) { 
+					f << "\"loopsubdiv\" \"integer nlevels\" [" <<  subdLevel << "]\n";
+					f << "\"bool dmnormalsmooth\" [\""<< CString((bool)vSmooth_mesh).GetAsciiString() <<"\"] \"bool dmsharpboundary\" [\"false\"]\n";
+					f << "\"integer indices\" [\n ";// integer indices
 				} else {
-					f << " \"trianglemesh\"\n";
+					f << " \"mesh\"\n";							
+					f << "  \"integer nsubdivlevels\" [" <<  subdLevel << "] \"string subdivscheme\" [\"loop\"] \n";// Not CatmullClark..??
+					f << "  \"bool dmnormalsmooth\" [\"" << CString((bool)vSmooth_mesh).GetAsciiString() << "\"] \"bool dmsharpboundary\" [\"false\"] \n";// preserve edges [ or ( 
+					f << "  \"string acceltype\" [\"qbvh\"] \"string tritype\" [\"wald\"] \n";//TODO; create menu option type... " Use accel. type for meshes; qbvh, grid, kdtree,...
+					f << "  \"integer triindices\" [\n ";// integer indices, integer quadindices
 				}
-			
-				f << "\"integer indices\" [\n";
-				f << vTris.GetAsciiString();
-				f << " ] \"point P\" [\n" ;
-				f << vPoints.GetAsciiString();
-				f << "] ";
+				if (vIsSubD) { // new code
+					f << wFaceIdx.GetAsciiString(); // vtris index, wquad index
+				} else {
+					f << vTris.GetAsciiString(); //old code
+					   }
+					f << " ] \"point P\" [\n " ;
 				if (vIsSubD) {
-					f << " \"normal N\" [\n" ;
+					f << wVertex.GetAsciiString(); // my code adapted from "SDK import-export demo"
+				} else {
+					f << vPoints.GetAsciiString();
+					   }
+				f << "] ";
+				if (vIsSubD) { //----//--------->
+					f << " \"normal N\" [\n " ; 
+					f << wNorVect.GetAsciiString();
+					f << "] ";
+				} else {
+					f << " \"normal N\" [\n " ;
 					f << vNormals.GetAsciiString();
 					f << "] ";
 				}
 				if(vText){
 					f << " \"float uv\" [\n";
 					f << vUV.GetAsciiString();
+					//f <<  wUvVect.GetAsciiString(); // not working correct
 					f << " ]\n";
 				}
-				
-				
-				
+	
+			}
 			
-			
-		}
 		f << "\nAttributeEnd #" << o.GetName().GetAsciiString() << "\n";
-
+	
 	}
-	
-	
-	
 	
 	return 0;
 }
@@ -1692,8 +1773,7 @@ void luxsi_write(){
 			
 		} else {
 			
-			//app.LogMessage( L"\tObject count: "+CString(aObj.GetCount()));
-			//app.LogMessage( L"\tInstance count: "+CString(aInstance.GetCount()));
+			
 			pb.PutValue(0);
 			pb.PutMaximum( aObj.GetCount()+aInstance.GetCount() );
 			pb.PutStep(1);
@@ -1720,6 +1800,14 @@ void luxsi_write(){
 				if (pb.IsCancelPressed() ) break;
 				pb.Increment();
 			}
+			/////---------------->
+			for (int i=0;i<aSurfaces.GetCount();i++) {
+				if (writeLuxsiObj(aSurfaces[i],L"surface")==-1) break;
+				if (pb.IsCancelPressed() ) break;
+				pb.Increment();
+			}
+			////------------->
+
 			for (int i=0;i<aClouds.GetCount();i++) {
 				if (writeLuxsiCloud(aClouds[i])==-1) break;
 				if (pb.IsCancelPressed() ) break;
@@ -1777,7 +1865,7 @@ void luxsi_execute(){
 				
 				CString exec = vLuXSIPath +" \""+ vFileObjects + "\"";
 				app.LogMessage(exec);
-				//loader(exec.GetAsciiString());
+				loader(exec.GetAsciiString()); // mod. for execute into Windows
 			#endif 
 		
 		}
