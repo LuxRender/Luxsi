@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="xsi"
+	Name="luxsi"
 	ProjectGUID="{80C2F649-D478-495A-B6E0-CE8F6BB46741}"
-	RootNamespace="xsi"
+	RootNamespace="luxsi"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="C:\Softimage\Softimage_7.5\XSISDK\include\Core;C:\Softimage\Softimage_7.5\XSISDK\include"
+				AdditionalIncludeDirectories="$(XSISDK_ROOT)\include\Core;$(XSISDK_ROOT)\include"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -59,7 +59,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="C:\Softimage\Softimage_7.5\XSISDK\lib\nt-x86\sicppsdk.lib C:\Softimage\Softimage_7.5\XSISDK\lib\nt-x86\sicoresdk.lib"
+				AdditionalDependencies="$(XSISDK_ROOT)\lib\nt-x86\sicppsdk.lib $(XSISDK_ROOT)\lib\nt-x86\sicoresdk.lib"
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
@@ -112,7 +112,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="C:\Softimage\Softimage_7.5\XSISDK\include\Core;C:\Softimage\Softimage_7.5\XSISDK\include"
+				AdditionalIncludeDirectories="$(XSISDK_ROOT)\include\Core;$(XSISDK_ROOT)\include"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				TreatWChar_tAsBuiltInType="false"
@@ -130,7 +130,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="C:\Softimage\Softimage_7.5\XSISDK\lib\nt-x86\sicppsdk.lib C:\Softimage\Softimage_7.5\XSISDK\lib\nt-x86\sicoresdk.lib"
+				AdditionalDependencies="$(XSISDK_ROOT)\lib\nt-x86\sicppsdk.lib $(XSISDK_ROOT)\lib\nt-x86\sicoresdk.lib"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -171,12 +171,20 @@
 				RelativePath="LuXSI.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\luxsi_gui.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Headerdateien"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\luxsi_main.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Ressourcendateien"
