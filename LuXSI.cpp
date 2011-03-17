@@ -220,15 +220,15 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 */
     //-- igi
     prop.AddParameter( L"nsets",    CValue::siInt4,  sps,L"",L"",    vnsets,      0,1024,4,512,  oParam ) ;
-	prop.AddParameter( L"nlights",  CValue::siInt4,  sps,L"",L"",    vnlights,    0,1024,64,512, oParam ) ;
-	prop.AddParameter( L"mindist",  CValue::siFloat, sps,L"",L"",    vmindist,    0.0,1024.0f,0.1f,1024.0,  oParam ) ;
+    prop.AddParameter( L"nlights",  CValue::siInt4,  sps,L"",L"",    vnlights,    0,1024,64,512, oParam ) ;
+    prop.AddParameter( L"mindist",  CValue::siFloat, sps,L"",L"",    vmindist,    0.0,1024.0f,0.1f,1024.0,  oParam ) ;
     //--
     //-- exphotonmap
     /*         
     vrenderingmode, vstrategy vshadowraycount  vmaxphotondepth, vmaxdepth vmaxphotondist,
-	vnphotonsused vindirectphotons vdirectphotons vcausticphotons vradiancephotons,
-	vfinalgather vrrstrategy vfinalgathersamples vgatherangle vdbg_enabledirect,
-	vdbg_enableradiancemap vdbg_enableindircaustic vdbg_enableindirdiffuse, vdbg_enableindirspecular  
+    vnphotonsused vindirectphotons vdirectphotons vcausticphotons vradiancephotons,
+    vfinalgather vrrstrategy vfinalgathersamples vgatherangle vdbg_enabledirect,
+    vdbg_enableradiancemap vdbg_enableindircaustic vdbg_enableindirdiffuse, vdbg_enableindirspecular  
      */
     prop.AddParameter( L"brenderingmode",            CValue::siInt4, sps,L"",L"", vrenderingmode,   0,10,0,10,  oParam ) ;
 //    prop.AddParameter( L"bstrategy",                 CValue::siString, sps, L"", L"",
@@ -550,8 +550,8 @@ void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext c
   */  
     //-- igi
     } else if (paramName == L"bnsets")      { vnsets     = changed.GetValue();
-	} else if (paramName == L"bnlights")    { vnlights   = changed.GetValue();
-	} else if (paramName == L"bmindist")    { vmindist   = changed.GetValue();
+    } else if (paramName == L"bnlights")    { vnlights   = changed.GetValue();
+    } else if (paramName == L"bmindist")    { vmindist   = changed.GetValue();
     
     //-- exphotonmap
 //  } else if (paramName == L"brenderingmode")      { vrenderingmode       = changed.GetValue();
@@ -788,55 +788,55 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
         
         //-- ditributepath
         Parameter lbdirectsampleall       = prop.GetParameters().GetItem( L"bdirectsampleall");
-		Parameter lbdirectsamples         = prop.GetParameters().GetItem( L"bdirectsamples");
-		Parameter lbindirectsampleall     = prop.GetParameters().GetItem( L"bindirectsampleall");
-		Parameter lbindirectsamples       = prop.GetParameters().GetItem( L"bindirectsamples");
-	    Parameter lbdiffusereflectdepth   = prop.GetParameters().GetItem( L"bdiffusereflectdepth");
-		Parameter lbdiffusereflectsamples = prop.GetParameters().GetItem( L"bdiffusereflectsamples");
-		Parameter lbdiffuserefractdepth   = prop.GetParameters().GetItem( L"bdiffuserefractdepth");
-		Parameter lbdiffuserefractsamples = prop.GetParameters().GetItem( L"bdiffuserefractsamples");
-		Parameter lbdirectdiffuse         = prop.GetParameters().GetItem( L"bdirectdiffuse");
-		Parameter lbindirectdiffuse       = prop.GetParameters().GetItem( L"bindirectdiffuse");
-		Parameter lbglossyreflectdepth    = prop.GetParameters().GetItem( L"bglossyreflectdepth");
-		Parameter lbglossyreflectsamples  = prop.GetParameters().GetItem( L"bglossyreflectsamples");
-		Parameter lbglossyrefractdepth    = prop.GetParameters().GetItem( L"bglossyrefractdepth");
-		Parameter lbglossyrefractsamples  = prop.GetParameters().GetItem( L"bglossyrefractsamples");
-		Parameter lbdirectglossy          = prop.GetParameters().GetItem( L"bdirectglossy");
-		Parameter lbindirectglossy        = prop.GetParameters().GetItem( L"bindirectglossy");
-		Parameter lbspecularreflectdepth  = prop.GetParameters().GetItem( L"bspecularreflectde");
-		Parameter lbspecularrefractdepth  = prop.GetParameters().GetItem( L"bspecularrefractdepth");
+        Parameter lbdirectsamples         = prop.GetParameters().GetItem( L"bdirectsamples");
+        Parameter lbindirectsampleall     = prop.GetParameters().GetItem( L"bindirectsampleall");
+        Parameter lbindirectsamples       = prop.GetParameters().GetItem( L"bindirectsamples");
+        Parameter lbdiffusereflectdepth   = prop.GetParameters().GetItem( L"bdiffusereflectdepth");
+        Parameter lbdiffusereflectsamples = prop.GetParameters().GetItem( L"bdiffusereflectsamples");
+        Parameter lbdiffuserefractdepth   = prop.GetParameters().GetItem( L"bdiffuserefractdepth");
+        Parameter lbdiffuserefractsamples = prop.GetParameters().GetItem( L"bdiffuserefractsamples");
+        Parameter lbdirectdiffuse         = prop.GetParameters().GetItem( L"bdirectdiffuse");
+        Parameter lbindirectdiffuse       = prop.GetParameters().GetItem( L"bindirectdiffuse");
+        Parameter lbglossyreflectdepth    = prop.GetParameters().GetItem( L"bglossyreflectdepth");
+        Parameter lbglossyreflectsamples  = prop.GetParameters().GetItem( L"bglossyreflectsamples");
+        Parameter lbglossyrefractdepth    = prop.GetParameters().GetItem( L"bglossyrefractdepth");
+        Parameter lbglossyrefractsamples  = prop.GetParameters().GetItem( L"bglossyrefractsamples");
+        Parameter lbdirectglossy          = prop.GetParameters().GetItem( L"bdirectglossy");
+        Parameter lbindirectglossy        = prop.GetParameters().GetItem( L"bindirectglossy");
+        Parameter lbspecularreflectdepth  = prop.GetParameters().GetItem( L"bspecularreflectde");
+        Parameter lbspecularrefractdepth  = prop.GetParameters().GetItem( L"bspecularrefractdepth");
         
         //-- IGI
         Parameter lbnsets       = prop.GetParameters().GetItem( L"bnsets" );
-	    Parameter lbnlights     = prop.GetParameters().GetItem( L"bnlights" );
-	    Parameter lbmindist     = prop.GetParameters().GetItem( L"bmindist" );
+        Parameter lbnlights     = prop.GetParameters().GetItem( L"bnlights" );
+        Parameter lbmindist     = prop.GetParameters().GetItem( L"bmindist" );
    
        //-- exphotonmap
          
 //    brenderingmode, bstrategy, bshadowraycount, bmaxphotondepth, bmaxdepth, bmaxphotondist,
-//	  bnphotonsused vindirectphotons vdirectphotons vcausticphotons vradiancephotons,
-//	  bfinalgather vrrstrategy vfinalgathersamples vgatherangle vdbg_enabledirect,
-//	  bdbg_enableradiancemap vdbg_enableindircaustic vdbg_enableindirdiffuse, vdbg_enableindirspecular  
+//      bnphotonsused vindirectphotons vdirectphotons vcausticphotons vradiancephotons,
+//      bfinalgather vrrstrategy vfinalgathersamples vgatherangle vdbg_enabledirect,
+//      bdbg_enableradiancemap vdbg_enableindircaustic vdbg_enableindirdiffuse, vdbg_enableindirspecular  
     
         //--
-        Parameter	lbstrategy                = prop.GetParameters().GetItem( L"bstrategy" );
-	    Parameter	lbshadowraycount          = prop.GetParameters().GetItem( L"bshadowraycount" );
-	    Parameter	lbmaxphotondepth          = prop.GetParameters().GetItem( L"bmaxphotondepth" );
-	    Parameter	lbmaxphotondist           = prop.GetParameters().GetItem( L"bmaxphotondist" );
-	    Parameter	lbnphotonsused            = prop.GetParameters().GetItem( L"bnphotonsused" );
-	    Parameter	lbindirectphotons         = prop.GetParameters().GetItem( L"bindirectphotons" );
-	    Parameter	lbdirectphotons           = prop.GetParameters().GetItem( L"bdirectphotons" );
-	    Parameter	lbcausticphotons          = prop.GetParameters().GetItem( L"bcausticphotons" );
-	    Parameter	lbradiancephotons         = prop.GetParameters().GetItem( L"bradiancephotons" );
-	    Parameter   lbfinalgather             = prop.GetParameters().GetItem( L"bfinalgather" );
+        Parameter    lbstrategy                = prop.GetParameters().GetItem( L"bstrategy" );
+        Parameter    lbshadowraycount          = prop.GetParameters().GetItem( L"bshadowraycount" );
+        Parameter    lbmaxphotondepth          = prop.GetParameters().GetItem( L"bmaxphotondepth" );
+        Parameter    lbmaxphotondist           = prop.GetParameters().GetItem( L"bmaxphotondist" );
+        Parameter    lbnphotonsused            = prop.GetParameters().GetItem( L"bnphotonsused" );
+        Parameter    lbindirectphotons         = prop.GetParameters().GetItem( L"bindirectphotons" );
+        Parameter    lbdirectphotons           = prop.GetParameters().GetItem( L"bdirectphotons" );
+        Parameter    lbcausticphotons          = prop.GetParameters().GetItem( L"bcausticphotons" );
+        Parameter    lbradiancephotons         = prop.GetParameters().GetItem( L"bradiancephotons" );
+        Parameter   lbfinalgather             = prop.GetParameters().GetItem( L"bfinalgather" );
         Parameter   lbrenderingmode           = prop.GetParameters().GetItem( L"brenderingmode" );
-        Parameter	lbfinalgathersamples      = prop.GetParameters().GetItem( L"bfinalgathersamples" );
-	    Parameter	lbgatherangle             = prop.GetParameters().GetItem( L"bgatherangle" );
-	    Parameter	lbdbg_enabledirect        = prop.GetParameters().GetItem( L"bdbg_enabledirect" );
-	    Parameter	lbdbg_enableradiancemap   = prop.GetParameters().GetItem( L"bdbg_enableradiancemap" );
-	    Parameter	lbdbg_enableindircaustic  = prop.GetParameters().GetItem( L"bdbg_enableindircaustic" );
-	    Parameter	lbdbg_enableindirdiffuse  = prop.GetParameters().GetItem( L"bdbg_enableindirdiffuse" );
-	    Parameter	lbdbg_enableindirspecular = prop.GetParameters().GetItem( L"bdbg_enableindirspecular" );
+        Parameter    lbfinalgathersamples      = prop.GetParameters().GetItem( L"bfinalgathersamples" );
+        Parameter    lbgatherangle             = prop.GetParameters().GetItem( L"bgatherangle" );
+        Parameter    lbdbg_enabledirect        = prop.GetParameters().GetItem( L"bdbg_enabledirect" );
+        Parameter    lbdbg_enableradiancemap   = prop.GetParameters().GetItem( L"bdbg_enableradiancemap" );
+        Parameter    lbdbg_enableindircaustic  = prop.GetParameters().GetItem( L"bdbg_enableindircaustic" );
+        Parameter    lbdbg_enableindirdiffuse  = prop.GetParameters().GetItem( L"bdbg_enableindirdiffuse" );
+        Parameter    lbdbg_enableindirspecular = prop.GetParameters().GetItem( L"bdbg_enableindirspecular" );
 
     //--flags
    
@@ -855,48 +855,48 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
         
         //-- distrubute
         lbdirectsampleall.PutCapabilityFlag( siNotInspectable, true );
-		lbdirectsamples.PutCapabilityFlag( siNotInspectable, true );
-		lbindirectsampleall.PutCapabilityFlag( siNotInspectable, true );
-		lbindirectsamples.PutCapabilityFlag( siNotInspectable, true );
-	    lbdiffusereflectdepth.PutCapabilityFlag( siNotInspectable, true );   
-		lbdiffusereflectsamples.PutCapabilityFlag( siNotInspectable, true );
-		lbdiffuserefractdepth.PutCapabilityFlag( siNotInspectable, true );
-		lbdiffuserefractsamples.PutCapabilityFlag( siNotInspectable, true ); 
-		lbdirectdiffuse.PutCapabilityFlag( siNotInspectable, true );         
-		lbindirectdiffuse.PutCapabilityFlag( siNotInspectable, true );      
-		lbglossyreflectdepth.PutCapabilityFlag( siNotInspectable, true );   
-		lbglossyreflectsamples.PutCapabilityFlag( siNotInspectable, true );  
-		lbglossyrefractdepth.PutCapabilityFlag( siNotInspectable, true );    
-		lbglossyrefractsamples.PutCapabilityFlag( siNotInspectable, true );  
-		lbdirectglossy.PutCapabilityFlag( siNotInspectable, true );          
-		lbindirectglossy.PutCapabilityFlag( siNotInspectable, true );        
-		lbspecularreflectdepth.PutCapabilityFlag( siNotInspectable, true );  
-		lbspecularrefractdepth.PutCapabilityFlag( siNotInspectable, true );  
+        lbdirectsamples.PutCapabilityFlag( siNotInspectable, true );
+        lbindirectsampleall.PutCapabilityFlag( siNotInspectable, true );
+        lbindirectsamples.PutCapabilityFlag( siNotInspectable, true );
+        lbdiffusereflectdepth.PutCapabilityFlag( siNotInspectable, true );   
+        lbdiffusereflectsamples.PutCapabilityFlag( siNotInspectable, true );
+        lbdiffuserefractdepth.PutCapabilityFlag( siNotInspectable, true );
+        lbdiffuserefractsamples.PutCapabilityFlag( siNotInspectable, true ); 
+        lbdirectdiffuse.PutCapabilityFlag( siNotInspectable, true );         
+        lbindirectdiffuse.PutCapabilityFlag( siNotInspectable, true );      
+        lbglossyreflectdepth.PutCapabilityFlag( siNotInspectable, true );   
+        lbglossyreflectsamples.PutCapabilityFlag( siNotInspectable, true );  
+        lbglossyrefractdepth.PutCapabilityFlag( siNotInspectable, true );    
+        lbglossyrefractsamples.PutCapabilityFlag( siNotInspectable, true );  
+        lbdirectglossy.PutCapabilityFlag( siNotInspectable, true );          
+        lbindirectglossy.PutCapabilityFlag( siNotInspectable, true );        
+        lbspecularreflectdepth.PutCapabilityFlag( siNotInspectable, true );  
+        lbspecularrefractdepth.PutCapabilityFlag( siNotInspectable, true );  
         
         //-- IGI 
-            lbnsets.PutCapabilityFlag( siNotInspectable, true );
-	    lbnlights.PutCapabilityFlag( siNotInspectable, true );
-	    lbmindist.PutCapabilityFlag( siNotInspectable, true );
+        lbnsets.PutCapabilityFlag( siNotInspectable, true );
+        lbnlights.PutCapabilityFlag( siNotInspectable, true );
+        lbmindist.PutCapabilityFlag( siNotInspectable, true );
 
         //-- exphotonmap
         lbrenderingmode.PutCapabilityFlag( siNotInspectable, true );
-	    lbstrategy.PutCapabilityFlag( siNotInspectable, true );
-	    lbshadowraycount.PutCapabilityFlag( siNotInspectable, true ); 
-	    lbmaxphotondepth.PutCapabilityFlag( siNotInspectable, true );
+        lbstrategy.PutCapabilityFlag( siNotInspectable, true );
+        lbshadowraycount.PutCapabilityFlag( siNotInspectable, true ); 
+        lbmaxphotondepth.PutCapabilityFlag( siNotInspectable, true );
         lbmaxphotondist.PutCapabilityFlag( siNotInspectable, true );
-	    lbnphotonsused.PutCapabilityFlag( siNotInspectable, true );
-	    lbindirectphotons.PutCapabilityFlag( siNotInspectable, true ); 
-	    lbdirectphotons.PutCapabilityFlag( siNotInspectable, true );
-	    lbcausticphotons.PutCapabilityFlag( siNotInspectable, true ); 
-	    lbradiancephotons.PutCapabilityFlag( siNotInspectable, true ); 
-	    lbfinalgather.PutCapabilityFlag( siNotInspectable, true ); 
-	    lbfinalgathersamples.PutCapabilityFlag( siNotInspectable, true );
-	    lbgatherangle.PutCapabilityFlag( siNotInspectable, true );
-	    lbdbg_enabledirect.PutCapabilityFlag( siNotInspectable, true ); 
-	    lbdbg_enableradiancemap.PutCapabilityFlag( siNotInspectable, true ); 
-	    lbdbg_enableindircaustic.PutCapabilityFlag( siNotInspectable, true );
-	    lbdbg_enableindirdiffuse.PutCapabilityFlag( siNotInspectable, true ); 
-	    lbdbg_enableindirspecular.PutCapabilityFlag( siNotInspectable, true ); 
+        lbnphotonsused.PutCapabilityFlag( siNotInspectable, true );
+        lbindirectphotons.PutCapabilityFlag( siNotInspectable, true ); 
+        lbdirectphotons.PutCapabilityFlag( siNotInspectable, true );
+        lbcausticphotons.PutCapabilityFlag( siNotInspectable, true ); 
+        lbradiancephotons.PutCapabilityFlag( siNotInspectable, true ); 
+        lbfinalgather.PutCapabilityFlag( siNotInspectable, true ); 
+        lbfinalgathersamples.PutCapabilityFlag( siNotInspectable, true );
+        lbgatherangle.PutCapabilityFlag( siNotInspectable, true );
+        lbdbg_enabledirect.PutCapabilityFlag( siNotInspectable, true ); 
+        lbdbg_enableradiancemap.PutCapabilityFlag( siNotInspectable, true ); 
+        lbdbg_enableindircaustic.PutCapabilityFlag( siNotInspectable, true );
+        lbdbg_enableindirdiffuse.PutCapabilityFlag( siNotInspectable, true ); 
+        lbdbg_enableindirspecular.PutCapabilityFlag( siNotInspectable, true ); 
 
         if ( vSurfaceInt == 0 ) //-- bidirectional
         {
@@ -938,41 +938,41 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
         else if ( vSurfaceInt == 4 ) //-- IGI
         {
             lbnsets.PutCapabilityFlag( siNotInspectable, false );
-	        lbnlights.PutCapabilityFlag( siNotInspectable, false );
-	        lbmindist.PutCapabilityFlag( siNotInspectable, false );
+            lbnlights.PutCapabilityFlag( siNotInspectable, false );
+            lbmindist.PutCapabilityFlag( siNotInspectable, false );
         }
         else
         {
         //    lbstrategy.PutCapabilityFlag( siNotInspectable, true );
-	    //    lbshadowraycount.PutCapabilityFlag( siNotInspectable, true ); 
-	        
+        //    lbshadowraycount.PutCapabilityFlag( siNotInspectable, true ); 
+            
             lbmaxdepth.PutCapabilityFlag( siNotInspectable, false ); 
-	        lbmaxphotondepth.PutCapabilityFlag( siNotInspectable, false );
-	        lbdirectphotons.PutCapabilityFlag( siNotInspectable, false );
+            lbmaxphotondepth.PutCapabilityFlag( siNotInspectable, false );
+            lbdirectphotons.PutCapabilityFlag( siNotInspectable, false );
             lbcausticphotons.PutCapabilityFlag( siNotInspectable, false ); 
             lbindirectphotons.PutCapabilityFlag( siNotInspectable, false );
             lbradiancephotons.PutCapabilityFlag( siNotInspectable, false ); 
             lbnphotonsused.PutCapabilityFlag( siNotInspectable, false );
             lbmaxphotondist.PutCapabilityFlag( siNotInspectable, false );
-	        lbfinalgather.PutCapabilityFlag( siNotInspectable, false ); 
+            lbfinalgather.PutCapabilityFlag( siNotInspectable, false ); 
             //--
             if ( vfinalgather )
             {
                 lbfinalgathersamples.PutCapabilityFlag( siNotInspectable, false );
-	        lbgatherangle.PutCapabilityFlag( siNotInspectable, false );
+                lbgatherangle.PutCapabilityFlag( siNotInspectable, false );
              }
             lbrenderingmode.PutCapabilityFlag( siNotInspectable, false ); //-- combo
             lbrrstrategy.PutCapabilityFlag( siNotInspectable, false );
             lbrrcon_prob.PutCapabilityFlag( siNotInspectable, true );
             //--
-	        if ( vsexpert )
+            if ( vsexpert )
             {
                 lblight_str.PutCapabilityFlag( siNotInspectable, false );
                 lbdbg_enabledirect.PutCapabilityFlag( siNotInspectable, false ); 
-	            lbdbg_enableradiancemap.PutCapabilityFlag( siNotInspectable, false ); 
-	            lbdbg_enableindircaustic.PutCapabilityFlag( siNotInspectable, false );
-	            lbdbg_enableindirdiffuse.PutCapabilityFlag( siNotInspectable, false ); 
-    	        lbdbg_enableindirspecular.PutCapabilityFlag( siNotInspectable, false );
+                lbdbg_enableradiancemap.PutCapabilityFlag( siNotInspectable, false ); 
+                lbdbg_enableindircaustic.PutCapabilityFlag( siNotInspectable, false );
+                lbdbg_enableindirdiffuse.PutCapabilityFlag( siNotInspectable, false ); 
+                lbdbg_enableindirspecular.PutCapabilityFlag( siNotInspectable, false );
             }
             ctxt.PutAttribute(L"Refresh", true );
         }
@@ -1242,15 +1242,15 @@ void writeLuxsiBasics(){
         f << "  \"integer glossyrefractsamples\" [1]\n";
         f << "  \"integer specularreflectdepth\" [3]\n";
         f << "  \"integer specularrefractdepth\" [5]\n";
-//      f << "  \"bool diffusereflectreject" ["false"]
-//      f << "  \"float diffusereflectreject_threshold" [10.000000000000000]
-//      f << "  \"bool diffuserefractreject" ["false"]
-//      f << "  \"float diffuserefractreject_threshold" [10.000000000000000]
-//      f << "  \"bool glossyreflectreject" ["false"]
-//      f << "  \"float glossyreflectreject_threshold" [10.000000000000000]
-//      f << "  \"bool glossyrefractreject" ["false"]
-//      f << "  \"float glossyrefractreject_threshold" [10.000000000000000]
-//      f << "  \"string lightstrategy" ["importance"]
+        f << "  \"bool diffusereflectreject\" [\""<< MtBool[0] <<"\"]\n";
+        f << "  \"float diffusereflectreject_threshold\" [10.00]\n";
+        f << "  \"bool diffuserefractreject\" [\""<< MtBool[0] <<"\"]\n";
+        f << "  \"float diffuserefractreject_threshold\" [10.00]\n";
+        f << "  \"bool glossyreflectreject\" [\""<< MtBool[0] <<"\"]\n";
+        f << "  \"float glossyreflectreject_threshold\" [10.00]\n";
+        f << "  \"bool glossyrefractreject\" [\""<< MtBool[0] <<"\"]\n";
+        f << "  \"float glossyrefractreject_threshold\" [10.00]\n";
+        f << "  \"string lightstrategy\" [\""<< MtlightST[vLight_str] <<"\"]\n";
     }
     else if ( vSurfaceInt == 4 ) //-- igi
     {
