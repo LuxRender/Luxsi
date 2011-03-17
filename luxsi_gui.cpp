@@ -250,29 +250,57 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddItem( L"bdbg_enableindirspecular", L"Debug: Enable indirect specular");
 
             // igi
-            lay.AddItem(L"bnsets", L"");// 4]\n";
-            lay.AddItem(L"bnlights",L""); // 64]\n";
-            lay.AddItem(L"bstrategy",L""); // L0.100000]\n";
-         // distributedpath
-            lay.AddItem(L"bdirectsampleall", L"");//\"" << MtBool[1] << "\"]\n";
-            lay.AddItem(L"bdirectsamples", L"");//1]\n";
-            lay.AddItem(L"bindirectsampleall", L"");//\"" << MtBool[1] << "\"]\n";
-            lay.AddItem(L"bindirectsamples", L"");//1]\n";
-            lay.AddItem(L"bdiffusereflectdepth", L"");//3]\n";
-            lay.AddItem(L"bdiffusereflectsamples", L"");//1]\n";
-            lay.AddItem(L"bdiffuserefractdepth", L"");//5]\n";
-            lay.AddItem(L"bdiffuserefractsamples", L"");//1]\n";
-            lay.AddItem(L"bdirectdiffuse", L"");//\"" << MtBool[1] << "\"]\n";
-            lay.AddItem(L"bindirectdiffuse", L"");//\"" << MtBool[1] << "\"]\n";
-            lay.AddItem(L"bglossyreflectdepth", L"");//2]\n";
-            lay.AddItem(L"bglossyreflectsamples", L"");//1]\n";
-            lay.AddItem(L"bglossyrefractdepth", L"");//5]\n";
-            lay.AddItem(L"bglossyrefractsamples", L"");//1]\n";
-            lay.AddItem(L"bdirectglossy", L"");//\"" << MtBool[1] << "\"]\n";
-            lay.AddItem(L"bindirectglossy", L"");//\"" << MtBool[1] << "\"]\n";
-            lay.AddItem(L"bspecularreflectdepth", L"");//3]\n";
-            lay.AddItem(L"bspecularrefractdepth", L"");//5]\n";
+            lay.AddItem(L"bnsets", L"");
+            lay.AddItem(L"bnlights",L"");
+            lay.AddItem(L"bstrategy",L"");
+         
+            // distributedpath
+            lay.AddItem(L"bdirectsamples", L"Direct light Sampling").PutLabelPercentage(80);
+        lay.AddRow();
+            lay.AddItem(L"bdirectsampleall", L"Sample all");
+            lay.AddItem(L"bdirectdiffuse", L"Diffuse");
+            lay.AddItem(L"bdirectglossy", L"Glossy");
+        lay.EndRow();
+            lay.AddItem(L"bindirectsamples", L"Indirect light Sampling").PutLabelPercentage(80);
+        lay.AddRow();
+            lay.AddItem(L"bindirectsampleall", L"Sample all");
+            lay.AddItem(L"bindirectdiffuse", L"Diffuse");
+            lay.AddItem(L"bindirectglossy", L"Glossy");
+        lay.EndRow();
+    lay.AddGroup(L"Diffuse settings");
+        lay.AddRow();
+            lay.AddItem(L"bdiffusereflectsamples", L"Reflect samples");
+            lay.AddItem(L"bdiffusereflectdepth", L"Reflect depth");
+        lay.EndRow();
+        lay.AddRow();  
+            lay.AddItem(L"bdiffuserefractsamples", L"Refract samples");
+            lay.AddItem(L"bdiffuserefractdepth", L"Refract depth");
+        lay.EndRow();
+    lay.EndGroup();
+    lay.AddGroup(L"Glossy settings");
+        lay.AddRow();
+            lay.AddItem(L"bglossyreflectsamples", L"Reflect samples");
+            lay.AddItem(L"bglossyreflectdepth", L"Reflect depth");
+        lay.EndRow();
+        lay.AddRow();
+            lay.AddItem(L"bglossyrefractsamples", L"Refract samples");
+            lay.AddItem(L"bglossyrefractdepth", L"Refract depth");
+        lay.EndRow();
+    lay.EndGroup();
+    lay.AddGroup(L"Specular settings");
+        lay.AddRow();            
+            lay.AddItem(L"bspecularreflectdepth", L"Reflect samples");
+            lay.AddItem(L"bspecularrefractdepth", L"Refract depth");
+        lay.EndRow();
+    lay.EndGroup();
+    lay.AddGroup(L"Rejection settings");
+        //--
+            lay.AddItem( L"bdiff_reflect_reject_thr", L"Diffuse reflect reject").PutLabelPercentage(80);  
+            lay.AddItem( L"bdiff_refract_reject_thr", L"Diffuse refract reject").PutLabelPercentage(80);
 
+            lay.AddItem( L"bglossy_reflect_reject_thr", L"Glossy reflect reject").PutLabelPercentage(80); 
+            lay.AddItem( L"bglossy_refract_reject_thr", L"Glossy refract reject").PutLabelPercentage(80);
+        lay.EndGroup();
         lay.EndGroup();
     lay.EndGroup();
 
