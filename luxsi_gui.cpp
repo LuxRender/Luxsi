@@ -108,7 +108,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.AddTab(L"Render ");
     //------------------------------//
     CValueArray aPresets(16);
-        aPresets[0] = L"custom" ;       aPresets[1] = 0;
+        aPresets[0] = L"Custom parameter" ;       aPresets[1] = 0;
         aPresets[2] = L"Preview - Direct Lighting (No GI)" ; aPresets[3] = 1;
         aPresets[4] = L"Final - MLT/Bidir Path Tracing (int) (recommended)" ; aPresets[5] = 2;
         aPresets[6] = L"Final - MLT/Path Tracing (exterior)" ; aPresets[7] = 3;
@@ -116,7 +116,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         aPresets[10] = L"Progressive - Path Tracing (exterior)" ; aPresets[11] = 5;
         aPresets[12] = L"Bucket - Bidir Path Tracing (interior)" ; aPresets[13] = 6;
         aPresets[14] = L"Bucket - Path Tracing (exterior)" ; aPresets[15] = 7;
-    lay.AddEnumControl(L"presets",aPresets,L"R. Presets",siControlCombo ) ;
+    lay.AddEnumControl(L"bpresets",aPresets,L"R. Presets",siControlCombo ) ;
 
 //    lay.AddItem(L"AmbBack",L"Use Ambience as background");
 
@@ -124,7 +124,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
     lay.AddGroup(L"LuxRender Engine");
         lay.AddRow();
         CValueArray Acombo(4);
-            Acombo[0] = L"GUI";     Acombo[1] = 0;
+            Acombo[0] = L"GUI";     Acombo[1] = 0; //-- TODO;
             Acombo[2] = L"Console"; Acombo[3] = 1;
         lay.AddEnumControl( L"brmode", Acombo, L"Render", siControlCombo ) ;
 
@@ -314,7 +314,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             vItfilter[4] = L"mitchell" ; vItfilter[5] = 2;
             vItfilter[6] = L"sinc" ;     vItfilter[7] = 3;
             vItfilter[8] = L"triangle" ; vItfilter[9] = 4;
-        lay.AddEnumControl(L"Filt",vItfilter,L"Filter",siControlCombo ) ;
+        lay.AddEnumControl(L"bfilter",vItfilter,L"Filter",siControlCombo ) ;
         lay.AddRow(); // box
             lay.AddItem(L"bxwidth", L"X Width").PutLabelPercentage(40);
             lay.AddItem(L"bywidth", L"Y Width").PutLabelPercentage(40);
