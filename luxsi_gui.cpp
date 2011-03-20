@@ -104,19 +104,21 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddButton(L"exe_luxsi",L"Export to file");
             lay.AddButton(L"render_luxsi",L"Render scene");
         lay.EndRow();
-    //------------------------------//
+    //------------------------------// 
         lay.AddTab(L"Render ");
     //------------------------------//
-    CValueArray aPresets(16);
-        aPresets[0] = L"Custom parameter" ;       aPresets[1] = 0;
-        aPresets[2] = L"Preview - Direct Lighting (No GI)" ; aPresets[3] = 1;
-        aPresets[4] = L"Final - MLT/Bidir Path Tracing (int) (recommended)" ; aPresets[5] = 2;
-        aPresets[6] = L"Final - MLT/Path Tracing (exterior)" ; aPresets[7] = 3;
-        aPresets[8] = L"Progressive - Bidir Path Tracing (interior)" ; aPresets[9] = 4;
-        aPresets[10] = L"Progressive - Path Tracing (exterior)" ; aPresets[11] = 5;
-        aPresets[12] = L"Bucket - Bidir Path Tracing (interior)" ; aPresets[13] = 6;
-        aPresets[14] = L"Bucket - Path Tracing (exterior)" ; aPresets[15] = 7;
-    lay.AddEnumControl(L"bpresets",aPresets,L"R. Presets",siControlCombo ) ;
+    CValueArray aPresets(20);
+        aPresets[0] = L"Custom parameter" ;                              aPresets[1] = 0;
+        aPresets[2] = L"Preview - Instant Global Illumination" ;         aPresets[3] = 1;
+        aPresets[4] = L"Preview - Direct Lighting (No GI)" ;             aPresets[5] = 2;
+        aPresets[6] = L"Preview - Ex-Photonmap" ;                        aPresets[7] = 3;
+        aPresets[8] = L"Final - MLT/Bidir Path Tracing (int) (recom.)" ; aPresets[9] = 4;
+        aPresets[10] = L"Final - MLT/Path Tracing (exterior)" ;          aPresets[11] = 5;
+        aPresets[12] = L"Progressive - Bidir Path Tracing (interior)" ;  aPresets[13] = 6;
+        aPresets[14] = L"Progressive - Path Tracing (exterior)" ;        aPresets[15] = 7;
+        aPresets[16] = L"Bucket - Bidir Path Tracing (interior)" ;       aPresets[17] = 8;
+        aPresets[18] = L"Bucket - Path Tracing (exterior)" ;             aPresets[19] = 9;
+    lay.AddEnumControl(L"bpresets", aPresets, L"R. Presets", siControlCombo ) ;
 
 //    lay.AddItem(L"AmbBack",L"Use Ambience as background");
 
@@ -155,7 +157,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
                 vItem3[4] = L"lowdiscrepancy" ; vItem3[5] = 2;
                 vItem3[6] = L"random" ;         vItem3[7] = 3;
             lay.AddEnumControl( L"bsampler", vItem3, L"Sampler", siControlCombo );
-            lay.AddItem(L"bexpert", L"Adv.").PutWidthPercentage(6);
+            lay.AddItem(L"bexpert", L"Advanced").PutWidthPercentage(6);
         lay.EndRow();
             lay.AddItem( L"bchainlength", L"Chainlength").PutLabelPercentage(60);
             CValueArray vItbase(6);
@@ -175,24 +177,24 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddItem( L"pixelsamples", L"Pixelsamples");
         //--
             lay.AddItem( L"bmutation", L"Large Mut. prob.").PutLabelPercentage(60);
-            lay.AddItem( L"bmaxrej", L"Max rejects").PutLabelPercentage(60);
+            lay.AddItem( L"bmaxrej", L"Max cons. rejects").PutLabelPercentage(60);
             lay.AddItem( L"buservarian", L"User Variance");
         //--
     lay.EndGroup(); //--
     //--
-    lay.AddGroup(L"Surface Integrator");
+    lay.AddGroup(L"Surface Integrator"); //-- surface
         lay.AddRow();
             CValueArray vItem6(12);
-                vItem6[0]  = L"bidirectional";   vItem6[1] = 0;
-                vItem6[2]  = L"path";            vItem6[3] = 1;
-                vItem6[4]  = L"directlighting";  vItem6[5] = 2;
-                vItem6[6]  = L"distributedpath"; vItem6[7] = 3;
-                vItem6[8]  = L"igi";             vItem6[9] = 4;
-                vItem6[10] = L"exphotonmap";     vItem6[11] = 5;
+                vItem6[0]  = L"Bidirectional";   vItem6[1] = 0;
+                vItem6[2]  = L"Path";            vItem6[3] = 1;
+                vItem6[4]  = L"Directlighting";  vItem6[5] = 2;
+                vItem6[6]  = L"Distributedpath"; vItem6[7] = 3;
+                vItem6[8]  = L"I. Global Illu."; vItem6[9] = 4;
+                vItem6[10] = L"Ex-Photonmap";    vItem6[11] = 5;
             lay.AddEnumControl( L"bsurfaceint", vItem6, L"Integrator", siControlCombo ) ;
-            lay.AddItem(L"bsexpert", L"Adv.").PutWidthPercentage(6);
+            lay.AddItem(L"bsexpert", L"Advanced").PutWidthPercentage(6);
         lay.EndRow();
-        lay.AddGroup();
+    lay.AddGroup(); //-- no label
             CValueArray vAlist(14); //-- light strategy
                 vAlist[0]  = L"one";         vAlist[1] = 0;
                 vAlist[2]  = L"all";         vAlist[3] = 1;
@@ -225,28 +227,28 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.EndRow();
     lay.AddGroup(L"Diffuse settings");
         lay.AddRow();
-            lay.AddItem(L"bdiffusereflectsamples", L"Reflect samples");
-            lay.AddItem(L"bdiffusereflectdepth", L"Reflect depth");
+            lay.AddItem(L"bdiffusereflectsamples", L"Refl. sampl").PutLabelPercentage(80);
+            lay.AddItem(L"bdiffusereflectdepth", L"Refl. depth").PutLabelPercentage(80);
         lay.EndRow();
         lay.AddRow();  
-            lay.AddItem(L"bdiffuserefractsamples", L"Refract samples");
-            lay.AddItem(L"bdiffuserefractdepth", L"Refract depth");
+            lay.AddItem(L"bdiffuserefractsamples", L"Refr. sampl").PutLabelPercentage(80);
+            lay.AddItem(L"bdiffuserefractdepth", L"Refr. depth").PutLabelPercentage(80);
         lay.EndRow();
     lay.EndGroup();
     lay.AddGroup(L"Glossy settings");
         lay.AddRow();
-            lay.AddItem(L"bglossyreflectsamples", L"Reflect samples");
-            lay.AddItem(L"bglossyreflectdepth", L"Reflect depth");
+            lay.AddItem(L"bglossyreflectsamples", L"Refl. sampl").PutLabelPercentage(80);
+            lay.AddItem(L"bglossyreflectdepth", L"Refl. depth").PutLabelPercentage(80);
         lay.EndRow();
         lay.AddRow();
-            lay.AddItem(L"bglossyrefractsamples", L"Refract samples");
-            lay.AddItem(L"bglossyrefractdepth", L"Refract depth");
+            lay.AddItem(L"bglossyrefractsamples", L"Refr. sampl").PutLabelPercentage(80);
+            lay.AddItem(L"bglossyrefractdepth", L"Refr. depth").PutLabelPercentage(80);
         lay.EndRow();
     lay.EndGroup();
     lay.AddGroup(L"Specular settings");
         lay.AddRow();            
-            lay.AddItem(L"bspecularreflectdepth", L"Reflect samples");
-            lay.AddItem(L"bspecularrefractdepth", L"Refract depth");
+            lay.AddItem(L"bspecularreflectdepth", L"Refl. sampl").PutLabelPercentage(80);
+            lay.AddItem(L"bspecularrefractdepth", L"Refr. depth").PutLabelPercentage(80);
         lay.EndRow();
     lay.EndGroup();
     lay.AddGroup(L"Rejection settings");
@@ -299,22 +301,22 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddItem( L"bdbg_enableindircaustic", L"Debug: Enable indirect caustics");
             lay.AddItem( L"bdbg_enableindirdiffuse", L"Debug: Enable indirect diffuse");
             lay.AddItem( L"bdbg_enableindirspecular", L"Debug: Enable indirect specular");
-            
-            
-        lay.EndGroup();
-    lay.EndGroup();
-        
-           
+        lay.EndGroup(); //-- no label
+    lay.EndGroup(); //-- surface
+       
     //---------
     //-- filter
     lay.AddGroup(L"Filter"); //***
-        CValueArray vItfilter(10);
-            vItfilter[0] = L"box" ;      vItfilter[1] = 0;
-            vItfilter[2] = L"gaussian" ; vItfilter[3] = 1;
-            vItfilter[4] = L"mitchell" ; vItfilter[5] = 2;
-            vItfilter[6] = L"sinc" ;     vItfilter[7] = 3;
-            vItfilter[8] = L"triangle" ; vItfilter[9] = 4;
-        lay.AddEnumControl(L"bfilter",vItfilter,L"Filter",siControlCombo ) ;
+        lay.AddRow();
+            CValueArray vItfilter(10);
+                vItfilter[0] = L"box" ;      vItfilter[1] = 0;
+                vItfilter[2] = L"gaussian" ; vItfilter[3] = 1;
+                vItfilter[4] = L"mitchell" ; vItfilter[5] = 2;
+                vItfilter[6] = L"sinc" ;     vItfilter[7] = 3;
+                vItfilter[8] = L"triangle" ; vItfilter[9] = 4;
+            lay.AddEnumControl(L"bfilter",vItfilter,L"Filter",siControlCombo ) ;
+            lay.AddItem(L"bfexpert", L"Advanced").PutWidthPercentage(6);
+        lay.EndRow();
         lay.AddRow(); // box
             lay.AddItem(L"bxwidth", L"X Width").PutLabelPercentage(40);
             lay.AddItem(L"bywidth", L"Y Width").PutLabelPercentage(40);
@@ -329,27 +331,24 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
     lay.EndGroup(); //---]
 
     lay.AddGroup(L"Accelerator");
-        CValueArray vItAccel(6);
-            vItAccel[0] = L"Qbvh" ;    vItAccel[1] = 0;
-            vItAccel[2] = L"Bvh" ;     vItAccel[3] = 1;
-            vItAccel[4] = L"KD Tree" ; vItAccel[5] = 2;
-        lay.AddEnumControl( L"bAccel", vItAccel, L"Accelerator",siControlCombo);
-    
-    //-- accelerator
-        //-- qbvh
-            lay.AddItem(L"bmaxprimsperleaf", L"Max. prims per leaft");
         lay.AddRow();
-            lay.AddItem(L"bfullsweepthreshold", L"Full sweep threshold");
-            lay.AddItem(L"bskipfactor", L"Skip factor"); 
+            CValueArray vItAccel(6);
+                vItAccel[0] = L"QBVH" ;    vItAccel[1] = 0;
+                vItAccel[2] = L"BVH" ;     vItAccel[3] = 1;
+                vItAccel[4] = L"KD Tree" ; vItAccel[5] = 2;
+            lay.AddEnumControl( L"bAccel", vItAccel, L"Accelerator",siControlCombo);
+            lay.AddItem(L"bacexpert", L"Advanced").PutWidthPercentage(6);
         lay.EndRow();
+            //-- qbvh
+            lay.AddItem(L"bmaxprimsperleaf", L"Max. prims leaft").PutLabelPercentage(60);
+            lay.AddItem(L"bfullsweepthreshold", L"Full sweep threshold").PutLabelPercentage(60);
+            lay.AddItem(L"bskipfactor", L"Skip factor").PutLabelPercentage(60); 
         //-- bvh /-- inter, traver, costsamp
 //            lay.AddItem(L"btreetype", L""); // combo ?
             lay.AddItem(L"bcostsamples", L"Costsample"); 
         //-- KD Tree
-        lay.AddRow();
-            lay.AddItem(L"bintersectcost", L"Intersec Cost"); 
-            lay.AddItem(L"btraversalcost", L"Traversal Cost"); 
-        lay.EndRow();
+            lay.AddItem(L"bintersectcost", L"Intersec Cost").PutLabelPercentage(60); 
+            lay.AddItem(L"btraversalcost", L"Traversal Cost").PutLabelPercentage(60); 
         lay.AddRow();
             lay.AddItem(L"bmaxprims", L"Max. Prims"); 
             lay.AddItem(L"bacmaxdepth", L"Max. Depth");
