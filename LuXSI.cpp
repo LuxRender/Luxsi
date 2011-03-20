@@ -89,7 +89,7 @@ int vcostsamples = 0, vmaxprims = 1, vacmaxdepth = -1;
 //-- per kd-tree, floats ?
 int vintersectcost = 80, vtraversalcost = 1; 
 float vemptybonus = 0.2f;
-bool vrefineimmediately = false;
+bool vrefineimmediately = false, vacexpert = false;
 
 
 //-- igi
@@ -192,7 +192,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     prop.AddParameter( L"progressive",  CValue::siBool,  sps,L"",L"", vProg,        dft,dft,dft,dft,    oParam);
     
     //-- filter //
-    prop.AddParameter( L"bfexpert", CValue::siBool,     sps,L"",L"",  vfexpert,      dft,dft,dft,dft, oParam);
+    prop.AddParameter( L"bfexpert", CValue::siBool,     sps,L"",L"", vfexpert,  dft,dft,dft,dft, oParam);
     prop.AddParameter( L"bywidth",  CValue::siFloat,    sps,L"",L"", vYwidth,   0.0f,10.0f,0.1f,2.0f, oParam);
     prop.AddParameter( L"bxwidth",  CValue::siFloat,    sps,L"",L"", vXwidth,   0.0f,10.0f,0.1f,2.0f, oParam);
     prop.AddParameter( L"bfalpha",  CValue::siFloat,    sps,L"",L"", vFalpha,   0.0f,10.0f,0.1f,2.0f, oParam);
@@ -312,8 +312,9 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     prop.AddParameter( L"bengine",  CValue::siInt4, sps,L"",L"", vEngine,       0,10,0,10,  oParam ) ;
     prop.AddParameter( L"bautode",  CValue::siBool, sps,L"",L"", vAutoTh,       dft,dft,dft,dft,    oParam);
     prop.AddParameter( L"bthreads", CValue::siInt4, sps,L"",L"", vThreads,      0,10,0,10,  oParam ) ;
-    //--
+    //-- Accelerator vacexpert
     prop.AddParameter( L"bAccel",              CValue::siInt4, sps,L"",L"",  vAccel,              0,10,0,10,  oParam ) ;
+    prop.AddParameter( L"bacexpert",           CValue::siBool, sps,L"",L"",  vacexpert,       dft,dft,dft,dft, oParam) ;
     prop.AddParameter( L"bmaxprimsperleaf",    CValue::siInt4, sps,L"",L"",  vmaxprimsperleaf,    0,10,0,10,  oParam ) ;
     prop.AddParameter( L"bfullsweepthreshold", CValue::siInt4, sps,L"",L"",  vfullsweepthr,       0,10,0,10,  oParam ) ;
     prop.AddParameter( L"bskipfactor",         CValue::siInt4, sps,L"",L"",  vskipfactor,         0,10,0,10,  oParam ) ;
@@ -438,88 +439,11 @@ void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext c
         //-- prefix v; variables
     //-- test for presets
     if ( changed.GetName() == L"bpresets" )
-    { luxsi_render_presets( paramName, changed, ctxt); }
-
-    //-- end test
-/*
-    if (paramName==L"bpresets") {
-        switch ((int)changed.GetValue()) {
-            case 1:
-                // Preview direclighting
-                //-- sampler
-                Parameter(prop.GetParameters().GetItem( L"bsampler" )).PutValue( vSampler = 2 );
-                Parameter(prop.GetParameters().GetItem( L"bexpert" )).PutValue( vExpert = false );
-                Parameter(prop.GetParameters().GetItem( L"hSpp" )).PutValue( vhaltspp = 0 );
-                Parameter(prop.GetParameters().GetItem( L"hTime" )).PutValue( vhalttime = 0 );
-                Parameter(prop.GetParameters().GetItem( L"bpixsampler" )).PutValue( vPixsampler = 1 );
-                Parameter(prop.GetParameters().GetItem( L"pixelsamples" )).PutValue( vPixelsamples = 2 );
-                //-- surfaceintegrator
-                Parameter(prop.GetParameters().GetItem( L"bsurfaceint" )).PutValue( vSurfaceInt = 2 );
-                Parameter(prop.GetParameters().GetItem( L"bsexpert" )).PutValue( vsexpert = false );
-                Parameter(prop.GetParameters().GetItem( L"blight_str" )).PutValue( vLight_str = 2 );
-                Parameter(prop.GetParameters().GetItem( L"bmaxdepth" )).PutValue( vmaxdepth = 8 );
-             
-                //-- volume integrator //-- single: 1.0 // TODO;
-                //-- filter
-                Parameter(prop.GetParameters().GetItem( L"bfilter" )).PutValue( vfilter = 2 );
-                Parameter(prop.GetParameters().GetItem( L"bfexpert" )).PutValue( vfexpert = false );
-                Parameter(prop.GetParameters().GetItem( L"bxwidth" )).PutValue( vXwidth = 2.0 );
-                Parameter(prop.GetParameters().GetItem( L"bywidth" )).PutValue( vYwidth = 2.0 );
-                Parameter(prop.GetParameters().GetItem( L"bF_B" )).PutValue( vF_B = 0.3333f );
-                Parameter(prop.GetParameters().GetItem( L"bF_C" )).PutValue( vF_C = 0.3333f );
-                Parameter(prop.GetParameters().GetItem( L"ssample" )).PutValue( vSupers = true );
-                //-- accelerator = 'qbvh'
-                Parameter(prop.GetParameters().GetItem( L"bmaxprimsperleaf" )).PutValue( vmaxprimsperleaf = 4 );
-                Parameter(prop.GetParameters().GetItem( L"bfullsweepthreshold" )).PutValue( vfullsweepthr = 16 );
-                Parameter(prop.GetParameters().GetItem( L"bskipfactor" )).PutValue( vskipfactor = 1 );
-
-                ctxt.PutArrayAttribute(L"Refresh", true);
-                app.LogMessage(L" Parameters for render presets 1, loaded..");
-                break;
-            case 2:
-                // final 1 MLT / Bidi PathT
-                vSampler = 0; vmaxconsecrejects = 512; vlmutationpro = 0.6f;
-                vSurfaceInt = 0; vLight_depth = 10; vEye_depth = 10; vBounces = 10;
-                break;
-            case 3:
-                // final 2 MLT / PT (ext)
-                vSampler = 1; vmaxconsecrejects = 512; vlmutationpro = 0.6f;
-                vSurfaceInt = 1; vmaxdepth = 10;    vBounces = 10;
-                break;
-            case 4:
-                // progr 1 BPT (int)
-                vSampler = 2; vmaxconsecrejects = 512;
-                vSurfaceInt = 2; vLight_depth = 10; vEye_depth = 10; vBounces = 10;
-                vPixsampler = 2; vPixelsamples = 1;
-                break;
-            case 5:
-                // progr 2 PT (ext)
-                vSampler = 1; vmaxconsecrejects = 512;
-                vSurfaceInt = 1; vBounces = 10; vmaxdepth = 10;
-                vPixsampler = 2; vPixelsamples = 1;
-                break;
-            case 6:
-                // bucket 1 BPT (int)
-                vSampler = 2; vmaxconsecrejects = 512;
-                vSurfaceInt =0; vLight_depth = 10; vEye_depth = 8; vBounces = 8;
-                vPixsampler = 5; vPixelsamples = 64;
-                break;
-            case 7:
-                // bucket 2 PT (ext)
-                vSampler = 2; vmaxconsecrejects = 512;
-                vSurfaceInt = 1; vmaxdepth = 8; vBounces = 8;
-                vPixsampler = 5; vPixelsamples = 64;
-                break;
-        }
-        ctxt.PutArrayAttribute(L"Refresh", true); // for test
-    
+    { 
+        luxsi_render_presets( paramName, changed, ctxt);
     }
-    */
 
-    
-    
     //-- image
-
            if (paramName == L"Width")   { vXRes     = changed.GetValue();
     } else if (paramName == L"Height")  { vYRes     = changed.GetValue();
     } else if (paramName == L"gamma")   { vContrast = changed.GetValue();
@@ -550,13 +474,13 @@ void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext c
     } else if (paramName == L"save_exr")    { vExr        = changed.GetValue();
 
     //----/ save images /----/ png /--->
-    } else if (paramName == L"mode_rpng")       { vRpng         = changed.GetValue();
-    } else if (paramName == L"save_png_16")     { vWpng_16      = changed.GetValue();
-    } else if (paramName == L"png_gamut")       { vPng_gamut    = changed.GetValue();
-    } else if (paramName == L"save_png")        { vPng          = changed.GetValue();
+    } else if (paramName == L"mode_rpng")    { vRpng         = changed.GetValue();
+    } else if (paramName == L"save_png_16")  { vWpng_16      = changed.GetValue();
+    } else if (paramName == L"png_gamut")    { vPng_gamut    = changed.GetValue();
+    } else if (paramName == L"save_png")     { vPng          = changed.GetValue();
 
     //-- save file name
-    } else if (paramName == L"fObjects")        { vFileObjects  = changed.GetValue();
+    } else if (paramName == L"fObjects")     { vFileObjects  = changed.GetValue();
     
     //--TAB RENDER
     //-- Luxrender engine
@@ -658,6 +582,7 @@ void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext c
     
     //-- Accelerator
     } else if (paramName == L"bAccel")              { vAccel              = changed.GetValue();
+    } else if (paramName == L"bacexpert")           { vacexpert           = changed.GetValue();
     } else if (paramName == L"bmaxprimsperleaf")    { vmaxprimsperleaf    = changed.GetValue();
     } else if (paramName == L"bfullsweepthreshold") { vfullsweepthr       = changed.GetValue();
     } else if (paramName == L"bskipfactor")         { vskipfactor         = changed.GetValue();
@@ -684,87 +609,199 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
     if ( changed.GetName() == L"bpresets" ) 
     {
         vpresets = prop.GetParameterValue( L"bpresets" );
+        //-- commons values for all presets
+        //    Parameter(prop.GetParameters().GetItem( L"bexpert" )).PutValue( vExpert = false );
+            Parameter(prop.GetParameters().GetItem( L"hSpp" )).PutValue( vhaltspp = 0 );
+            Parameter(prop.GetParameters().GetItem( L"hTime" )).PutValue( vhalttime = 0 );
+         
         //--
         if ( vpresets == 0 ) // Custom parameters
         {
             //-- TODO;
         }
-        else if ( vpresets == 1 ) // Preview direclighting
-        {   //-- sampler
-            Parameter(prop.GetParameters().GetItem( L"bsampler" )).PutValue( vSampler = 2 );
-            Parameter(prop.GetParameters().GetItem( L"bexpert" )).PutValue( vExpert = false );
-            Parameter(prop.GetParameters().GetItem( L"hSpp" )).PutValue( vhaltspp = 0 );
-            Parameter(prop.GetParameters().GetItem( L"hTime" )).PutValue( vhalttime = 0 );
-            Parameter(prop.GetParameters().GetItem( L"bpixsampler" )).PutValue( vPixsampler = 1 );
-            Parameter(prop.GetParameters().GetItem( L"pixelsamples" )).PutValue( vPixelsamples = 2 );
-            //-- surfaceintegrator
-            Parameter(prop.GetParameters().GetItem( L"bsurfaceint" )).PutValue( vSurfaceInt = 2 );
-            Parameter(prop.GetParameters().GetItem( L"bsexpert" )).PutValue( vsexpert = false );
+        else if ( vpresets == 1 ) // Preview Instant Global Illumination
+        {
+            //-- sampler; low
+            vSampler = 2 ;
+            vPixsampler = 3 ; // low
+            vPixelsamples = 1 ;
+            //-- surfaceintegrator; distributepath
+            vSurfaceInt = 3 ;
             Parameter(prop.GetParameters().GetItem( L"blight_str" )).PutValue( vLight_str = 2 );
-            Parameter(prop.GetParameters().GetItem( L"bmaxdepth" )).PutValue( vmaxdepth = 8 );
-            //-- volume integrator //-- single: 1.0 // TODO;
-            //-- filter
-            Parameter(prop.GetParameters().GetItem( L"bfilter" )).PutValue( vfilter = 2 );
-            Parameter(prop.GetParameters().GetItem( L"bfexpert" )).PutValue( vfexpert = false );
-            Parameter(prop.GetParameters().GetItem( L"bxwidth" )).PutValue( vXwidth = 2.0 );
-            Parameter(prop.GetParameters().GetItem( L"bywidth" )).PutValue( vYwidth = 2.0 );
-            Parameter(prop.GetParameters().GetItem( L"bF_B" )).PutValue( vF_B = 0.3333f );
-            Parameter(prop.GetParameters().GetItem( L"bF_C" )).PutValue( vF_C = 0.3333f );
-            Parameter(prop.GetParameters().GetItem( L"ssample" )).PutValue( vSupers = true );
-            //-- accelerator = 'qbvh'
-            Parameter(prop.GetParameters().GetItem( L"bmaxprimsperleaf" )).PutValue( vmaxprimsperleaf = 4 );
-            Parameter(prop.GetParameters().GetItem( L"bfullsweepthreshold" )).PutValue( vfullsweepthr = 16 );
-            Parameter(prop.GetParameters().GetItem( L"bskipfactor" )).PutValue( vskipfactor = 1 );
-            //--
+            Parameter(prop.GetParameters().GetItem( L"directsampleall" )).PutValue( vdirectsampleall =  true );
+            Parameter(prop.GetParameters().GetItem( L"bdirectsamples" )).PutValue( vdirectsamples = 1 );
+            Parameter(prop.GetParameters().GetItem( L"bindirectsampleall" )).PutValue( vindirectsampleall = false );
+            Parameter(prop.GetParameters().GetItem( L"bindirectsamples" )).PutValue( vindirectsamples = 1 );
+            Parameter(prop.GetParameters().GetItem( L"bdiffusereflectdepth" )).PutValue( vdiffusereflectdepth = 3 );
+            Parameter(prop.GetParameters().GetItem( L"bdiffusereflectsamples" )).PutValue( vdiffusereflectsamples = 1 );
+            Parameter(prop.GetParameters().GetItem( L"bdiffuserefractdepth" )).PutValue( vdiffuserefractdepth = 5 );
+            Parameter(prop.GetParameters().GetItem( L"bdiffuserefractsamples" )).PutValue( vdiffuserefractsamples = 1 );
+            Parameter(prop.GetParameters().GetItem( L"bdirectdiffuse" )).PutValue( vdirectdiffuse = true );
+            Parameter(prop.GetParameters().GetItem( L"bindirectdiffuse" )).PutValue( vindirectdiffuse = true );
+            Parameter(prop.GetParameters().GetItem( L"bglossyreflectdepth" )).PutValue( vglossyreflectdepth = 2 );
+            Parameter(prop.GetParameters().GetItem( L"bglossyreflectsamples" )).PutValue( vglossyreflectsamples = 1 );
+            Parameter(prop.GetParameters().GetItem( L"bglossyrefractdepth" )).PutValue( vglossyrefractdepth = 5 );
+            Parameter(prop.GetParameters().GetItem( L"bglossyrefractsamples" )).PutValue( vglossyrefractsamples = 1 );
+            Parameter(prop.GetParameters().GetItem( L"bdirectglossy" )).PutValue( vdirectglossy = true );
+            Parameter(prop.GetParameters().GetItem( L"bindirectglossy" )).PutValue( vindirectglossy = true );
+            Parameter(prop.GetParameters().GetItem( L"bspecularreflectdepth" )).PutValue( vspecularreflectdepth = 3 );
+            Parameter(prop.GetParameters().GetItem( L"bspecularrefractdepth" )).PutValue( vspecularrefractdepth = 5 );
+            //-- volume int
+            //-- filter / commons
             app.LogMessage(L" Parameters for render presets 1, loaded..");
         }
-        else if ( vpresets == 2 ) // final 1 MLT / Bidi PathT
-        {
-            vSampler = 0; vmaxconsecrejects = 512; vlmutationpro = 0.6f;
-            vSurfaceInt = 0; vLight_depth = 10; vEye_depth = 10; vBounces = 10;
+        else if ( vpresets == 2 ) // Preview directlighting ( No GI )
+        {   
+            //-- sampler; lowdiscrepance
+            vSampler = 2 ;
+            vPixsampler = 1 ;
+            vPixelsamples = 2 ;
+            
+            //-- surfaceintegrator; directlighting
+            vSurfaceInt = 2 ;
+            vmaxdepth = 5 ;
+            
             //--
             app.LogMessage(L" Parameters for render presets 2, loaded..");
         }
-        else if ( vpresets == 3 ) // final 2 MLT / PT (ext)
+        else if ( vpresets == 3 ) // Preview Ex-photonmap
         {
-            vSampler = 1; vmaxconsecrejects = 512; vlmutationpro = 0.6f;
-            vSurfaceInt = 1; vmaxdepth = 10;    vBounces = 10;
-            //--
-            app.LogMessage(L" Parameters for render presets 3, loaded..");
+            //- Sampler "lowdiscrepancy"
+            vPixsampler = 5 ; //- hilbert
+            vPixelsamples = 4 ;
+            //-- SurfaceIntegrator "exphotonmap"
+            vSurfaceInt = 5 ;
+            Parameter(prop.GetParameters().GetItem( L"brenderingmode" )).PutValue( vrenderingmode = 0 ); // directlighting
+            Parameter(prop.GetParameters().GetItem( L"blightstrategy" )).PutValue( vLight_str = 0 ); // auto
+            Parameter(prop.GetParameters().GetItem( L"bshadowraycount" )).PutValue( vshadowraycount = 1 ); // ?
+            Parameter(prop.GetParameters().GetItem( L"bmaxphotondepth" )).PutValue( vmaxphotondepth = 10 );
+            vmaxdepth = 5 ;
+            Parameter(prop.GetParameters().GetItem( L"bmaxphotondist" )).PutValue( vmaxphotondist = 0.100000f );
+            Parameter(prop.GetParameters().GetItem( L"bnphotonsused" )).PutValue( vnphotonsused = 50 );
+            Parameter(prop.GetParameters().GetItem( L"bindirectphotons" )).PutValue( vindirectphotons = 20000 );
+            Parameter(prop.GetParameters().GetItem( L"bdirectphotons" )).PutValue( vdirectphotons = 20000 );
+            Parameter(prop.GetParameters().GetItem( L"bcausticphotons" )).PutValue( vcausticphotons = 0 );
+            Parameter(prop.GetParameters().GetItem( L"bradiancephotons" )).PutValue( vradiancephotons = 20000 );
+            Parameter(prop.GetParameters().GetItem( L"bfinalgather" )).PutValue( vfinalgather = false );
+
+            // VolumeIntegrator "single"
+            // Parameter(prop.GetParameters().GetItem( L"stepsize" [1.000000]
+            app.LogMessage(L" Parameters for render presets 3; loaded..");
         }
-        else if ( vpresets == 4 ) // progr 1 BPT (int)
+        else if ( vpresets == 4 ) // final 1 MLT / Bi-directional PathTracing (int)
         {
-            vSampler = 2; vmaxconsecrejects = 512;
-            vSurfaceInt = 2; vLight_depth = 10; vEye_depth = 10; vBounces = 10;
-            vPixsampler = 2; vPixelsamples = 1;
+            //-- sampler; metropolis 
+            vSampler = 0 ;
+            vlmutationpro = 0.6f ;
+            vmaxconsecrejects = 512 ; 
+            vusevariance = false ;
+            //-- 
+            vSurfaceInt = 0 ; // bidir
+            vLight_depth = 32 ; 
+            vEye_depth = 32 ;
             //--
             app.LogMessage(L" Parameters for render presets 4; loaded..");
         }
-        else if ( vpresets == 5 ) //  progr 2 PT (ext)
+        else if ( vpresets == 5 ) // final 2 MLT / PathTracing (ext)
         {
-            vSampler = 1; vmaxconsecrejects = 512;
-            vSurfaceInt = 1; vBounces = 10; vmaxdepth = 10;
-            vPixsampler = 2; vPixelsamples = 1;
+            vSampler = 0 ;// metro
+            vlmutationpro = 0.4f;
+            //--
+            vSurfaceInt = 1 ; // path
+            vmaxdepth = 10 ;
+            Parameter(prop.GetParameters().GetItem( L"binc_env" )).PutValue( vInc_env = true ) ;
             //--
             app.LogMessage(L" Parameters for render presets 5; loaded..");
         }
-        else if ( vpresets == 6 )// bucket 1 BPT (int
+        else if ( vpresets == 6 ) // progr 1 Bidir Path Tracing (int)
         {
-            vSampler = 2; vmaxconsecrejects = 512;
-            vSurfaceInt =0; vLight_depth = 10; vEye_depth = 8; vBounces = 8;
-            vPixsampler = 5; vPixelsamples = 64;
+            vSampler = 2 ;
+            vPixsampler = 2; 
+            vPixelsamples = 1;
+            //--
+            vSurfaceInt = 2 ; //-- 
+            vLight_depth = 10; 
+            vEye_depth = 10; 
             //--
             app.LogMessage(L" Parameters for render presets 6; loaded..");
         }
-        else // bucket 2 PT (ext)
+        else if ( vpresets == 7 ) //  progr 2 Path Tracing (ext)
         {
-            vSampler = 2; vmaxconsecrejects = 512;
-            vSurfaceInt = 1; vmaxdepth = 8; vBounces = 8;
-            vPixsampler = 5; vPixelsamples = 64;
+            vSampler = 1 ;
+            vchainlength = 512;
+            Parameter(prop.GetParameters().GetItem( L"bbasampler" )).PutValue( vbasampler = 1 );
+            vPixsampler = 2; 
+            vPixelsamples = 1;
+            //-- surf
+            vSurfaceInt = 1 ; // path
+            vmaxdepth = 10 ;
+            Parameter(prop.GetParameters().GetItem( L"binc_env" )).PutValue( vInc_env = true ) ;
             //--
             app.LogMessage(L" Parameters for render presets 7; loaded..");
         }
-        //--
+        else if ( vpresets == 8 )// bucket 1 Bidir Path Tracing (int)
+        {
+            vSampler = 2 ; // low
+            vPixsampler = 5; 
+            vPixelsamples = 64;
+            //--
+            vSurfaceInt = 0 ; // bidir
+            vLight_depth = 16 ; 
+            vEye_depth = 16 ;
+            //--
+            app.LogMessage(L" Parameters for render presets 8; loaded..");
+        }
+        else // bucket 2 Path Tracing (ext)
+        {
+            vSampler = 2 ; // low
+            vPixsampler = 5 ; // hilbert
+            vPixelsamples = 64 ;
+
+            vSurfaceInt = 1 ; // path
+            vsexpert = false ;
+            vmaxdepth = 10 ; 
+            Parameter(prop.GetParameters().GetItem( L"binc_env" )).PutValue( vInc_env = true );
+            //-- filter - commons
+            app.LogMessage(L" Parameters for render presets 9; loaded..");
+        }
+        //-- commons values for all presets
+            //-- sampler
+            Parameter(prop.GetParameters().GetItem( L"bsampler" )).PutValue( vSampler );
+            //-- if ( vsampler == low ) //-- TODO;
+            Parameter(prop.GetParameters().GetItem( L"bpixsampler" )).PutValue( vPixsampler );
+            Parameter(prop.GetParameters().GetItem( L"pixelsamples" )).PutValue( vPixelsamples );
+            //-- if ( vsampler == metro ) //-- TODO;
+            Parameter(prop.GetParameters().GetItem( L"bmutation" )).PutValue( vlmutationpro = 0.6f );
+            Parameter(prop.GetParameters().GetItem( L"bmaxrej" )).PutValue( vmaxconsecrejects = 512 ); 
+            Parameter(prop.GetParameters().GetItem( L"buservarian" )).PutValue( vusevariance = false );
+            
+            //-- filter
+            Parameter(prop.GetParameters().GetItem( L"bfilter" )).PutValue( vfilter );
+            // si filter es mitchell
+            Parameter(prop.GetParameters().GetItem( L"bxwidth" )).PutValue( vXwidth = 1.500000 );
+            Parameter(prop.GetParameters().GetItem( L"bywidth" )).PutValue( vYwidth = 1.500000 );
+            Parameter(prop.GetParameters().GetItem( L"bF_B" )).PutValue( vF_B = 0.3333f );
+            Parameter(prop.GetParameters().GetItem( L"bF_C" )).PutValue( vF_C = 0.3333f );
+            Parameter(prop.GetParameters().GetItem( L"ssample" )).PutValue( vSupers = true );
+            //--  or  gaussian ? //-- TODO;
+
+            //-- surface integrator
+            Parameter(prop.GetParameters().GetItem( L"bsurfaceint" )).PutValue( vSurfaceInt );
+            //-- direct
+            Parameter(prop.GetParameters().GetItem( L"blightrrthre" )).PutValue( vmaxdepth );
+            //-- path
+            Parameter(prop.GetParameters().GetItem( L"bmaxdepth" )).PutValue( vmaxdepth = 10 );
+            //-- bi-direct
+            Parameter(prop.GetParameters().GetItem( L"blight_depth" )).PutValue( vLight_depth ); 
+            Parameter(prop.GetParameters().GetItem( L"beye_depth" )).PutValue( vEye_depth );
+            
+           
+            //-- Accelerator; 'qbvh' 
+            Parameter(prop.GetParameters().GetItem( L"bAccel" )).PutValue( vAccel = 0 );
+            Parameter(prop.GetParameters().GetItem( L"bmaxprimsperleaf" )).PutValue( vmaxprimsperleaf = 4 );
+            Parameter(prop.GetParameters().GetItem( L"bfullsweepthreshold" )).PutValue( vfullsweepthr = 16 );
+            Parameter(prop.GetParameters().GetItem( L"bskipfactor" )).PutValue( vskipfactor = 1 );
+           
         ctxt.PutArrayAttribute(L"Refresh", true); // for test
     
     } //-- end cases...
@@ -794,7 +831,7 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
         if ( changed.GetName() == L"save_exr")
         //------------------------------------//
         {
-            Parameter lmode_Znorm   = prop.GetParameters().GetItem( L"mode_Znorm" );
+            Parameter lmode_Znorm = prop.GetParameters().GetItem( L"mode_Znorm" );
             //--
             lmode_Znorm.PutCapabilityFlag( siNotInspectable, changed.GetValue() == false );
                 ctxt.PutAttribute(L"Refresh", true);
@@ -807,9 +844,9 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
             Parameter lsave_png_16  = prop.GetParameters().GetItem( L"save_png_16" ) ;
             Parameter lpng_gamut    = prop.GetParameters().GetItem( L"png_gamut" ) ;
             //--
-            lmode_rpng.PutCapabilityFlag( siNotInspectable,     changed.GetValue() == false ) ;
-            lsave_png_16.PutCapabilityFlag( siNotInspectable,   changed.GetValue() == false ) ;
-            lpng_gamut.PutCapabilityFlag( siNotInspectable,     changed.GetValue() == false ) ;
+            lmode_rpng.PutCapabilityFlag( siNotInspectable,   changed.GetValue() == false ) ;
+            lsave_png_16.PutCapabilityFlag( siNotInspectable, changed.GetValue() == false ) ;
+            lpng_gamut.PutCapabilityFlag( siNotInspectable,   changed.GetValue() == false ) ;
                 ctxt.PutAttribute(L"Refresh", true);
         }
 
@@ -825,7 +862,7 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
 
         //-- create list of parameters
         Parameter lmutation     = prop.GetParameters().GetItem( L"bmutation" );
-        Parameter lmaxrej       = prop.GetParameters().GetItem( L"bmaxrej" );
+        Parameter lbmaxrej       = prop.GetParameters().GetItem( L"bmaxrej" );
         Parameter lbuservarian  = prop.GetParameters().GetItem( L"buservarian" );
         Parameter lchainlength  = prop.GetParameters().GetItem( L"bchainlength" );
         Parameter lbpixsampler  = prop.GetParameters().GetItem( L"bpixsampler" );
@@ -834,7 +871,7 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
 
         //-- assing flags for hidden options
         lmutation.PutCapabilityFlag( siNotInspectable, true );
-        lmaxrej.PutCapabilityFlag( siNotInspectable, true );
+        lbmaxrej.PutCapabilityFlag( siNotInspectable, true );
         lbuservarian.PutCapabilityFlag( siNotInspectable, true );
         lchainlength.PutCapabilityFlag( siNotInspectable, true );
         lbpixsampler.PutCapabilityFlag( siNotInspectable, true );
@@ -846,12 +883,12 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
         if ( vSampler == 0)  //-- metropolis
         {
             lmutation.PutCapabilityFlag( siNotInspectable, false );
+            lbuservarian.PutCapabilityFlag( siNotInspectable, false );
             if (vExpert)
             {
-                lmaxrej.PutCapabilityFlag( siNotInspectable, false );
+                lbmaxrej.PutCapabilityFlag( siNotInspectable, false );
             }
-            lbuservarian.PutCapabilityFlag( siNotInspectable, false );
-                ctxt.PutAttribute(L"Refresh", true);
+            ctxt.PutAttribute(L"Refresh", true);
         }
         else if ( vSampler == 1 ) //-- erpt
         {
@@ -868,7 +905,7 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
                 lbuservarian.PutCapabilityFlag( siNotInspectable, false );
                 if ( vExpert )
                 {
-                    lmaxrej.PutCapabilityFlag( siNotInspectable, false );
+                    lbmaxrej.PutCapabilityFlag( siNotInspectable, false );
                 }
             }
                 ctxt.PutAttribute(L"Refresh", true);
@@ -881,12 +918,13 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
         }
     }
 
-    //--------------------------------//
-    if ( changed.GetName() == L"bfilter")
-    //--------------------------------//
+    //--------------------------------------//
+    if (( changed.GetName() == L"bfilter")||
+        ( changed.GetName() == L"bfexpert"))
+    //--------------------------------------//
     {
         vfilter = prop.GetParameterValue(L"bfilter");
-        vExpert = prop.GetParameterValue(L"bexpert");
+        vfexpert = prop.GetParameterValue(L"bfexpert");
 
         //-- create list of parameters
         Parameter lbxwidth  = prop.GetParameters().GetItem( L"bxwidth" );
@@ -907,41 +945,42 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
         lbywidth.PutCapabilityFlag( siNotInspectable, true );
 
         //-- show with all options, if mode expert is true
-        if ( vExpert )
+        if ( vfexpert )
         {
             lbxwidth.PutCapabilityFlag( siNotInspectable, false );
             lbywidth.PutCapabilityFlag( siNotInspectable, false );
             ctxt.PutAttribute(L"Refresh", true);
         }
 
-        if (( vfilter == 1 ) && ( vExpert )) //-- gauss
+        if (( vfilter == 1 ) && ( vfexpert )) //-- gauss
         {
             lbfalpha.PutCapabilityFlag( siNotInspectable, false );
                 ctxt.PutAttribute(L"Refresh", true);
         }
-        else if (( vfilter == 2 ) && ( vExpert )) //-- mitchell
+        else if (( vfilter == 2 ) && ( vfexpert )) //-- mitchell
         {
             lssample.PutCapabilityFlag( siNotInspectable, false );
             lbF_B.PutCapabilityFlag( siNotInspectable, false );
             lbF_C.PutCapabilityFlag( siNotInspectable, false );
                 ctxt.PutAttribute(L"Refresh", true);
         }
-        else if (( vfilter == 3 ) && ( vExpert )) //-- sinc
+        else if (( vfilter == 3 ) && ( vfexpert )) //-- sinc
         {
             lbTau.PutCapabilityFlag( siNotInspectable, false );
                 ctxt.PutAttribute(L"Refresh", true);
         }
         else //-- box
         {
-        lay.PutAttribute(L"Refresh", true); //-- lay, only refresh layout
+        ctxt.PutAttribute(L"Refresh", true); 
         }
     }
 
-    //----------------------------------------//
+    //---------------------------------------------//
     if (( changed.GetName() == L"bsurfaceint" ) ||
         ( changed.GetName() == L"bfinalgather" ) ||
+        ( changed.GetName() == L"bpresets" ) ||
         ( changed.GetName() == L"bsexpert" ))
-    //----------------------------------------//
+    //--------------------------------------------//
     {
         vSurfaceInt  = prop.GetParameterValue(L"bsurfaceint");
         vsexpert = prop.GetParameterValue(L"bsexpert");
@@ -980,7 +1019,6 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
         Parameter lbdiff_refract_reject_thr = prop.GetParameters().GetItem( L"bdiff_refract_reject_thr");
         Parameter lbglossy_reflect_reject_thr = prop.GetParameters().GetItem( L"bglossy_reflect_reject_thr");
         Parameter lbglossy_refract_reject_thr = prop.GetParameters().GetItem( L"bglossy_refract_reject_thr");
-
         
         //-- IGI
         Parameter lbnsets       = prop.GetParameters().GetItem( L"bnsets" );
@@ -1008,7 +1046,7 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
         Parameter lbdbg_enableindirdiffuse  = prop.GetParameters().GetItem( L"bdbg_enableindirdiffuse" );
         Parameter lbdbg_enableindirspecular = prop.GetParameters().GetItem( L"bdbg_enableindirspecular" );
 
-    //--flags
+    //-- flags
    
         //-- bidi
         lblight_depth.PutCapabilityFlag( siNotInspectable, true );
@@ -1153,7 +1191,6 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
         }
         else
         {
-        //    lbstrategy.PutCapabilityFlag( siNotInspectable, true );
         //    lbshadowraycount.PutCapabilityFlag( siNotInspectable, true ); 
             
             lbmaxdepth.PutCapabilityFlag( siNotInspectable, false ); 
@@ -1193,10 +1230,10 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
     } // end surface int
     //-- Accelerator
     if (( changed.GetName() == L"bAccel" )||
-        ( changed.GetName() == L"bsexpert" )) //-- change to dedicated item (bAcexpert)
+        ( changed.GetName() == L"bacexpert" )) //-- change to dedicated item (bAcexpert)
     {
         vAccel = prop.GetParameterValue(L"bAccel");
-        vsexpert = prop.GetParameterValue(L"bsexpert"); //-- provisional
+        vacexpert = prop.GetParameterValue(L"bacexpert"); //-- provisional
         //--
         Parameter lbmaxprimsperleaf= prop.GetParameters().GetItem( L"bmaxprimsperleaf");
         Parameter lbfullsweepthreshold= prop.GetParameters().GetItem( L"bfullsweepthreshold"); 
@@ -1223,14 +1260,14 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
         lbacmaxdepth.PutCapabilityFlag( siNotInspectable, true );
         lbemptybonus.PutCapabilityFlag( siNotInspectable, true );
         //--
-        if (( vAccel == 0 ) && ( vsexpert )) //-- qbvh
+        if (( vAccel == 0 ) && ( vacexpert )) //-- qbvh
         {
             lbmaxprimsperleaf.PutCapabilityFlag( siNotInspectable, false );
             lbfullsweepthreshold.PutCapabilityFlag( siNotInspectable, false );
             lbskipfactor.PutCapabilityFlag( siNotInspectable, false );
             ctxt.PutAttribute(L"Refresh", true );
         }
-        else if (( vAccel == 1 )&& ( vsexpert )) //-- bvh
+        else if (( vAccel == 1 )&& ( vacexpert )) //-- bvh
         {
 //            lbtreetype.PutCapabilityFlag( siNotInspectable, false ); //-- combo          
             lbcostsamples.PutCapabilityFlag( siNotInspectable, false );
@@ -1246,7 +1283,7 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
 //        }
         else
         {
-            if ( vsexpert )//-- KD Tree
+            if ( vacexpert )//-- KD Tree
             {
                 lbintersectcost.PutCapabilityFlag( siNotInspectable, false );
                 lbtraversalcost.PutCapabilityFlag( siNotInspectable, false );
@@ -1363,19 +1400,19 @@ void writeLuxsiBasics(){
     int loc=(int)fname.rfind(".");
 
     f << "Film \"fleximage\"\n"; //----
-    f << "  \"integer xresolution\" [" << vXRes << "]\n  \"integer yresolution\" [" << vYRes << "]\n";
-    f << "  \"string filename\" [\"" << replace(fname.substr(0,loc)) << "\"]\n";
+    f << "  \"integer xresolution\" ["<< vXRes << "]\n  \"integer yresolution\" ["<< vYRes <<"]\n";
+    f << "  \"string filename\" [\""<< replace(fname.substr(0,loc)) << "\"]\n";
 
     f << "  \"integer writeinterval\" [" << vSave <<"]\n";
     f << "  \"integer displayinterval\" [" << vDis <<"]\n";
 
-    f << "  \"bool write_exr\" [\"" << MtBool[vExr] <<"\"]\n";
+    f << "  \"bool write_exr\" [\""<< MtBool[vExr] <<"\"]\n";
     if (vExr)
     {
         f << "  \"string write_exr_zbuf_normalizationtype\" [\""<< AZb_norm[vExr_Znorm] <<"\"]\n";
     } //----/ TODO: more options for Exr /------>
 
-    f << "  \"bool write_png\" [\"" << MtBool[vPng] <<"\"]\n";
+    f << "  \"bool write_png\" [\""<< MtBool[vPng] <<"\"]\n";
     if (vPng)
     {
         f << "  \"string write_png_channels\" [\""<< ArgbP[vRpng] <<"\"]\n";
@@ -1386,14 +1423,14 @@ void writeLuxsiBasics(){
     f << "  \"bool write_tga\" [\""<< MtBool[vTga] <<"\"]\n";
     if (vTga)
     {
-        f << "  \"string write_tga_channels\" [\"" << ArgbT[vRtga] <<"\"]\n";
-        f << "  \"bool write_tga_gamutclamp\" [\"" << MtBool[vTga_gamut] <<"\"]\n";
+        f << "  \"string write_tga_channels\" [\""<< ArgbT[vRtga] <<"\"]\n";
+        f << "  \"bool write_tga_gamutclamp\" [\""<< MtBool[vTga_gamut] <<"\"]\n";
     } //----/ TODO: more options for Tga /------>
 
     f << "  \"bool write_resume_flm\" [\""<< MtBool[vResume] <<"\"]\n";
     f << "  \"bool premultiplyalpha\" [\""<< MtBool[0] <<"\"]\n"; // TODO;
-    f << "  \"integer haltspp\" [" << vhaltspp << "]\n";
-    f << "  \"integer halttime\" [" << vhalttime << "]\n";
+    f << "  \"integer haltspp\" ["<< vhaltspp <<"]\n";
+    f << "  \"integer halttime\" ["<< vhalttime <<"]\n";
 
     f << "  \"float gamma\" ["<< vContrast <<"]\n\n";
     //-------------------------------------------------//
@@ -1525,9 +1562,10 @@ void writeLuxsiBasics(){
         f << "  \"float glossyreflectreject_threshold\" ["<< vglossy_reflect_reject_thr <<"]\n";
         f << "  \"bool glossyrefractreject\" [\""<< MtBool[0] <<"\"]\n";
         f << "  \"float glossyrefractreject_threshold\" ["<< vglossy_refract_reject_thr <<"]\n";
+        //--
         if ( vsexpert )
         {
-        f << "  \"string lightstrategy\" [\""<< MtlightST[vLight_str] <<"\"]\n";
+            f << "  \"string lightstrategy\" [\""<< MtlightST[vLight_str] <<"\"]\n";
         }
     }
     else if ( vSurfaceInt == 4 ) //-- igi
