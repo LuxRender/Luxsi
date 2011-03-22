@@ -63,6 +63,8 @@ ProgressBar pb = kit.GetProgressBar();
 bool vdirectdiffuse = true, vdirectglossy = true, vindirectsampleall = false, vindirectdiffuse = true, vindirectglossy = true;
 bool vdiffuserefractreject= false, vglossyrefractreject= false, vglossyreflectreject = false, vdiffusereflectreject = false;	
 bool vdirectsampleall = true;
+bool vdiff_reflect_reject = false, vdiff_refract_reject = false, vglossy_reflect_reject = false;
+bool vglossy_refract_reject = false;
 
 int vdirectsamples = 1, vindirectsamples = 1, vdiffusereflectdepth = 3, vdiffusereflectsamples = 1;
 int vdiffuserefractdepth = 5, vdiffuserefractsamples = 1, vglossyreflectdepth = 2, vglossyreflectsamples = 1;
@@ -70,6 +72,7 @@ int vglossyrefractdepth = 5, vglossyrefractsamples = 1,  vspecularreflectdepth =
 
 float vdiff_reflect_reject_thr = 10.0f, vdiff_refract_reject_thr = 10.0f, vglossy_reflect_reject_thr = 10.0f;
 float vglossy_refract_reject_thr = 10.0f;
+
 
 //-- photonmap --------
 int vmaxdepth = 8, vmaxphotondepth = 10, vshadowraycount, vdirectphotons = 1000000, vcausticphotons = 20000;
@@ -242,7 +245,13 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 
     prop.AddParameter( L"bspecularreflectdepth",    CValue::siInt4, sps,L"",L"",    vspecularreflectdepth,  0,10,2,5,  oParam ) ;
     prop.AddParameter( L"bspecularrefractdepth",    CValue::siInt4, sps,L"",L"",    vspecularrefractdepth,  0,10,2,5,  oParam ) ;
+    //--
+    prop.AddParameter( L"bdiff_reflect_reject",    CValue::siBool, sps,L"",L"",     vdiff_reflect_reject,   dft,dft,dft,dft, oParam ) ;
+    prop.AddParameter( L"bdiff_refract_reject",    CValue::siBool, sps,L"",L"",     vdiff_refract_reject,   dft,dft,dft,dft, oParam ) ; 
+    prop.AddParameter( L"bglossy_reflect_reject",  CValue::siBool, sps,L"",L"",     vglossy_reflect_reject,   dft,dft,dft,dft, oParam ) ;
+    prop.AddParameter( L"bglossy_refract_reject",  CValue::siBool, sps,L"",L"",     vglossy_refract_reject,   dft,dft,dft,dft, oParam ) ;
 
+    //--
     prop.AddParameter( L"bdiff_reflect_reject_thr",   CValue::siFloat, sps,L"",L"", vdiff_reflect_reject_thr,   0.0f,10.0f,0.0f,10.0f, oParam ) ; 
     prop.AddParameter( L"bdiff_refract_reject_thr",   CValue::siFloat, sps,L"",L"", vdiff_refract_reject_thr,   0.0f,10.0f,0.0f,10.0f, oParam ) ; 
     prop.AddParameter( L"bglossy_reflect_reject_thr", CValue::siFloat, sps,L"",L"", vglossy_reflect_reject_thr, 0.0f,10.0f,0.0f,10.0f, oParam ) ;
@@ -402,7 +411,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
         CustomProperty prop = changed.GetParent() ;
         CString   paramName = changed.GetScriptName() ;
 
-        //app.LogMessage( L"Parameter Changed: " + paramName ) ;
+        app.LogMessage( L"Parameter Changed: " + paramName ) ;
 
         update_LuXSI_values(paramName, changed, ctxt, lay);
                 
@@ -513,7 +522,6 @@ void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext c
     } else if (paramName == L"blightrrthre"){ vLightRRthre  = changed.GetValue();
     } else if (paramName == L"brrcon_prob") { vrrcon_prob   = changed.GetValue();
 
-    
     //-- distributepath
     } else if (paramName == L"bdirectsampleall")        { vdirectsampleall        = changed.GetValue();
     } else if (paramName == L"bdirectsamples")          { vdirectsamples          = changed.GetValue();
@@ -536,7 +544,12 @@ void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext c
     
     } else if (paramName == L"bspecularreflectdepth")   { vspecularreflectdepth   = changed.GetValue();
     } else if (paramName == L"bspecularrefractdepth")   { vspecularrefractdepth   = changed.GetValue();
-  
+    
+    } else if (paramName == L"bdiff_reflect_reject")    { vdiff_reflect_reject   = changed.GetValue(); 
+    } else if (paramName == L"bdiff_refract_reject")    { vdiff_refract_reject   = changed.GetValue(); 
+    } else if (paramName == L"bglossy_reflect_reject")  { vglossy_reflect_reject = changed.GetValue();
+    } else if (paramName == L"bglossy_refract_reject")  { vglossy_refract_reject = changed.GetValue();
+
     } else if (paramName == L"bdiff_reflect_reject_thr")   { vdiff_reflect_reject_thr   = changed.GetValue(); 
     } else if (paramName == L"bdiff_refract_reject_thr")   { vdiff_refract_reject_thr   = changed.GetValue(); 
     } else if (paramName == L"bglossy_reflect_reject_thr") { vglossy_reflect_reject_thr = changed.GetValue();
@@ -619,7 +632,7 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
         {
             //-- TODO;
         }
-        else if ( vpresets == 1 ) // Preview Instant Global Illumination
+        else if ( vpresets == 1 ) // Preview; Instant Global Illumination
         {
             //-- sampler; low
             vSampler = 2 ;
@@ -650,7 +663,7 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
             //-- filter / commons
             app.LogMessage(L" Parameters for render presets 1, loaded..");
         }
-        else if ( vpresets == 2 ) // Preview directlighting ( No GI )
+        else if ( vpresets == 2 ) // Preview; Directlighting ( No GI )
         {   
             //-- sampler; lowdiscrepance
             vSampler = 2 ;
@@ -664,7 +677,7 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
             //--
             app.LogMessage(L" Parameters for render presets 2, loaded..");
         }
-        else if ( vpresets == 3 ) // Preview Ex-photonmap
+        else if ( vpresets == 3 ) // Preview; Ex-photonmap
         {
             //- Sampler "lowdiscrepancy"
             vPixsampler = 5 ; //- hilbert
@@ -705,7 +718,7 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
         else if ( vpresets == 5 ) // final 2 MLT / PathTracing (ext)
         {
             vSampler = 0 ;// metro
-            vlmutationpro = 0.4f;
+            vlmutationpro = 0.4f ;
             //--
             vSurfaceInt = 1 ; // path
             vmaxdepth = 10 ;
@@ -716,22 +729,22 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
         else if ( vpresets == 6 ) // progr 1 Bidir Path Tracing (int)
         {
             vSampler = 2 ;
-            vPixsampler = 2; 
-            vPixelsamples = 1;
+            vPixsampler = 2 ; 
+            vPixelsamples = 1 ;
             //--
             vSurfaceInt = 2 ; //-- 
-            vLight_depth = 10; 
-            vEye_depth = 10; 
+            vLight_depth = 10 ; 
+            vEye_depth = 10 ; 
             //--
             app.LogMessage(L" Parameters for render presets 6; loaded..");
         }
         else if ( vpresets == 7 ) //  progr 2 Path Tracing (ext)
         {
             vSampler = 1 ;
-            vchainlength = 512;
+            vchainlength = 512 ;
             Parameter(prop.GetParameters().GetItem( L"bbasampler" )).PutValue( vbasampler = 1 );
-            vPixsampler = 2; 
-            vPixelsamples = 1;
+            vPixsampler = 2 ; 
+            vPixelsamples = 1 ;
             //-- surf
             vSurfaceInt = 1 ; // path
             vmaxdepth = 10 ;
@@ -742,8 +755,8 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
         else if ( vpresets == 8 )// bucket 1 Bidir Path Tracing (int)
         {
             vSampler = 2 ; // low
-            vPixsampler = 5; 
-            vPixelsamples = 64;
+            vPixsampler = 5 ; 
+            vPixelsamples = 64 ;
             //--
             vSurfaceInt = 0 ; // bidir
             vLight_depth = 16 ; 
@@ -777,13 +790,13 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
             
             //-- filter
             Parameter(prop.GetParameters().GetItem( L"bfilter" )).PutValue( vfilter );
-            // si filter es mitchell
+            // si filter es mitchell...
             Parameter(prop.GetParameters().GetItem( L"bxwidth" )).PutValue( vXwidth = 1.500000 );
             Parameter(prop.GetParameters().GetItem( L"bywidth" )).PutValue( vYwidth = 1.500000 );
             Parameter(prop.GetParameters().GetItem( L"bF_B" )).PutValue( vF_B = 0.3333f );
             Parameter(prop.GetParameters().GetItem( L"bF_C" )).PutValue( vF_C = 0.3333f );
             Parameter(prop.GetParameters().GetItem( L"ssample" )).PutValue( vSupers = true );
-            //--  or  gaussian ? //-- TODO;
+            //--  ...or  gaussian ? //-- TODO;
 
             //-- surface integrator
             Parameter(prop.GetParameters().GetItem( L"bsurfaceint" )).PutValue( vSurfaceInt );
@@ -802,7 +815,7 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
             Parameter(prop.GetParameters().GetItem( L"bfullsweepthreshold" )).PutValue( vfullsweepthr = 16 );
             Parameter(prop.GetParameters().GetItem( L"bskipfactor" )).PutValue( vskipfactor = 1 );
            
-        ctxt.PutArrayAttribute(L"Refresh", true); // for test
+        ctxt.PutArrayAttribute(L"Refresh", true); 
     
     } //-- end cases...
 }
@@ -1019,6 +1032,11 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
         Parameter lbdiff_refract_reject_thr = prop.GetParameters().GetItem( L"bdiff_refract_reject_thr");
         Parameter lbglossy_reflect_reject_thr = prop.GetParameters().GetItem( L"bglossy_reflect_reject_thr");
         Parameter lbglossy_refract_reject_thr = prop.GetParameters().GetItem( L"bglossy_refract_reject_thr");
+        //--
+        Parameter lbdiff_reflect_reject = prop.GetParameters().GetItem( L"bdiff_reflect_reject");
+        Parameter lbdiff_refract_reject = prop.GetParameters().GetItem( L"bdiff_refract_reject");
+        Parameter lbglossy_reflect_reject = prop.GetParameters().GetItem( L"bglossy_reflect_reject");
+        Parameter lbglossy_refract_reject = prop.GetParameters().GetItem( L"bglossy_refract_reject");
         
         //-- IGI
         Parameter lbnsets       = prop.GetParameters().GetItem( L"bnsets" );
@@ -1085,6 +1103,11 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
         lbdiff_refract_reject_thr.PutCapabilityFlag( siNotInspectable, true );
         lbglossy_reflect_reject_thr.PutCapabilityFlag( siNotInspectable, true );
         lbglossy_refract_reject_thr.PutCapabilityFlag( siNotInspectable, true );
+        //--
+        lbdiff_reflect_reject.PutCapabilityFlag( siNotInspectable, true );
+        lbdiff_refract_reject.PutCapabilityFlag( siNotInspectable, true );
+        lbglossy_reflect_reject.PutCapabilityFlag( siNotInspectable, true );
+        lbglossy_refract_reject.PutCapabilityFlag( siNotInspectable, true );
 
         //-- IGI 
         lbnsets.PutCapabilityFlag( siNotInspectable, true );
@@ -1168,6 +1191,11 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
             lbdiff_refract_reject_thr.PutCapabilityFlag( siNotInspectable, false );
             lbglossy_reflect_reject_thr.PutCapabilityFlag( siNotInspectable, false );
             lbglossy_refract_reject_thr.PutCapabilityFlag( siNotInspectable, false );
+            //--
+            lbdiff_reflect_reject.PutCapabilityFlag( siNotInspectable, false );
+            lbdiff_refract_reject.PutCapabilityFlag( siNotInspectable, false );
+            lbglossy_reflect_reject.PutCapabilityFlag( siNotInspectable, false );
+            lbglossy_refract_reject.PutCapabilityFlag( siNotInspectable, false );
 
             //--
             if ( vsexpert )
