@@ -252,10 +252,22 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.EndRow();
     lay.EndGroup();
     lay.AddGroup(L"Rejection settings");
-            lay.AddItem( L"bdiff_reflect_reject_thr", L"Diffuse reflect reject").PutLabelPercentage(80);  
-            lay.AddItem( L"bdiff_refract_reject_thr", L"Diffuse refract reject").PutLabelPercentage(80);
-            lay.AddItem( L"bglossy_reflect_reject_thr", L"Glossy reflect reject").PutLabelPercentage(80); 
-            lay.AddItem( L"bglossy_refract_reject_thr", L"Glossy refract reject").PutLabelPercentage(80);
+        lay.AddRow();
+            lay.AddItem( L"bdiff_reflect_reject", L"Diffuse reflect reject");  
+            lay.AddItem( L"bdiff_reflect_reject_thr", L"").PutAttribute(siUINoLabel, true);
+        lay.EndRow();
+        lay.AddRow();
+            lay.AddItem( L"bdiff_refract_reject", L"Diffuse refract reject");
+            lay.AddItem( L"bdiff_refract_reject_thr", L"").PutAttribute(siUINoLabel, true);
+        lay.EndRow();
+        lay.AddRow();
+            lay.AddItem( L"bglossy_reflect_reject", L"Glossy reflect reject"); 
+            lay.AddItem( L"bglossy_reflect_reject_thr", L"").PutAttribute(siUINoLabel, true);
+        lay.EndRow();
+        lay.AddRow();
+            lay.AddItem( L"bglossy_refract_reject", L"Glossy refract reject");
+            lay.AddItem( L"bglossy_refract_reject_thr", L"").PutAttribute(siUINoLabel, true);
+        lay.EndRow();
     lay.EndGroup();
 
             // Instant Global Illumination
