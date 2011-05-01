@@ -146,7 +146,7 @@ char MtAccel [3] [7] = { "qbvh", "bvh", "kdtree" }; // iter vAccel
 CRefArray aGroups;
 CStringArray aMatList,aInstanceList;
 
-CString vSun=L"", vHDRI=L"", vLuXSIPath=L"", vFileObjects=L"";
+CString vSun=L"", vHDRI=L"", vLuXSIPath=L"", vFileObjects=L"", vLux_console = L"";
 
 XSIPLUGINCALLBACK CStatus XSILoadPlugin( PluginRegistrar& in_reg )
 {
@@ -340,15 +340,20 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 //  prop.AddParameter( L"mlt",      CValue::siBool, sps,L"",L"",  vMLT,     dft,dft,dft,dft,    oParam); // unused?
     prop.AddParameter( L"resume",   CValue::siBool, sps,L"",L"",  vResume,  dft,dft,dft,dft,    oParam);
  
-    // set temp filename
-    vFileObjects = app.GetInstallationPath(siUserPath);
+    // set default filename
+    vFileObjects = app.GetInstallationPath(siProjectPath);
+    vLuXSIPath = app.GetInstallationPath(siUserAddonPath);
+    vLux_console = vLuXSIPath;
+    //--
     #ifdef __unix__
         vFileObjects += L"/tmp.lxs";
     #else
         vFileObjects += L"/tmp.lxs"; //-- also work in windows systems ?
+        vLuXSIPath += L"/LuXSI/Application/bin/luxrender.exe";
+        vLux_console += L"/LuXSI/Application/bin/luxconsole.exe";
     #endif
-
-    vLuXSIPath=readIni(); // get luxrender path out of the ini
+    //-- /Addons/LuXSI/Application/bin
+    //-- vLuXSIPath=readIni(); // get luxrender path out of the ini
 
     prop.AddParameter( L"fObjects", CValue::siString, sps, L"", L"", vFileObjects, oParam ) ;
 
@@ -1855,7 +1860,7 @@ void writeLuxsiLight(X3DObject o){
             CMatrix4 sunTransMat = o.GetKinematics().GetLocal().GetTransform().GetMatrix4();
             f << "\nLightSource \"sunsky\"\n";
             f << "  \"integer nsamples\" [4]\n";
-            f << "  \"vector sundir\" [ "<< (float)sunTransMat.GetValue(2,0) << " " << (float)sunTransMat.GetValue(2,1) << " " << (float)sunTransMat.GetValue(2,2) << " ]\n";
+            f << "  \"vector sundir\" [ "<< sunTransMat.GetValue(2,0) << " " << (float)sunTransMat.GetValue(2,1) << " " << (float)sunTransMat.GetValue(2,2) << " ]\n";
             f << "  \"float gain\" [" << (float)s.GetParameterValue(L"intensity") << "]\n";
         }
 
@@ -2241,10 +2246,10 @@ void writeLuxsiShader(){
 
         f << "\n MakeNamedMaterial \""<< m.GetName().GetAsciiString() << "\" \n";
         f << "  \"string type\" [\""<< shaderType.GetAsciiString() <<"\"]\n";
-        if (shaderTexture !=L""){
-        f << shaderTexture.GetAsciiString();
-        } else {
         f << shaderString.GetAsciiString();
+        if (shaderTexture !=L"")
+        {
+        f << shaderTexture.GetAsciiString();
         }
 
     }
@@ -2684,7 +2689,6 @@ CString readIni(){
    load.close();
    return data;
 }
-
 //--
 void write_header_files(){
     //-- commons header for files .lxm and .lxo
@@ -2704,8 +2708,15 @@ void luxsi_write(){
     CValue retVal2="";
 
     // only write settings
+    if ( vFileObjects == L"" )
+    {
+        CString def_lxs_file = app.GetInstallationPath(siProjectPath);
+        def_lxs_file += L"/def.lxs";
+        app.LogMessage( L"File path export is empty, used default path: "+ def_lxs_file );
+        vFileObjects = def_lxs_file; 
+    }
 
-    if (vFileObjects!=L""){
+    if (vFileObjects != L""){
 
         CRefArray array,aObj,aLight,aCam,aSurfaces,aClouds,aInstance;
         sLight.str("");
@@ -2909,33 +2920,41 @@ void loader(const char szArgs[]){
     }
 #endif
 //--
-void luxsi_execute(){
-
-    if (vLuXSIPath!=L"")
+void luxsi_execute()
+{
+    //-- make default path
+    if ( vLuXSIPath == L"" )
     {
-        if (vExportDone)
-        {
-            app.LogMessage(vLuXSIPath +L" " + vFileObjects );
+        CString def_exe_path = app.GetInstallationPath(siUserAddonPath);
+        def_exe_path += L"/LuXSI/Application/bin/luxrender.exe";
+        app.LogMessage(L"Path empty, used default path: "+ CString(def_exe_path));
+        vLuXSIPath = def_exe_path;
+    }
+    //--
+    if (vExportDone)
+    {
+        #ifdef __unix__
+                pid_t pid = fork();
+				if( 0 == pid ) 
+                {
+                     system ( ( vLuXSIPath +" \""+ vFileObjects).GetAsciiString());
+                     exit(0);
+                }
 
-            #ifdef __unix__
-                 //if(!fork()) {
-                     app.LogMessage(L"hier");
-                     system("kedit");
-                 //}
-
-                //  exit(0);
-                //}
-
-            #else
-                // win
+        #else
+            // windows
+            if (vRmode == 1) //-- console
+            {
+                //vLux_console += // added parameters
+                vLuXSIPath = vLux_console;
+            }
                 CString exec = vLuXSIPath +" \""+ vFileObjects + "\"";
                 app.LogMessage(exec);
                 loader(exec.GetAsciiString()); // mod. for execute into Windows
-            #endif
-        }
+        #endif
     }
     else
     {
-        app.LogMessage(L"Select the Luxrender path",siErrorMsg );
+        app.LogMessage(L" Not data file exported, retry exporting scene, before render ",siErrorMsg );
     }
 }
