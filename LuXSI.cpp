@@ -795,7 +795,7 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
             
             //-- filter
             Parameter(prop.GetParameters().GetItem( L"bfilter" )).PutValue( vfilter );
-            // si filter es mitchell...
+            //-- if filter is mitchell...
             Parameter(prop.GetParameters().GetItem( L"bxwidth" )).PutValue( vXwidth = 1.500000 );
             Parameter(prop.GetParameters().GetItem( L"bywidth" )).PutValue( vYwidth = 1.500000 );
             Parameter(prop.GetParameters().GetItem( L"bF_B" )).PutValue( vF_B = 0.3333f );
@@ -834,9 +834,9 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
     //-- convention names;
     //-- prefix l; for Parameter ( logic )
 
-        //------------------------------------//
+        //------------------------------------
         if ( changed.GetName() == L"save_tga")
-        //------------------------------------//
+        //------------------------------------
         {
             Parameter lmode_rtga = prop.GetParameters().GetItem( L"mode_rtga" );
             Parameter ltga_gamut = prop.GetParameters().GetItem( L"tga_gamut" );
@@ -845,18 +845,18 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
             ltga_gamut.PutCapabilityFlag( siNotInspectable, changed.GetValue() == false );
                 ctxt.PutAttribute(L"Refresh", true);
         }
-        //------------------------------------//
+        //------------------------------------
         if ( changed.GetName() == L"save_exr")
-        //------------------------------------//
+        //------------------------------------
         {
             Parameter lmode_Znorm = prop.GetParameters().GetItem( L"mode_Znorm" );
             //--
             lmode_Znorm.PutCapabilityFlag( siNotInspectable, changed.GetValue() == false );
                 ctxt.PutAttribute(L"Refresh", true);
         }
-        //------------------------------------//
+        //------------------------------------
         if ( changed.GetName() == L"save_png")
-        //------------------------------------//
+        //------------------------------------
         {
             Parameter lmode_rpng    = prop.GetParameters().GetItem( L"mode_rpng" ) ;
             Parameter lsave_png_16  = prop.GetParameters().GetItem( L"save_png_16" ) ;
@@ -868,11 +868,11 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
                 ctxt.PutAttribute(L"Refresh", true);
         }
 
-    //-- for all events -------------------------//
+    //-- for all events -------------------------
     if (( changed.GetName() == L"bsampler") ||
          ( changed.GetName() == L"bexpert") ||
           ( changed.GetName() == L"bbasampler"))
-    //-------------------------------------------//
+    //-------------------------------------------
     {
         vSampler = prop.GetParameterValue(L"bsampler");
         vExpert = prop.GetParameterValue(L"bexpert");
@@ -880,7 +880,7 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
 
         //-- create list of parameters
         Parameter lmutation     = prop.GetParameters().GetItem( L"bmutation" );
-        Parameter lbmaxrej       = prop.GetParameters().GetItem( L"bmaxrej" );
+        Parameter lbmaxrej      = prop.GetParameters().GetItem( L"bmaxrej" );
         Parameter lbuservarian  = prop.GetParameters().GetItem( L"buservarian" );
         Parameter lchainlength  = prop.GetParameters().GetItem( L"bchainlength" );
         Parameter lbpixsampler  = prop.GetParameters().GetItem( L"bpixsampler" );
@@ -1534,9 +1534,9 @@ void writeLuxsiBasics(){
         app.LogMessage( L"Not Sampler for exporter",siErrorMsg );
     }
 
-    //-----------------------------------------------------------//
+    //-------------------------------------------------------------
     f << "\nSurfaceIntegrator \""<< MtSurf[ vSurfaceInt ] <<"\"\n";
-    //-----------------------------------------------------------//
+    //-------------------------------------------------------------
     if ( vSurfaceInt == 0 )  //-- bidi
     {
         f << "  \"integer eyedepth\" ["<< vEye_depth <<"]\n";
@@ -1547,7 +1547,7 @@ void writeLuxsiBasics(){
             f << "  \"float lightrrthreshold\" ["<< vLightRRthre <<"]\n"; // TODO;
         }
     }
-    else if ( vSurfaceInt == 1 )// path
+    else if ( vSurfaceInt == 1 )//-- path
     {
         f << "  \"integer maxdepth\" ["<< vmaxdepth <<"]\n";
         f << "  \"float rrcontinueprob\" [0.649999976158142]\n"; // TODO:
@@ -1558,7 +1558,7 @@ void writeLuxsiBasics(){
             f << "  \"string lightstrategy\" [\""<< MtlightST[ vLight_str ] <<"\"]\n";
         }
     }
-    else if ( vSurfaceInt == 2 ) // directlighting
+    else if ( vSurfaceInt == 2 ) //-- directlighting
     {
         f << "  \"integer maxdepth\" ["<< vmaxdepth <<"]\n";
         if ( vsexpert )
@@ -1641,9 +1641,9 @@ void writeLuxsiBasics(){
         
     }
 
-    //--------------------------------------------------//
+    //--------------------------------------------------
     f << "\nAccelerator \""<< MtAccel[vAccel] <<"\"\n";
-    //--------------------------------------------------//
+    //--------------------------------------------------
     if (( vAccel == 0 ) || ( vExpert )) //-- qbvh
     {
         f << "  \"integer maxprimsperleaf\" ["<< vmaxprimsperleaf <<"]\n";
@@ -1743,7 +1743,6 @@ void writeLuxsiCam(X3DObject o){
     vnegZ.ScaleInPlace((double) c.GetParameterValue(L"interestdist"));
     vnegZ.AddInPlace(c.GetKinematics().GetGlobal().GetTransform().GetTranslation());
 
-
     CTransformation localTransformation = o2.GetKinematics().GetLocal().GetTransform();
     KinematicState  gs = o2.GetKinematics().GetGlobal();
     CTransformation gt = gs.GetTransform();
@@ -1752,55 +1751,72 @@ void writeLuxsiCam(X3DObject o){
 
     X3DObject ci(o.GetChildren()[1]);
     CValue vCType=L"pinhole";
-    CValue vFdist=0.0, vLensr=0.0, vFocal=0;
+    float vFdist = 0.0, vLensr = 0.0, vFocal = 0;
 
     CRefArray cShaders = c.GetShaders();
-    for (int i=0;i<cShaders.GetCount();i++){
+    for (int i=0;i<cShaders.GetCount();i++)
+    {
         CString vCSID((Shader(cShaders[i]).GetProgID()).Split(L".")[1]);
 
-        if (vCSID==L"sib_dof") {
+        if (vCSID==L"sib_dof") 
+        {
             // Depth_of_field shader found
-            vLensr=Shader(cShaders[i]).GetParameterValue(L"strenght");
-            vFdist=Shader(cShaders[i]).GetParameterValue(L"auto_focal_distance");
+            vLensr = Shader(cShaders[i]).GetParameterValue(L"strenght");
+            vFdist = Shader(cShaders[i]).GetParameterValue(L"auto_focal_distance");
         }
     }
 
     KinematicState  ci_gs = ci.GetKinematics().GetGlobal();
     CTransformation ci_gt = ci_gs.GetTransform();
 
-
     CVector3 tranlation(0,1,0);
     CTransformation target=o2.GetKinematics().GetGlobal().GetTransform().AddLocalTranslation(tranlation);
     CVector3 up(target.GetTranslation());
     float vfov;
-    if ((int)c.GetParameterValue(CString(L"fovtype"))==1) {
+    if ((int)c.GetParameterValue(CString(L"fovtype"))==1) 
+    {
         // calculate the proper FOV (horizontal -> vertical)
-        float hfov = (float)c.GetParameterValue(CString(L"fov"));
-        vfov=(float) (2* atan(1/(float)c.GetParameterValue(CString(L"aspect")) * tan(hfov/2*PI/180))*180/PI);
-    } else {
+        float hfov = (float)c.GetParameterValue(L"fov");
+        vfov=(float) (2* atan(1/(float)c.GetParameterValue(L"aspect") * tan(hfov/2*PI/180))*180/PI);
+    } 
+    else
+    {
         // keep vertical FOV
-        vfov=(float)c.GetParameterValue(CString(L"fov"));
+        vfov = (float)c.GetParameterValue(L"fov");
     }
     // lookat: posX posY posZ targetX targetY targetZ upX upY upZ
     double x,y,z;
     vnegZ.Get( x,y,z );
-
-    //----/ new feature; ortographic camera /---->
-    CString vProj=L"";
-    if (c.GetParameterValue(CString(L"proj"))==1) {vProj=L"perspective" ;}
-    else { vProj=L"orthographic";}
-    //----/ end /---->
-
     CVector3 new_pos = gt.GetTranslation();
     CVector3 new_pos_ci = ci_gt.GetTranslation();
+
+    //--
+    //char vcam_type [2][13]={"orthographic", "perspective"};
+    int camera_proj = c.GetParameterValue(L"proj");
     //--
     f << "LookAt " << new_pos.GetX() << " " << new_pos.GetY() << " " << new_pos.GetZ() << "\n";
     f << "       "<< new_pos_ci.GetX() << " " << new_pos_ci.GetY() << " " << new_pos_ci.GetZ() <<"\n";
     f << "       0 1 0 \n"; //<< CString(up.GetZ()).GetAsciiString() << "\n"; // not working correct
-    f << "Camera \"" << vProj.GetAsciiString() <<"\" \n \"float fov\" [" << vfov << "] \n";
-    f << "  \"float lensradius\" ["<< CString(vLensr).GetAsciiString()  <<"] \n";
-    f << "  \"float focaldistance\" ["<< CString(vFdist).GetAsciiString() <<"]";
-    f << "\n\n";
+        
+    if ( camera_proj == 1 )
+    {
+        f << "Camera \"perspective\" \n \"float fov\" [" << vfov << "] \n";
+        f << "  \"float lensradius\" ["<< CString(vLensr).GetAsciiString()  <<"] \n";
+        f << "  \"float focaldistance\" ["<< CString(vFdist).GetAsciiString() <<"]";
+        f << "\n\n";
+    }
+    else
+    {
+        //-- orthographic
+       /*
+        f << "Camera \"orthographic\" \n";
+        "float screenwindow" [-3.657142877578735 3.657142877578735 -2.057142868638039 2.057142868638039]
+	    "bool autofocus" ["false"]
+	    "float shutteropen" [0.000000000000000]
+	    "float shutterclose" [0.041666666666667]
+	    f << "  \"float lensradius\" ["<< CString(vLensr).GetAsciiString()  <<"] \n";
+        */
+    }
 }
 
 //--
@@ -2806,8 +2822,7 @@ void luxsi_write(){
         else
         {
 
-//----/ create files /------------->
-
+            //-- write files
             CString vFileLXM = L"", vFileLXO = L"";
             CString vInput_FileName = vFileObjects.GetAsciiString();
             int Loc = (int)vInput_FileName.ReverseFindString(".");
@@ -2940,7 +2955,6 @@ void luxsi_execute()
                      system ( ( vLuXSIPath +" \""+ vFileObjects).GetAsciiString());
                      exit(0);
                 }
-
         #else
             // windows
             if (vRmode == 1) //-- console
