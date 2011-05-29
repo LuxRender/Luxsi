@@ -75,8 +75,8 @@ float vglossy_refract_reject_thr = 10.0f;
 
 
 //-- photonmap --------
-int vmaxdepth = 8, vmaxphotondepth = 10, vshadowraycount, vdirectphotons = 1000000, vcausticphotons = 20000;
-int vindirectphotons = 20000, vradiancephotons = 20000, vnphotonsused = 50, vfinalgathersamples = 32, vrenderingmode=0;
+int vmaxdepth = 8, vmaxphotondepth = 10, vshadowraycount = 0, vdirectphotons = 1000000, vcausticphotons = 20000;
+int vindirectphotons = 200000, vradiancephotons = 20000, vnphotonsused = 50, vfinalgathersamples = 32, vrenderingmode=0;
 float vmaxphotondist = 0.10f, vgatherangle = 10.0f, vdistancethreshold = 0.75f;
 bool vfinalgather = false, vdbg_direct = false, vdbg_radiancemap = false, vdbg_indircaustic = false;
 bool vdbg_indirdiffuse = false, vdbg_indirspecular = false;
@@ -269,11 +269,11 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     prop.AddParameter( L"bshadowraycount",           CValue::siInt4, sps,L"",L"",  vshadowraycount,  0,10,0,10,  oParam ) ;
     prop.AddParameter( L"bmaxphotondepth",           CValue::siInt4, sps,L"",L"",  vmaxphotondepth,  0,10,0,10,  oParam ) ;
     prop.AddParameter( L"bmaxphotondist",            CValue::siFloat, sps,L"",L"", vmaxphotondist,   0.0f,1024.0f,0.0f,1024.0, oParam );
-    prop.AddParameter( L"bnphotonsused",             CValue::siInt4, sps,L"",L"",  vnphotonsused,       0,10,0,10,  oParam ) ;
-    prop.AddParameter( L"bindirectphotons",          CValue::siInt4, sps,L"",L"",  vindirectphotons,    0,10,0,10,  oParam ) ;
-    prop.AddParameter( L"bdirectphotons",            CValue::siInt4, sps,L"",L"",  vdirectphotons,      0,10,0,10,  oParam ) ;
-    prop.AddParameter( L"bcausticphotons",           CValue::siInt4, sps,L"",L"",  vcausticphotons,     0,10,0,10,  oParam ) ;
-    prop.AddParameter( L"bradiancephotons",          CValue::siInt4, sps,L"",L"",  vradiancephotons,    0,10,0,10,  oParam ) ;
+    prop.AddParameter( L"bnphotonsused",             CValue::siInt4, sps,L"",L"",  vnphotonsused,       0,50,0,50,  oParam ) ;
+    prop.AddParameter( L"bindirectphotons",          CValue::siInt4, sps,L"",L"",  vindirectphotons,    0,200000,0,200000,  oParam ) ;
+    prop.AddParameter( L"bdirectphotons",            CValue::siInt4, sps,L"",L"",  vdirectphotons,      0,10000000,0,10000000,  oParam ) ;
+    prop.AddParameter( L"bcausticphotons",           CValue::siInt4, sps,L"",L"",  vcausticphotons,     0,20000,0,20000,  oParam ) ;
+    prop.AddParameter( L"bradiancephotons",          CValue::siInt4, sps,L"",L"",  vradiancephotons,    0,200000,0,200000,  oParam ) ;
     prop.AddParameter( L"bfinalgather",              CValue::siBool, sps,L"",L"",  vfinalgather,        dft,dft,dft,dft, oParam );
     prop.AddParameter( L"bfinalgathersamples",       CValue::siInt4, sps,L"",L"",  vfinalgathersamples, 0,1024,0,1024, oParam );
     prop.AddParameter( L"bgatherangle",              CValue::siFloat, sps,L"",L"", vgatherangle,        0.0f,360.0f,0.0f,360.0, oParam );
@@ -321,7 +321,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     prop.AddParameter( L"bengine",  CValue::siInt4, sps,L"",L"", vEngine,       0,10,0,10,  oParam ) ;
     prop.AddParameter( L"bautode",  CValue::siBool, sps,L"",L"", vAutoTh,       dft,dft,dft,dft,    oParam);
     prop.AddParameter( L"bthreads", CValue::siInt4, sps,L"",L"", vThreads,      0,10,0,10,  oParam ) ;
-    //-- Accelerator vacexpert
+    //-- Accelerator 
     prop.AddParameter( L"bAccel",              CValue::siInt4, sps,L"",L"",  vAccel,              0,10,0,10,  oParam ) ;
     prop.AddParameter( L"bacexpert",           CValue::siBool, sps,L"",L"",  vacexpert,       dft,dft,dft,dft, oParam) ;
     prop.AddParameter( L"bmaxprimsperleaf",    CValue::siInt4, sps,L"",L"",  vmaxprimsperleaf,    0,10,0,10,  oParam ) ;
@@ -696,9 +696,9 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
             vmaxdepth = 5 ;
             Parameter(prop.GetParameters().GetItem( L"bmaxphotondist" )).PutValue( vmaxphotondist = 0.100000f );
             Parameter(prop.GetParameters().GetItem( L"bnphotonsused" )).PutValue( vnphotonsused = 50 );
-            Parameter(prop.GetParameters().GetItem( L"bindirectphotons" )).PutValue( vindirectphotons = 20000 );
-            Parameter(prop.GetParameters().GetItem( L"bdirectphotons" )).PutValue( vdirectphotons = 20000 );
-            Parameter(prop.GetParameters().GetItem( L"bcausticphotons" )).PutValue( vcausticphotons = 0 );
+            Parameter(prop.GetParameters().GetItem( L"bindirectphotons" )).PutValue( vindirectphotons = 200000 );
+            Parameter(prop.GetParameters().GetItem( L"bdirectphotons" )).PutValue( vdirectphotons = 1000000 );
+            Parameter(prop.GetParameters().GetItem( L"bcausticphotons" )).PutValue( vcausticphotons = 20000 );
             Parameter(prop.GetParameters().GetItem( L"bradiancephotons" )).PutValue( vradiancephotons = 20000 );
             Parameter(prop.GetParameters().GetItem( L"bfinalgather" )).PutValue( vfinalgather = false );
 
@@ -718,7 +718,7 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
             vLight_depth = 32 ; 
             vEye_depth = 32 ;
             //--
-            app.LogMessage(L" Parameters for render presets 4; loaded..");
+            app.LogMessage(L"Parameters for render presets 4; loaded..");
         }
         else if ( vpresets == 5 ) // final 2 MLT / PathTracing (ext)
         {
@@ -729,7 +729,7 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
             vmaxdepth = 10 ;
             Parameter(prop.GetParameters().GetItem( L"binc_env" )).PutValue( vInc_env = true ) ;
             //--
-            app.LogMessage(L" Parameters for render presets 5; loaded..");
+            app.LogMessage(L"Parameters for render presets 5; loaded..");
         }
         else if ( vpresets == 6 ) // progr 1 Bidir Path Tracing (int)
         {
@@ -741,7 +741,7 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
             vLight_depth = 10 ; 
             vEye_depth = 10 ; 
             //--
-            app.LogMessage(L" Parameters for render presets 6; loaded..");
+            app.LogMessage(L"Parameters for render presets 6; loaded..");
         }
         else if ( vpresets == 7 ) //  progr 2 Path Tracing (ext)
         {
@@ -1490,9 +1490,9 @@ void writeLuxsiBasics(){
         }
         //-- triangle -- commons values
     }
-    //-------------------------------------------------//
+    //-------------------------------------------------
     f << "\nSampler \""<< aSampler[vSampler] <<"\"\n";
-    //-- for more options, used if else mode ----------//
+    //-------------------------------------------------
 
     if ( vSampler == 0 ) //-- sampler; metropolis
     {
@@ -1812,8 +1812,8 @@ void writeLuxsiCam(X3DObject o){
         f << "Camera \"orthographic\" \n";
         "float screenwindow" [-3.657142877578735 3.657142877578735 -2.057142868638039 2.057142868638039]
 	    "bool autofocus" ["false"]
-	    "float shutteropen" [0.000000000000000]
-	    "float shutterclose" [0.041666666666667]
+	    "float shutteropen" [0.00000]
+	    "float shutterclose" [0.0416]
 	    f << "  \"float lensradius\" ["<< CString(vLensr).GetAsciiString()  <<"] \n";
         */
     }
@@ -1998,20 +1998,18 @@ void writeLuxsiShader(){
             shaderType=L"mirror";
             shaderString += L"  \"color Kr\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
             vIsSet=true;
-        } else if (vMatID==L"lux_metal") {
-            /*
-            CValueArray aMetal(5);
-            aMetal[0]="amorphous carbon";
-            aMetal[1]="silver";
-            aMetal[2]="gold";
-            aMetal[3]="copper";
-            aMetal[4]="aluminium";
-            f << "Texture \"name-"<< sname << "\" \"string\" \"constant\" \"string value\" ["<<  aMetal[s.GetParameter(L"string").GetValue()].GetAsText().GetAsciiString()<<"]\n";
-            f << "Texture \"uroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" [" << (float)s.GetParameter(L"roughness").GetValue() << "]\n";
-            f << "Texture \"vroughness-"<< sname << "\" \"float\" \"constant\" \"float value\" [" << (float)s.GetParameter(L"roughness").GetValue() << "]\n";
+        } else if (vMatID==L"lux_metal") 
+        {
+            char ametal [5][17] = {"amorphous carbon", "silver", "gold", "copper", "aluminium"}; 
+            int nmetal = s.GetParameterValue(L"mname");
+            //--
+            shaderString += L"  \"float uroughness\" ["+ CString((float)s.GetParameterValue(L"roughness")) + L"]\n";
+            shaderString += L"  \"float vroughness\" ["+ CString((float)s.GetParameterValue(L"roughness")) + L"]\n";
+            shaderString += L"  \"string name\" [\""+ CString(ametal[nmetal]) + L"\"]\n";
+            shaderString += L"  \"string type\" [\"metal\"] \n";
             ret=9;
             vIsSet=true;
-            */
+            
         } else if (vMatID==L"lux_shinymetal") {
 
             shaderType=L"shinymetal";
@@ -2066,7 +2064,7 @@ void writeLuxsiShader(){
     }
 
         if (!vIsSet) {
-            if ((float)s.GetParameter(L"transparency").GetValue()>0.0f) {
+            if ( (float)s.GetParameterValue(L"transparency") > 0.0f ) {
                 float ior=0.0f;
                 // glass mia-arch shader
                 s.GetColorParameterValue(L"refr_color",red,green,blue,alpha );
@@ -2080,7 +2078,7 @@ void writeLuxsiShader(){
                 if ((float)s.GetParameter(L"refr_gloss").GetValue()<1 ) {
                     shaderType=L"roughglass";
                     shaderString += L"  \"float uroughness\" ["+ CString(1.0f-(float)s.GetParameterValue(L"refr_gloss"))+ L"]";
-                    shaderString += L"  \"float vroughness\" ["+CString(1.0f-(float)s.GetParameterValue(L"refr_gloss"))+ L"]\n";
+                    shaderString += L"  \"float vroughness\" ["+ CString(1.0f-(float)s.GetParameterValue(L"refr_gloss"))+ L"]\n";
                 }
                 vIsSet=true;
             }
@@ -2133,12 +2131,12 @@ void writeLuxsiShader(){
             // Material Stuff
             if (vMatID==L"mi_car_paint_phen") {
                 // car paint
-                /*
+              //  /*
                 float spr,spg,spb,spa,spr2,spg2,spb2,spa2,r,g,b,a;
                 s.GetColorParameterValue(L"spec",spr,spg,spb,spa );
                 s.GetColorParameterValue(L"spec_sec",spr2,spg2,spb2,spa2 );
                 s.GetColorParameterValue(L"base_color",r,g,b,a );
-                f << "Texture \"Kd-" << sname << "\" \"color\" \"constant\" \"color value\" ["<< r << " " << g << " " << b << "]\n";
+              /*  shaderString = L"Texture \"Kd-"+ sname + "\" \"color\" \"constant\" \"color value\" ["+ CString(r) + " "+ CString(g) + " "+ CString(b) + "]\n";
                 f << "Texture \"Ks1-" << sname << "\" \"color\" \"constant\" \"color value\" ["<< spr <<" "<< spg <<" "<<spb<<"]\n";
                 f << "Texture \"Ks2-"<< sname <<"\" \"color\" \"constant\" \"color value\" ["<<spr2<<" "<<spg2<<" "<<spb2<<"]\n";
                 f << "Texture \"Ks3-"<< sname <<"\" \"color\" \"constant\" \"color value\" ["<<spr2<<" "<<spg2<<" "<<spb2<<"]\n";
@@ -2170,7 +2168,9 @@ void writeLuxsiShader(){
                     shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
                     shaderString += L"  \"float sigma\" [" + CString(mRough) + L"]\n";
                 }
-            } else if (vMatID==L"material-phong") {
+            }
+            else if (vMatID==L"material-phong") 
+            {
                 shaderType=L"glossy";
                 s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
                 shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]";
@@ -2178,29 +2178,39 @@ void writeLuxsiShader(){
                 shaderString += L"  \"float vroughness\" ["+CString((float)(s.GetParameterValue(L"shiny"))/10)+L"]\n";
                 s.GetColorParameterValue(L"specular",red,green,blue,alpha );
                 shaderString += L"  \"color Ks\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-            }  else if (vMatID==L"material-lambert"){
+            } 
+            else if (vMatID==L"material-lambert")
+            {
                 shaderType=L"matte";
                 s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
                 shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
                 shaderString += L"  \"float sigma\" [0]\n";
-            } else if (vMatID==L"material-ward"){
+            } 
+            else if (vMatID==L"material-ward")
+            {
                 s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
                 shaderType=L"glossy";
                 shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]";
                 shaderString += L"  \"float uroughness\" ["+ CString((float)(s.GetParameterValue(L"shiny_u"))/10)+ L"]";
                 shaderString += L"  \"float vroughness\" ["+ CString((float)(s.GetParameterValue(L"shiny_v"))/10)+ L"]\n";
                 shaderString += L"  \"color Ks\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-            } else if (vMatID==L"material-constant"){
+            } 
+            else if (vMatID==L"material-constant")
+            {
                 s.GetColorParameterValue(L"color",red,green,blue,alpha );
                 shaderType=L"matte";
                 shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
                 shaderString += L"  \"float sigma\" [0]\n";
-            } else if (vMatID==L"material-strauss"){
+            } 
+            else if (vMatID==L"material-strauss")
+            {
                 s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
                 shaderType=L"matte";
                 shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
                 shaderString += L"  \"float sigma\" [0]\n";
-            } else {
+            } 
+            else 
+            {
                 // fall back shader
                 shaderType=L"matte";
                 shaderString += L"  \"color Kd\" [0.7 0.7 0.7]\n";
@@ -2580,7 +2590,6 @@ int writeLuxsiObj(X3DObject o, CString vType){
 
     return 0;
 }
-
 //--
 int writeLuxsiCloud(X3DObject obj){
     //
@@ -2637,8 +2646,6 @@ int writeLuxsiCloud(X3DObject obj){
 
     return 0;
 }
-
-
 //--
 int writeLuxsiInstance(X3DObject o){
     // instance
@@ -2706,7 +2713,8 @@ CString readIni(){
    return data;
 }
 //--
-void write_header_files(){
+void write_header_files()
+{
     //-- commons header for files .lxm and .lxo
     f <<"\n# File created by Luxrender Exporter for Softimage; Luxsi. \n";
     f <<"# Copyright (C) 2010  Michael Gangolf \n";
