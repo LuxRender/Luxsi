@@ -1,5 +1,6 @@
 /*
-LuXSI - Softimage XSI Export plug-in for the LuxRender (http://www.luxrender.org) renderer
+LuXSI - Autodesk(c) Softimage(c) XSI Export addon for the LuxRender  Renderer
+(http://www.luxrender.org)
 
 Copyright (C) 2010  Michael Gangolf
 
@@ -138,9 +139,10 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         //--
         lay.AddItem(L"fLuxPath",L"Path to Luxrender",siControlFilePath);
         PPGItem lpath = lay.GetItem( L"fLuxPath" );
-            lpath.PutAttribute( siUIOpenFile, 1 ) ;
-            lpath.PutAttribute( siUIFileMustExist, 1 ) ;
-            lpath.PutAttribute( siControlFilePath , "test" ) ;
+            lpath.PutAttribute( siUIFileFilter, L"LuxRender bin|*.exe" ) ;
+        //    lpath.PutAttribute( siUIOpenFile, 1 ) ;
+        //    lpath.PutAttribute( siUIFileMustExist, 1 ) ;
+        //    lpath.PutAttribute( siControlFilePath , "test" ) ;
         //--
 
         lay.AddRow();
