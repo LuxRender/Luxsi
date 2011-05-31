@@ -1762,7 +1762,7 @@ void writeLuxsiLight(X3DObject o){
         f << "  \"point from\" [" << (float)translation.GetX() << " " << (float)translation.GetY() << " "  << (float)translation.GetZ()  << "] \n";
         f << "  \"point to\" ["<< (float)intPos.GetX() << " " << (float)intPos.GetY() << " "<< (float)intPos.GetZ() << "]\n";
         f << "  \"float coneangle\" [" << (float)o.GetParameterValue((L"LightCone")) << "]\n";
-        f << "  \"float conedeltaangle\" [" << ((float)o.GetParameterValue(L"LightCone")- (float)s.GetParameter(L"spread").GetValue() ) << "]\n";
+        f << "  \"float conedeltaangle\" [" << ((float)o.GetParameterValue(L"LightCone")- (float)s.GetParameterValue(L"spread")) << "]\n";
         f << "  \"color \" [" << a << "  " << b << "  " << c << "] \"float gain\" ["  << (float)s.GetParameterValue(L"intensity") << "]\n";
 
     } else if  (myOGLLight.GetType()==siLightInfinite ) {
@@ -2030,9 +2030,10 @@ void writeLuxsiShader(){
 
 
             // Material Stuff
-            if (vMatID==L"mi_car_paint_phen") {
+            if (vMatID==L"mi_car_paint_phen") 
+            {
                 // car paint
-              //  /*
+                //  /*
                 float spr,spg,spb,spa,spr2,spg2,spb2,spa2,r,g,b,a;
                 s.GetColorParameterValue(L"spec",spr,spg,spb,spa );
                 s.GetColorParameterValue(L"spec_sec",spr2,spg2,spb2,spa2 );
@@ -2049,7 +2050,9 @@ void writeLuxsiShader(){
                 f << "Texture \"M3-" << sname << "\" \"float\" \"constant\" \"float value\" [0.020]\n";
                 ret=6; // carpaint
                 */
-            } else if (vMatID==L"mia_material_phen") {
+            } 
+            else if (vMatID==L"mia_material_phen") 
+            {
                 // arch vis
                 s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
                 s.GetColorParameterValue(L"refl_color",sp_red,sp_green,sp_blue,sp_alpha );
@@ -2192,307 +2195,160 @@ int writeLuxsiObj(X3DObject o, CString vType){
     CValueArray fooArgs(1) ;
     fooArgs[0] = L"" ;
     CValue retVal=false ;
-    CDoubleArray point_count;
-    CFloatArray normals;
-    CLongArray tri_count,nod,out;
     bool vIsMeshLight=false;
     bool vIsSet=false;
     bool vText=false,vIsSubD=false;
     bool vIsMod=false;
 
     Geometry g(o.GetActivePrimitive().GetGeometry()) ;
-    CTriangleRefArray t( g.GetTriangles() );
     CRefArray mats(o.GetMaterials()); // Array of all materials of the object
-    Material m=mats[0];
+    Material m = mats[0];
     CRefArray shad(m.GetShaders()); // Array of all shaders attached to the material [e.g. phong]
     Shader s(shad[0]);
     CGeometryAccessor ga;
-    CValue vObjW,vObjType,vObjSh2,vObjSh3,vObjSh;
     CString vUV=L"",vNormals=L"",vTris=L"",vMod=L"",vPoints=L"";
-    CFacetRefArray facets( g.GetFacets() );
-
-    //----//----------->
-    CGeometryAccessor in_ga;
-    CString wFaceIdx;
-    CString wVertex;
-    CString wNorVect;
-    CString wNorIdx;
-    CString wUvVect;
-    //----//----------->
-
-    //LONG vSubDValue=0;
-    LONG subdLevel=0; // my code
+    
+    LONG subdLevel=0;
 
     Property geopr=o.GetProperties().GetItem(L"Geometry Approximation");
-    if ((int)geopr.GetParameterValue(L"gapproxmordrsl")>0 || (int)geopr.GetParameterValue(L"gapproxmosl")>0) {
+    if ((int)geopr.GetParameterValue(L"gapproxmordrsl") > 0 ) 
+    {
         vIsSubD=true;
-        if ((int)geopr.GetParameterValue(L"gapproxmordrsl")>0) {//
-            subdLevel=(int)geopr.GetParameterValue(L"gapproxmordrsl");// modif..
-        } else {
-            subdLevel=(int)geopr.GetParameterValue(L"gapproxmosl");//
-        }
-    } else {
-        vIsSubD=false;
+        subdLevel = (int)geopr.GetParameterValue(L"gapproxmordrsl"); //-- only render, ignore if is for display
     }
-    //----/ my modifications /------>
-    siConstructionMode constmode = (siConstructionModeModeling);
-    siSubdivisionRuleType subdmode = (siCatmullClark);
-    //----/ added /------>
-
-    ga = PolygonMesh(g).GetGeometryAccessor();
-    ga.GetVertexPositions(point_count);
-    ga.GetTriangleVertexIndices(tri_count);
-    ga.GetTriangleNodeIndices(nod);
-    ga.GetNodeNormals(normals);
-
-    CLongArray pvCount;
-    CLongArray vIndices;
-
-    ga.GetTriangleNodeIndices(vIndices);
-    ga.GetPolygonVerticesCount(pvCount);
-
-    long nPolyCount = ga.GetPolygonCount();
-
+    else
+    {
+        vIsSubD=false; 
+    }
+    //--
     CTransformation localTransformation = ga.GetTransform();
     KinematicState  gs = o.GetKinematics().GetLocal();
     CTransformation gt = gs.GetTransform();
     CMatrix4 mat4(gt.GetMatrix4());
-
-    CVector3 axis;
-    double rot = gt.GetRotationAxisAngle(axis);
-    //----/ my code for subd. meshes /-------------->
-// implementado del ejemplo del XSISDK, import-export
-
-//----//write polygon face_indices -gettrianglecount//--------->
-    in_ga = PolygonMesh(g).GetGeometryAccessor(constmode, subdmode, subdLevel);
-    CLongArray triVtxIdxArray;
-    in_ga.GetTriangleVertexIndices(triVtxIdxArray);
-        CLongArray triSizeArray(in_ga.GetTriangleCount());
-    //----/ triangulate polygons /----->
-    CLongArray numVertArray;
-    in_ga.GetPolygonVerticesCount(numVertArray);
-    //----/ end /-------->
-        for (LONG i=0, offset=0; i<triSizeArray.GetCount(); i++)
-        {
-            wFaceIdx += L" "+ CString(triVtxIdxArray[offset]);
-            wFaceIdx += L" "+ CString(triVtxIdxArray[offset+1]);
-            wFaceIdx += L" "+ CString(triVtxIdxArray[offset+2]) + L" \n ";
-            offset += 3;
-        if (numVertArray==4){
-            wFaceIdx += L" "+ CString(triVtxIdxArray[offset+0]);
-            wFaceIdx += L" "+ CString(triVtxIdxArray[offset+2]);
-            wFaceIdx += L" "+ CString(triVtxIdxArray[offset+3]) + L" \n ";
-            offset += 3 ;
-            }
-        }
-
-//----// polygon points_vectors positions -getvertexcount //----------->
-
-    CDoubleArray vtxPosArray;
-    in_ga.GetVertexPositions(vtxPosArray);
-    LONG nVals = vtxPosArray.GetCount()/3;
-
-    for ( LONG i=0, nCurrent=0; i<nVals; i++ )
+    //--
+    if (int(g.GetTriangles().GetCount()) > 0 )
     {
-        wVertex += L" "+ CString(vtxPosArray[nCurrent]);
-        wVertex += L" "+ CString(vtxPosArray[nCurrent+1]);
-        wVertex += L" "+ CString(vtxPosArray[nCurrent+2]) + L" \n ";
-        nCurrent += 3;
-    }
-//----//polygon node normal_vectors -getnodecount //------------->.GetNodeIndices
-     CFloatArray nodeArray; // original
-     in_ga.GetNodeNormals(nodeArray); // original
-
-    LONG norVals = nodeArray.GetCount()/3;
-
-    for ( LONG i=0, normCurrent=0; i<norVals; i++ )
-    {
-        wNorVect += L" "+ CString(nodeArray[normCurrent]);
-        wNorVect += L" "+ CString(nodeArray[normCurrent+1]);
-        wNorVect += L" "+ CString(nodeArray[normCurrent+2]) + L" \n ";
-        normCurrent += 3;
-    }
-    //----// normal_indices -gettrianglecount //---------->
-    CLongArray triNodeIdxArray;
-    in_ga.GetTriangleNodeIndices(triNodeIdxArray);
-
-    for (LONG i=0, offset=0; i<triSizeArray.GetCount(); i++)
-    {
-        wNorIdx += L" "+ CString(triNodeIdxArray[offset]);
-        wNorIdx += L" "+ CString(triNodeIdxArray[offset+1]);
-        wNorIdx += L" "+ CString(triNodeIdxArray[offset+2]) + L"> \n ";
-        offset += 3;
-    }
-    //----// uv_vectors -getnodecount//---------->
-    CRefArray uvs = in_ga.GetUVs();
-    LONG nUVs = uvs.GetCount();
-     // iterate over the uv data
-        for ( LONG i=0; i<nUVs; i++ )
-        {
-            ClusterProperty uv(uvs[i]);
-         // get the values
-            CFloatArray uvValues;
-            uv.GetValues( uvValues );
-
-            // log the values
-            LONG nValues = uvValues.GetCount();
-            for ( LONG idxElem=0; idxElem<nValues; idxElem += 3)
-            {
-              wUvVect += L"   "+  CString(uvValues[idxElem]);
-              wUvVect += L" "+ CString(uvValues[idxElem+1]) + L"\n";
-             }
-        }
-//----/end to modif. /---->
-    /////////////-------------->
-    if (point_count.GetCount() > 0 || tri_count.GetCount() > 0 ) {
         f << "\nAttributeBegin #" << o.GetName().GetAsciiString();
-        if ((float)s.GetParameterValue(L"inc_inten")> 0 ) {
+        if ((float)s.GetParameterValue(L"inc_inten")> 0 )
+        {
             // check for Meshlight
-            vIsMeshLight=true;
+            vIsMeshLight = true;
             float red=0.0f,green=0.0f,blue=0.0f,alpha=0.0f;
             s.GetColorParameterValue(L"incandescence",red,green,blue,alpha );
             CString lName = findInGroup(o.GetName());
             f << " LightGroup \"";
-            if (lName!=L"") {
+            if (lName!=L"") 
+            {
                 f << lName.GetAsciiString();
-            } else {
+            } 
+            else 
+            {
                 f << (o.GetName()).GetAsciiString();
             }
+            float incandescence(float(s.GetParameterValue(L"inc_inten")));
             f << "\"\n";
-            f << "\nAreaLightSource \"area\" \"integer nsamples\" [1] \"color L\" ["<<(red*(float)s.GetParameterValue(L"inc_inten")) <<" "<<(green*(float)s.GetParameterValue(L"inc_inten")) <<" "<<(blue*(float)s.GetParameterValue(L"inc_inten"))<<"] \"float gain\" [" << (float)s.GetParameterValue(L"inc_inten") << "] \n";
+            f << "\nAreaLightSource \"area\" \"integer nsamples\" [1]";
+            f << "\"color L\" ["<< (red * incandescence) <<" "<<(green * incandescence) <<" "<<(blue * incandescence )<<"]";
+            f << "\"float gain\" [" << incandescence << "] \n";
 
-        } else {
+        }
+        else
+        {
             //shader = writeLuxsiShader(o);
             f << "\nNamedMaterial \""<< m.GetName().GetAsciiString() <<"\"\n";
         }
-            // write triangles
+        //-- write triangles
+        if (vType==L"instance") 
+        {
+            f << "Identity\n";
+        }
+        CVector3 axis;
+        double rot = gt.GetRotationAxisAngle(axis);
+        //-- TODO; changed for matrix
+        f << "Translate " << gt.GetPosX() << " " << gt.GetPosY() << " "<< gt.GetPosZ() << "\n";
+        if (rot!=0)
+        {
+            f << "Rotate " << (rot*180/PI) << " "<< axis[0] << " " << axis[1] << " "<< axis[2] << "\n";
+        }
+        if (gt.GetSclX()!=1 && gt.GetSclY()!=1 && gt.GetSclZ()!=1) 
+        {
+            f << "Scale " << gt.GetSclX() << " " << gt.GetSclY() << " "<< gt.GetSclZ() << "\n";
+        }
+        //--
+        CTriangleRefArray triangles(g.GetTriangles()); // miga
+        CLongArray indices( triangles.GetIndexArray() );
 
-            if (vType==L"instance") {
-                f << "Identity\n";
-            }
-                f << "Translate " << gt.GetPosX() << " " << gt.GetPosY() << " "<< gt.GetPosZ() << "\n";
-                if (rot!=0){
-                f << "Rotate " << (rot*180/PI) << " "<< axis[0] << " " << axis[1] << " "<< axis[2] << "\n";
-                }
-                if (gt.GetSclX()==1 && gt.GetSclY()==1 && gt.GetSclZ()==1) {} else {
-                    f << "Scale " << gt.GetSclX() << " " << gt.GetSclY() << " "<< gt.GetSclZ() << "\n";
-                }
-        //  }
+        CVector3Array allPoints(triangles.GetCount()*3);
+        CVector3Array allUV(triangles.GetCount()*3);
+        CVector3Array allNormals(triangles.GetCount()*3);
 
-            CTriangleRefArray triangles(g.GetTriangles()); // miga
-
-            CLongArray indices( triangles.GetIndexArray() );
-
-            CVector3Array allPoints(triangles.GetCount()*3);
-            CVector3Array allUV(triangles.GetCount()*3);
-            CVector3Array allNormals(triangles.GetCount()*3);
-
-            long index=0;
-            for (int i=0; i<triangles.GetCount();i++)
+        long index=0;
+        for (int i=0; i<triangles.GetCount();i++)
+        {
+            Triangle triangle(triangles.GetItem(i));
+            for (int j=0;j<triangle.GetPoints().GetCount();j++)
             {
-                Triangle triangle(triangles.GetItem(i));
-                for (int j=0;j<triangle.GetPoints().GetCount();j++)
-                {
-                    TriangleVertex vertex0(triangle.GetPoints().GetItem(j));
-                    CVector3 pos(vertex0.GetPosition());
-                    CVector3 normal(vertex0.GetNormal());
-                    CUV uvs(vertex0.GetUV());
+                TriangleVertex vertex0(triangle.GetPoints().GetItem(j));
+                CVector3 pos(vertex0.GetPosition());
+                CVector3 normal(vertex0.GetNormal());
+                CUV uvs(vertex0.GetUV());
 
-                    long arrayPos=index++;
-
-                    allPoints[arrayPos] = pos;
-                    allNormals[arrayPos] = normal;
-                    allUV[arrayPos] = CVector3(uvs.u, uvs.v,0);
-                    vTris += CValue(arrayPos).GetAsText()+L" ";
-
-                }
-                vTris += L"\n";
+                long arrayPos=index++;
+                allPoints[arrayPos] = pos;
+                allNormals[arrayPos] = normal;
+                allUV[arrayPos] = CVector3(uvs.u, uvs.v,0);
+                vTris += CValue(arrayPos).GetAsText()+L" ";
             }
+            vTris += L"\n";
+        }
 
         //  app.LogMessage(L"count: "+CValue(allPoints.GetCount()).GetAsText());
-            for (LONG j=0;j<allPoints.GetCount();j++){
-                    vPoints +=  L" "+ CString(allPoints[j][0]) + L" "+  CString(allPoints[j][1]) + L" "+ CString(allPoints[j][2])+L"\n";
-                    vUV +=  L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]) + L"\n";
-                    vNormals +=  L" "+ CString(allNormals[j][0]) + L" "+  CString(allNormals[j][1]) + L" "+ CString(allNormals[j][2])+L"\n";
-            }
-
-            CRefArray vImags=m.GetShaders();
-            for (int i=0;i<vImags.GetCount();i++)
+        for (LONG j=0;j<allPoints.GetCount();j++)
+        {
+            vPoints +=  L" "+ CString(allPoints[j][0]) + L" "+  CString(allPoints[j][1]) + L" "+ CString(allPoints[j][2])+L"\n";
+            vUV +=  L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]) + L"\n";
+            vNormals +=  L" "+ CString(allNormals[j][0]) + L" "+  CString(allNormals[j][1]) + L" "+ CString(allNormals[j][2])+L"\n";
+        }
+        //-- write portal
+        string::size_type loc = string(CString(o.GetName()).GetAsciiString()).find( "PORTAL", 0 );
+        if (loc != string::npos) 
+        {
+            f << " PortalShape ";
+            f << " \"trianglemesh\"\n \"integer indices\" [\n";
+            f << vTris.GetAsciiString();
+            f << " ] \"point P\" [\n" ;
+            f << vPoints.GetAsciiString();
+            f << "] \"normal N\" [\n";
+            f << vNormals.GetAsciiString();
+            f << "]\n";
+        }
+        else 
+        {
+            f << " Shape  \"mesh\" \n";
+            f << "  \"integer nsubdivlevels\" [" << subdLevel <<"] \"string subdivscheme\" [\"loop\"] \n";// Not CatmullClark..??
+            f << "  \"bool dmnormalsmooth\" [\""<< MtBool[vSmooth_mesh] <<"\"]";
+            f << "  \"bool dmsharpboundary\" [\""<< MtBool[vSharp_bound] <<"\"] \n";// preserve edges [ or (
+            f << "  \"string acceltype\" [\""<< MtAccel[vAccel] <<"\"] \"string tritype\" [\"wald\"] \n";//TODO; create menu option type... "
+            f << "  \"integer triindices\" [\n ";// integer indices, also work corrected
+            f << vTris.GetAsciiString();
+            f << "\n ] \"point P\" [\n";
+            f << vPoints.GetAsciiString();
+            f << "\n ]";
+            if ( vNormals != L"" )
             {
-                CRefArray vImags2=Shader(vImags[i]).GetShaders();
-                for (int j=0;j<vImags2.GetCount();j++)
-                {
-                    CString vWhat((Shader(vImags2[j]).GetProgID()).Split(L".")[1]);
-                    if (vWhat==L"txt2d-image-explicit" || vWhat==L"Softimage.txt2d-image-explicit.1")
-                    {
-                        vText=true;
-                    }
-                }
+                f << " \"normal N\" [\n";
+                f << vNormals.GetAsciiString();
+                f << "\n ]";
             }
-
-            // write
-
-            string::size_type loc = string(CString(o.GetName()).GetAsciiString()).find( "PORTAL", 0 );
-            if (loc != string::npos) {
-                sLight << " PortalShape ";
-                sLight << " \"trianglemesh\"\n \"integer indices\" [\n";
-                sLight << vTris.GetAsciiString();
-                sLight << " ] \"point P\" [\n" ;
-                sLight << vPoints.GetAsciiString();
-                sLight << "] \"normal N\" [\n";
-                sLight << vNormals.GetAsciiString();
-                sLight << "]\n";
-            } else {
-                f << " Shape ";
-
-                if (vIsSubD) {
-                    f << "\"loopsubdiv\" \"integer nlevels\" ["<< subdLevel-1 <<"]\n";
-                    f << "\"bool dmnormalsmooth\" [\""<< MtBool[vSmooth_mesh] <<"\"]\n";
-                    f << "\"bool dmsharpboundary\" [\""<< MtBool[vSharp_bound] <<"\"]\n";
-                    f << "\"integer indices\" [\n ";// integer indices
-                } else {
-                    f << " \"mesh\"\n";
-                    f << "  \"integer nsubdivlevels\" [" << subdLevel <<"] \"string subdivscheme\" [\"loop\"] \n";// Not CatmullClark..??
-                    f << "  \"bool dmnormalsmooth\" [\""<< MtBool[vSmooth_mesh] <<"\"]";
-                    f << "  \"bool dmsharpboundary\" [\""<< MtBool[vSharp_bound] <<"\"] \n";// preserve edges [ or (
-                    f << "  \"string acceltype\" [\""<< MtAccel[vAccel] <<"\"] \"string tritype\" [\"wald\"] \n";//TODO; create menu option type... "
-                    f << "  \"integer triindices\" [\n ";// integer indices, integer quadindices
-                 }
-                if (vIsSubD) { // new code
-                    f << wFaceIdx.GetAsciiString(); // vtris index, wquad index
-                } else {
-                    f << vTris.GetAsciiString(); //old code
-                       }
-                    f << " ] \"point P\" [\n " ;
-
-                if (vIsSubD) {
-                    f << wVertex.GetAsciiString(); // my code adapted from "SDK import-export demo"
-                } else {
-                    f << vPoints.GetAsciiString();
-                       }
-                f << "] ";
-            if (vIsSubD) { //----//--------->
-                    f << " \"normal N\" [\n " ;
-                    f << wNorVect.GetAsciiString();
-                    f << "] ";
-                } else {
-                    f << " \"normal N\" [\n " ;
-                    f << vNormals.GetAsciiString();
-                    f << "] ";
-                }
-                if(vText){
-                    f << " \"float uv\" [\n";
-                    f << vUV.GetAsciiString();
-                    //f <<  wUvVect.GetAsciiString(); // not working correct
-                    f << " ]\n";
-                }
-
+            if( vUV != L"" )
+            {
+                f << " \"float uv\" [\n";
+                f << vUV.GetAsciiString();
+                f << " ]\n";
             }
-
+        }
         f << "\nAttributeEnd #" << o.GetName().GetAsciiString() << "\n";
-
     }
-
     return 0;
 }
 //--
@@ -2611,7 +2467,7 @@ CString readIni(){
     load.open( iniPath.GetAsciiString() );
 
     while(load.get(x)) {
-      data+=x;
+      data += x;
    }
    //app.LogMessage(L""+CString(data));
    load.close();
@@ -2877,7 +2733,7 @@ void luxsi_execute()
             }
                 CString exec = vLuXSIPath +" \""+ vFileObjects + "\"";
                 app.LogMessage(exec);
-                loader(exec.GetAsciiString()); // mod. for execute into Windows
+                loader(exec.GetAsciiString()); //-- for execute in Windows systems
         #endif
     }
     else
