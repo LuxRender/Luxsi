@@ -2,7 +2,7 @@
 LuXSI - Autodesk(c) Softimage(c) XSI Export addon for the LuxRender  Renderer
 (http://www.luxrender.org)
 
-Copyright (C) 2010  Michael Gangolf
+Copyright (C) 2010 2011  Michael Gangolf and Pedro Alcaide
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
