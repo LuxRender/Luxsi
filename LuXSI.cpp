@@ -2054,31 +2054,36 @@ void writeLuxsiShader(){
 
 
             // Material Stuff
-            if (vMatID==L"mi_car_paint_phen") 
+            if (vMatID==L"lux_car_paint") 
             {
-                // car paint
+                //-- car paint
+                char A_carpaint [8][15] = {"2k acrylack", "blue", "blue matte", "bmw339",
+                    "ford f8", "opel titan", "polaris silber", "white"};
+                int presets = s.GetParameterValue(L"presets");
+                
                 float spr,spg,spb,spa,spr2,spg2,spb2,spa2,r,g,b,a;
                 s.GetColorParameterValue(L"spec",spr,spg,spb,spa ); //spec primary
                 s.GetColorParameterValue(L"spec_sec",spr2,spg2,spb2,spa2 ); // spec secondary
-                s.GetColorParameterValue(L"base_color",r,g,b,a );
+                s.GetColorParameterValue(L"kd",r,g,b,a );
+                s.GetColorParameterValue(L"reflectivity",r,g,b,a );
                 //--
-                //if ( presets == 0 )
-                //{
+                if ( presets == 0 )
+                {
                     shaderString += L"  \"color Kd\" [" + CString(r) + L" " + CString(g) + L" " + CString(b) + L"] \n";
 	                shaderString += L"  \"color Ks1\" [" + CString(spr) + L" " + CString(spg) + L" " + CString(spb) + L"] \n";
 	                shaderString += L"  \"color Ks2\" [" + CString(spr2) + L" " + CString(spg2) + L" " + CString(spb2) + L"] \n";
 	                shaderString += L"  \"color Ks3\" [" + CString(spr2) + L" " + CString(spg2) + L" " + CString(spb2) + L"] \n";
-	                shaderString += L"  \"float M1\" [0.032999999821186] \n";
-	                shaderString += L"  \"float M2\" [0.054999999701977] \n";
-	                shaderString += L"  \"float M3\" [0.100000001490116] \n";
-	                shaderString += L"  \"float R1\" [0.079999998211861] \n";
-	                shaderString += L"  \"float R2\" [0.029999999329448] \n";
-	                shaderString += L"  \"float R3\" [0.059999998658895] \n";
-               // }
-               // else
-               // {
-               //     shaderString += L"  \"string name\" [\"blue\"]\n"; // presets
-               // }
+	                shaderString += L"  \"float M1\" ["+ CString(float(s.GetParameterValue(L"m1"))) + L"] \n";
+	                shaderString += L"  \"float M2\" ["+ CString(float(s.GetParameterValue(L"m2"))) + L"] \n";
+	                shaderString += L"  \"float M3\" ["+ CString(float(s.GetParameterValue(L"m3"))) + L"] \n";
+	                shaderString += L"  \"float R1\" ["+ CString(float(s.GetParameterValue(L"r1"))) + L"] \n";
+	                shaderString += L"  \"float R2\" ["+ CString(float(s.GetParameterValue(L"r2"))) + L"] \n";
+	                shaderString += L"  \"float R3\" ["+ CString(float(s.GetParameterValue(L"r3"))) + L"] \n";
+                }
+                else
+                {
+                    shaderString += L"  \"string name\" [\""+ CString(A_carpaint[presets]) + L"\"]\n"; // presets
+                }
 	            shaderType=L"carpaint";
             } 
             else if (vMatID==L"mia_material_phen") 
