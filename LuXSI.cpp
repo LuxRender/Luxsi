@@ -82,12 +82,15 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     Parameter oParam;
     prop = ctxt.GetSource();
 
-    prop.AddParameter( L"use_hidden_obj",   CValue::siBool, sps,L"",L"", vIsHiddenObj,   dft,dft,dft,dft, oParam);
-    prop.AddParameter( L"use_hidden_light", CValue::siBool, sps,L"",L"", vIsHiddenLight, dft,dft,dft,dft, oParam);
-    prop.AddParameter( L"use_hidden_cam",   CValue::siBool, sps,L"",L"", vIsHiddenCam,   dft,dft,dft,dft, oParam);
-//  prop.AddParameter( L"exp_one",          CValue::siBool, sps,L"",L"", vExpOne,        dft,dft,dft,dft, oParam);
-    prop.AddParameter( L"smooth_mesh",      CValue::siBool, sps,L"",L"", vSmooth_mesh,   dft,dft,dft,dft, oParam);
-    prop.AddParameter( L"sharp_bound",      CValue::siBool, sps,L"",L"", vSharp_bound,   dft,dft,dft,dft, oParam);
+    prop.AddParameter( L"use_hidden_obj",   CValue::siBool, sps,L"",L"", vIsHiddenObj,   dft,dft,dft,dft, oParam );
+    prop.AddParameter( L"use_hidden_light", CValue::siBool, sps,L"",L"", vIsHiddenLight, dft,dft,dft,dft, oParam );
+    prop.AddParameter( L"use_hidden_cam",   CValue::siBool, sps,L"",L"", vIsHiddenCam,   dft,dft,dft,dft, oParam );
+//  prop.AddParameter( L"exp_one",          CValue::siBool, sps,L"",L"", vExpOne,        dft,dft,dft,dft, oParam );
+    prop.AddParameter( L"smooth_mesh",      CValue::siBool, sps,L"",L"", vSmooth_mesh,   dft,dft,dft,dft, oParam );
+    prop.AddParameter( L"sharp_bound",      CValue::siBool, sps,L"",L"", vSharp_bound,   dft,dft,dft,dft, oParam );
+    
+    //-- lights / blights
+    prop.AddParameter( L"blights",        CValue::siInt4,  sps,L"",L"", vlights,        0l,4l,0l,4l,  oParam );
     
     //----/ image /-->
     prop.AddParameter( L"Width",        CValue::siInt4,  sps,L"",L"", vXRes,        0l,2048l,0l,1024l,  oParam);
@@ -374,6 +377,9 @@ void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext c
     } else if (paramName == L"use_hidden_cloud"){ vIsHiddenClouds   = changed.GetValue();
     } else if (paramName == L"use_hidden_cam")  { vIsHiddenCam      = changed.GetValue();
     } else if (paramName == L"use_hidden_light"){ vIsHiddenLight    = changed.GetValue();
+
+    //-- lights / blights
+    } else if (paramName == L"blights")     { vlights  = changed.GetValue();
 
     //-- mesh export
     } else if (paramName == L"smooth_mesh")     { vSmooth_mesh  = changed.GetValue();
@@ -730,7 +736,7 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
 {
     //-- load parameters data
     
-    PPGLayout lay = ctxt.GetSource() ;
+    PPGLayout lay = ctxt.GetSource() ; 
 
     //-- convention names;
     //-- prefix l; for Parameter ( logic )
@@ -1571,33 +1577,42 @@ void writeLuxsiBasics(){
     }
 }
 //--
-void write_environment(){ // test
-        // Look if there is an background image for Image Based Lighting (e.g. HDRI)
+void write_environment()
+{
+/*    // Look if there is an background image for Image Based Lighting (e.g. HDRI)
     CRefArray aEnv = app.GetActiveProject().GetActiveScene().GetActivePass().GetNestedObjects();
-    for (int i=0;i<aEnv.GetCount();i++){
-        if (SIObject(aEnv[i]).GetName()==L"Environment Shader Stack") {
+    for (int i=0;i<aEnv.GetCount();i++)
+    {
+        if (SIObject(aEnv[i]).GetName()==L"Environment Shader Stack")
+        {
             CRefArray aImages = SIObject(aEnv[i]).GetNestedObjects();
-            for (int j=0;j<aImages.GetCount();j++){
-                if (SIObject(aImages[j]).GetType()==L"Shader"){
+            for (int j=0;j<aImages.GetCount();j++)
+            {
+                if (SIObject(aImages[j]).GetType()==L"Shader")
+                {
                     Shader s(aImages[j]);
                     CRefArray aEnvImg=s.GetImageClips();
-                    for (int k=0;k<aEnvImg.GetCount();k++){
+                    for (int k=0;k<aEnvImg.GetCount();k++)
+                    {
                         ImageClip2 vImgClip(aEnvImg[k]);
                         Source vImgClipSrc(vImgClip.GetSource());
-                        CValue vFileName = vImgClipSrc.GetParameterValue( L"path");
-                        if (vFileName.GetAsText()!=L""){
-                            vHDRI=vFileName.GetAsText();
+                        CString vFileName = vImgClipSrc.GetParameterValue( L"path");
+                        if (vFileName !=L"")
+                        {
+                            string::size_type hdr = string(CString(vFileName).GetAsciiString()).find( ".hdr", 0 );
+                            string::size_type exr = string(CString(vFileName).GetAsciiString()).find( ".exr", 0 );
+	                        if ( hdr != string::npos || exr != string::npos ) vHDRI = vFileName; vEnviron = true;
 
-                            break;
+                          //  break;
                         }
                     }
                 }
             }
-            break;
+         //   break;
         }
     }
 
-/*
+
 
     else if (vAmbBack) {
             //
@@ -1692,7 +1707,6 @@ void writeLuxsiCam(X3DObject o){
     CVector3 new_pos_ci = ci_gt.GetTranslation();
 
     //--
-    //char vcam_type [2][13]={"orthographic", "perspective"};
     int camera_proj = c.GetParameterValue(L"proj");
     //--
     f << "LookAt " << new_pos.GetX() << " " << new_pos.GetY() << " " << new_pos.GetZ() << "\n";
@@ -1701,10 +1715,10 @@ void writeLuxsiCam(X3DObject o){
         
     if ( camera_proj == 1 )
     {
-        f << "Camera \"perspective\" \n \"float fov\" [" << vfov << "] \n";
-        f << "  \"float lensradius\" ["<< CString(vLensr).GetAsciiString()  <<"] \n";
-        f << "  \"float focaldistance\" ["<< CString(vFdist).GetAsciiString() <<"]";
-        f << "\n\n";
+        f << "Camera \"perspective\" \n";
+        f << "  \"float fov\" [" << vfov << "] \n";
+        f << "  \"float lensradius\" [" << vLensr << "] \n";
+        f << "  \"float focaldistance\" [" << vFdist << "] \n";
     }
     else
     {
@@ -1715,100 +1729,148 @@ void writeLuxsiCam(X3DObject o){
 	    "bool autofocus" ["false"]
 	    "float shutteropen" [0.00000]
 	    "float shutterclose" [0.0416]
-	    f << "  \"float lensradius\" ["<< CString(vLensr).GetAsciiString()  <<"] \n";
+	    f << "  \"float lensradius\" [" << vLensr << "] \n";
         */
     }
 }
 
 //--
-void writeLuxsiLight(X3DObject o){
-    //
-    // write light
-    //
+void writeLuxsiLight(X3DObject o)
+{
+    //-- search image based lighting
+    CString vFile_env = L"";
+    bool vEnviron = false;
+    int env_mode;
+   
+    CRefArray aEnv = app.GetActiveProject().GetActiveScene().GetActivePass().GetNestedObjects();
+    for (int i=0;i<aEnv.GetCount();i++)
+    {
+        if (SIObject(aEnv[i]).GetName()==L"Environment Shader Stack")
+        {
+            CRefArray aImages = SIObject(aEnv[i]).GetNestedObjects();
+            for (int j=0;j<aImages.GetCount();j++)
+            {
+                if (SIObject(aImages[j]).GetType()==L"Shader")
+                {
+                    Shader s(aImages[j]);
+                    CRefArray aEnvImg=s.GetImageClips();
+                    for (int k=0;k<aEnvImg.GetCount();k++)
+                    {
+                        ImageClip2 vImgClip(aEnvImg[k]);
+                        Source vImgClipSrc(vImgClip.GetSource());
+                        //--
+                        env_mode = s.GetParameterValue(L"mode");
+                        app.LogMessage(L"mod env: "+ CString(env_mode));
+                        //--
+                    
+                        vFile_env = vImgClipSrc.GetParameterValue( L"path");
+                        if (vFile_env !=L"")
+                        {
+                            string::size_type hdr = string(CString(vFile_env).GetAsciiString()).find( ".hdr", 0 );
+                            string::size_type exr = string(CString(vFile_env).GetAsciiString()).find( ".exr", 0 );
+	                        if ( hdr != string::npos || exr != string::npos ) vEnviron = true;
+                        }
+                    }
+                }
+            }
+         //   break;
+        }
+    }
+    //-- determinate point from
     CTransformation localTransformation = o.GetKinematics().GetLocal().GetTransform();
     KinematicState  gs = o.GetKinematics().GetGlobal();
     CTransformation gt = gs.GetTransform();
-    CVector3 translation(gt.GetTranslation());
-    CValue lType,lPos,lPower;
+    CVector3 light_from(gt.GetTranslation());
+    //--
+    CString lPos,lPower;
     float a=0, b=0, c=0, alpha=0;
 
+    //-- determinate point to 
+    X3DObject li;
+    li= X3DObject(o.GetParent()).GetChildren()[1];
+    CTransformation lt = li.GetKinematics().GetLocal().GetTransform();
+    CVector3 light_to(lt.GetTranslation());
+    
+    //--
     Shader s((Light(o).GetShaders())[0]);
     OGLLight myOGLLight(Light(o).GetOGLLight());
     s.GetColorParameterValue(L"color",a,b,c,alpha );
     CString lName = findInGroup(o.GetName());
     //--
-    CString group_name;
+    CString group_name; 
+    int lType = Light(o).GetParameterValue(L"Type");
+    app.LogMessage(L" light type: "+ CString(lType) );
     //--
-    if (lName!=L"") {
+    bool vSiArealight = o.GetParameterValue(L"LightArea");
+    bool vSiArea_vis = o.GetParameterValue(L"LightAreaVisible");
+    int vlight_geo = o.GetParameterValue(L"LightAreaGeom");
+    float vIntensity = s.GetParameterValue(L"intensity");
+    float vLightCone = o.GetParameterValue(L"LightCone"); 
+    float vspotblend = s.GetParameterValue(L"spread");
+   //--
+    if (lName != L"") {
         group_name = lName.GetAsciiString();
     } else {
         group_name = o.GetName().GetAsciiString();
     }
     f << "\nLightGroup \""<< group_name.GetAsciiString() <<"\" \n";
     //--
-	    CString light_type; 
-	    string::size_type loc = string(CString(o.GetName()).GetAsciiString()).find( "IES", 0 );
-	    if (loc != string::npos) light_type = L"IES";
-	    //--
-    //--
-    if (myOGLLight.GetType() == siLightSpot ){
-        //-- Spotlight
-        X3DObject li;
-        CVector3 intPos;
-        //-- Get Interest
-        li= X3DObject(o.GetParent()).GetChildren()[1];
-        CTransformation lt = li.GetKinematics().GetLocal().GetTransform();
-        intPos = lt.GetTranslation();
-        CRefArray shad(Light(o).GetShaders());
-        Shader s(shad[0]);
+	CString light_type; 
+	string::size_type loc = string(CString(o.GetName()).GetAsciiString()).find( "IES", 0 );
+	if (loc != string::npos) light_type = L"IES";
+	
+    //-- commons parameters
+    
 
+    if (lType == 2) //-- spot
+    {
         //-- values
         f << "\nLightSource \"spot\"\n";
-        f << "  \"point from\" [" << (float)translation.GetX() << " " << (float)translation.GetY() << " "  << (float)translation.GetZ()  << "] \n";
-        f << "  \"point to\" ["<< (float)intPos.GetX() << " " << (float)intPos.GetY() << " "<< (float)intPos.GetZ() << "]\n";
-        f << "  \"float coneangle\" [" << (float)o.GetParameterValue((L"LightCone")) << "]\n";
-        f << "  \"float conedeltaangle\" [" << ((float)o.GetParameterValue(L"LightCone")- (float)s.GetParameterValue(L"spread")) << "]\n";
-        f << "  \"color \" [" << a << "  " << b << "  " << c << "] \"float gain\" ["  << (float)s.GetParameterValue(L"intensity") << "]\n";
-
-    } else if  (myOGLLight.GetType()==siLightInfinite ) {
-
-        //-- sunlight
-        if (vHDRI!=L""){
-            f << "Scale -1 1 1 \nRotate -90 1 0 0 \n"; // for corrected orientation
-            f << "LightSource \"infinite\" \"color L\" [1 1 1] \"integer nsamples\" [1]\n"; //-- TODO; removed color
-            f << "\"string mapname\" [\"" << replace(vHDRI.GetAsciiString()) << "\"]\n";
-
-        } else {
+        f << "  \"float gain\" [" << vIntensity << "]\n";
+        f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
+        f << "  \"point from\" [" << light_from.GetX() << " " << light_from.GetY() << " "  << light_from.GetZ()  << "] \n";
+        f << "  \"point to\" ["<< light_to.GetX() << " " << light_to.GetY() << " "<< light_to.GetZ() << "]\n";
+        f << "  \"float coneangle\" [" << vLightCone << "]\n";
+        f << "  \"float conedeltaangle\" [" << vLightCone - vspotblend << "]\n";
+    } 
+    else if  (lType == 1) //-- infinite
+    {
+        if ( vEnviron && vFile_env != L"")
+        {
+            f << "\nTransformBegin \n";
+            f << "Scale -1 1 1 \nRotate -90 1 0 0 \n"; // for corrected orientation ??
+            f << "LightSource \"infinite\"\n";
+            f << "  \"float gain\" [" << vIntensity << "]\n";
+            f << "  \"float importance\" [1.0]\n"; // TODO
+            f << "  \"string mapname\" [\"" << replace(vFile_env.GetAsciiString()) << "\"]\n";
+            f << "  \"string mapping\" [\"angular\"]\n"; // TODO
+            f << "  \"float gamma\" [1.0]\n";
+            f << "  \"integer nsamples\" [1]\n";
+            f << "\nTransformEnd \n";
+        } 
+        else
+        {
+            f << "LightSource \"infinite\"\n";
+            f << "  \"float gain\" [" << vIntensity << "]\n";
+            f << "  \"float importance\" [1.0]\n"; // TODO
+            f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
+            /*
             CMatrix4 sunTransMat = o.GetKinematics().GetLocal().GetTransform().GetMatrix4();
             f << "\nLightSource \"sunsky\"\n";
             f << "  \"integer nsamples\" [4]\n";
-            f << "  \"vector sundir\" [ "<< sunTransMat.GetValue(2,0) << " " << (float)sunTransMat.GetValue(2,1) << " " << (float)sunTransMat.GetValue(2,2) << " ]\n";
-            f << "  \"float gain\" [" << (float)s.GetParameterValue(L"intensity") << "]\n";
+            f << "  \"vector sundir\" [ "<< sunTransMat.GetValue(2,0) << " " << sunTransMat.GetValue(2,1) << " " << sunTransMat.GetValue(2,2) << " ]\n";
+            f << "  \"float gain\" [" << vIntensity << "]\n";
+            */
         }
-
-        //---
-        //sunlight
-        //
-    /*  CMatrix4 sunTransMat = o.GetKinematics().GetLocal().GetTransform().GetMatrix4();
-
-        f << "\nLightSource \"sunsky\"\n";
-        f << "  \"integer nsamples\" [4]\n";
-        f << "  \"vector sundir\" [ "<< (float)sunTransMat.GetValue(2,0) << " " << (float)sunTransMat.GetValue(2,1) << " " << (float)sunTransMat.GetValue(2,2) << " ]\n";
-        f << "  \"float gain\" [" << (float)s.GetParameterValue(L"intensity") << "]\n";
-    */
-
-    } else {
-        //
+    } 
+    else 
+    {
         // Pointlight
-        CVector3 intPos;
-        CTransformation localTransformation2 = o.GetKinematics().GetLocal().GetTransform();
-        KinematicState  gs2 = o.GetKinematics().GetGlobal();
-        CTransformation gt2 = gs2.GetTransform();
-        intPos=gt2.GetTranslation();
-        //--
         f << "\nLightSource \"point\"\n";
-        f << "  \"point from\" [" << intPos.GetX() << " " << intPos.GetY() << " " << intPos.GetZ() << "]\n";
-        f << "  \"color L\" [" << a << "  " << b << "  " << c << "] \"float gain\" ["<< (float)s.GetParameterValue(L"intensity") << "]\n";
+        f << "  \"float gain\" [" << vIntensity << "]\n";
+        f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
+        f << "  \"point from\" [" << light_to.GetX() << " " << light_to.GetY() << " " << light_to.GetZ() << "]\n";
+        f << "  \"float gain\" ["<< (float)s.GetParameterValue(L"intensity") << "]\n";
 
     }
 }
@@ -2680,11 +2742,13 @@ void luxsi_write(){
 
             f << "\nAttributeBegin \n";
 
+             //-- environment, test
+            //write_environment();
+
             //-- lights
             for (int i=0;i<aLight.GetCount();i++) writeLuxsiLight(aLight[i]);
 
-            //-- environment, test
-            write_environment();
+           
 
             f << "\nAttributeEnd \n \n";
 
