@@ -105,6 +105,22 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddButton(L"exe_luxsi",L"Export to file");
             lay.AddButton(L"render_luxsi",L"Render scene");
         lay.EndRow();
+    //------------------------------//
+        lay.AddTab(L"Lights ");
+    //------------------------------//
+        lay.AddGroup(L"Special options for lights");
+            lay.AddItem( L"bUse_IES", L"Use IES file"); // bool
+            lay.AddItem( L"bimportance", L"Importance"); // float
+            //-----
+            lay.AddItem(L"bIES_file",L"IES file path",siControlFilePath);
+            PPGItem	item = lay.GetItem( L"bIES_file" ); 
+				item.PutAttribute( siUIOpenFile, 1 ) ;
+				item.PutAttribute( siUIFileMustExist, 1 ) ;
+				item.PutAttribute( siUIFileFilter, L"IES files|*.ies" ) ; // probas
+				item.PutAttribute( siControlFilePath , "test" ) ;
+        //---
+        lay.EndGroup();
+
     //------------------------------// 
         lay.AddTab(L"Render ");
     //------------------------------//
