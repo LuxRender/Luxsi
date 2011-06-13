@@ -80,7 +80,7 @@ int vnsets = 4, vnlights = 64;
 float vmindist = 0.10f; 
 //-- Sampler
 float vlmutationpro = 0.1f, vmutationrange = 2.5;
-int vSampler = 2, vmaxconsecrejects=256, vchainlength= 512, vPixsampler = 3, vPixelsamples=2;
+int vSampler = 2, vmaxconsecrejects=256, vchainlength= 512, vPixsampler = 3, vPixelsamples = 2;
 int vbasampler = 0;
 bool vusevariance = false;
 //-- 
@@ -117,12 +117,17 @@ float vXwidth = 2.0f, vYwidth = 2.0f, vFalpha = 2.0f, vF_B = 0.3f, vF_C = 0.3f, 
 int vfilter = 2;
 bool vfexpert = false;
 
+//-- specials lights
+int vlights = 0;
+CString ies_file = L"";
+bool vUse_IES = false;
+
 //----/ convention names, prefix; Mt /----->
 char MtBool[2][6] = { "false", "true" };
 char MtBsampler [4] [15] = { "metropolis", "lowdiscrepancy", "random" }; // mode, Asampler [vSampler]
 char MtAccel [3] [7] = { "qbvh", "bvh", "kdtree" }; // iter vAccel
 
-//--/ end /-->
+//--
 CRefArray aGroups;
 CStringArray aMatList,aInstanceList;
 
