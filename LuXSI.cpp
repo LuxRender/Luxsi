@@ -90,7 +90,9 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     prop.AddParameter( L"sharp_bound",      CValue::siBool, sps,L"",L"", vSharp_bound,   dft,dft,dft,dft, oParam );
     
     //-- lights / blights
-    prop.AddParameter( L"blights",        CValue::siInt4,  sps,L"",L"", vlights,        0l,4l,0l,4l,  oParam );
+    //prop.AddParameter( L"blights",      CValue::siInt4,  sps,L"",L"", vlights,        0l,4l,0l,4l,  oParam );
+    prop.AddParameter( L"bIES_file",    CValue::siString, sps, L"",L"", ies_file,    oParam);
+    prop.AddParameter( L"bUse_IES",     CValue::siBool,   sps, L"",L"", vUse_IES,    dft,dft,dft,dft,    oParam);
     
     //----/ image /-->
     prop.AddParameter( L"Width",        CValue::siInt4,  sps,L"",L"", vXRes,        0l,2048l,0l,1024l,  oParam);
@@ -265,7 +267,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 
     return CStatus::OK;
 }
-//-- before, define_layout
+//-- 
 XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
 {
     PPGEventContext ctxt( in_ctxt ) ;
@@ -281,7 +283,8 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
         ctxt.PutAttribute(L"Refresh",true);
 
         CRefArray params = prop.GetParameters();;
-        for (int i=0;i<params.GetCount();i++){
+        for (int i=0;i<params.GetCount();i++)
+        {
             // Update values on init
             Parameter param(params[i]);
             update_LuXSI_values(param.GetScriptName(), param, ctxt, lay);
@@ -290,10 +293,12 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
     else if ( eventID == PPGEventContext::siButtonClicked )
     {
         CValue buttonPressed = ctxt.GetAttribute( L"Button" ) ;
-        if (buttonPressed.GetAsText()==L"exe_luxsi"){
+        if (buttonPressed.GetAsText()==L"exe_luxsi")
+        {
             luxsi_write();
         }
-        if (buttonPressed.GetAsText()==L"render_luxsi"){
+        if (buttonPressed.GetAsText()==L"render_luxsi")
+        {
             luxsi_write();
             luxsi_execute();
         }
@@ -378,9 +383,6 @@ void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext c
     } else if (paramName == L"use_hidden_cam")  { vIsHiddenCam      = changed.GetValue();
     } else if (paramName == L"use_hidden_light"){ vIsHiddenLight    = changed.GetValue();
 
-    //-- lights / blights
-    } else if (paramName == L"blights")     { vlights  = changed.GetValue();
-
     //-- mesh export
     } else if (paramName == L"smooth_mesh")     { vSmooth_mesh  = changed.GetValue();
     } else if (paramName == L"sharp_bound")     { vSharp_bound  = changed.GetValue();
@@ -402,6 +404,14 @@ void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext c
 
     //-- save file name
     } else if (paramName == L"fObjects")     { vFileObjects  = changed.GetValue();
+    } else {
+        //app.LogMessage(L"Tab 'Main' update values..");
+    }
+    //-- TAB SPECIAL LIGHTS
+    //-- lights / 
+    //} else if (paramName == L"blights")     { vlights  =   changed.GetValue();
+           if (paramName == L"bIES_file")   { ies_file	=  changed.GetValue();
+    } else if (paramName == L"bUse_IES")    { vUse_IES	=  changed.GetValue();
     
     //--TAB RENDER
     //-- Luxrender engine
@@ -523,7 +533,7 @@ void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext c
     
     //--
     } else {
-        app.LogMessage(L"End update values.");
+       // app.LogMessage(L"Tab 'Render' update values.");
     }
        dynamic_luxsi_UI(changed, ctxt);
 }
@@ -634,7 +644,7 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
             //--
             vSurfaceInt = 1 ; // path
             vmaxdepth = 10 ;
-            Parameter(prop.GetParameters().GetItem( L"binc_env" )).PutValue( vInc_env = true ) ;
+            Parameter(prop.GetParameters().GetItem( L"binc_env" )).PutValue( vInc_env = true );
             //--
             app.LogMessage(L"Parameters for render presets 5; loaded..");
         }
@@ -660,7 +670,7 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
             //-- surf
             vSurfaceInt = 1 ; // path
             vmaxdepth = 10 ;
-            Parameter(prop.GetParameters().GetItem( L"binc_env" )).PutValue( vInc_env = true ) ;
+            Parameter(prop.GetParameters().GetItem( L"binc_env" )).PutValue( vInc_env = true );
             //--
             app.LogMessage(L" Parameters for render presets 7; loaded..");
         }
@@ -1776,62 +1786,99 @@ void writeLuxsiLight(X3DObject o)
          //   break;
         }
     }
-    //-- determinate point from
-    CTransformation localTransformation = o.GetKinematics().GetLocal().GetTransform();
-    KinematicState  gs = o.GetKinematics().GetGlobal();
-    CTransformation gt = gs.GetTransform();
-    CVector3 light_from(gt.GetTranslation());
     //--
-    CString lPos,lPower;
+    CTransformation localTransformation = o.GetKinematics().GetGlobal().GetTransform();
+    //-- point from
+    KinematicState  global_kinex_state = o.GetKinematics().GetGlobal();
+    CTransformation global_transf = global_kinex_state.GetTransform();
+    CVector3 light_from(global_transf.GetTranslation());
+    //--
     float a=0, b=0, c=0, alpha=0;
 
-    //-- determinate point to 
+    //-- point to 
     X3DObject li;
     li= X3DObject(o.GetParent()).GetChildren()[1];
     CTransformation lt = li.GetKinematics().GetLocal().GetTransform();
     CVector3 light_to(lt.GetTranslation());
     
     //--
-    Shader s((Light(o).GetShaders())[0]);
-    OGLLight myOGLLight(Light(o).GetOGLLight());
-    s.GetColorParameterValue(L"color",a,b,c,alpha );
-    CString lName = findInGroup(o.GetName());
+    KinematicState  local_state = o.GetKinematics().GetLocal();
+    CTransformation local_transf = local_state.GetTransform();
+   
+  /*
     //--
+    Geometry g(Light(o).GetActivePrimitive().GetGeometry()) ;
+    //--
+    CString vTris = L"", vPoints = L"";
+    CTriangleRefArray triangles(g.GetTriangles()); // miga
+        CLongArray indices( triangles.GetIndexArray() );
+        CVector3Array allPoints(triangles.GetCount()*3);
+       
+        long index=0;
+        for (int i=0; i<triangles.GetCount();i++)
+        {
+            Triangle triangle(triangles.GetItem(i));
+            for (int j=0;j<triangle.GetPoints().GetCount();j++)
+            {
+                TriangleVertex vertex0(triangle.GetPoints().GetItem(j));
+                CVector3 pos(vertex0.GetPosition());
+            
+                long arrayPos=index++;
+                allPoints[arrayPos] = pos;
+                vTris += CValue(arrayPos).GetAsText()+L" ";
+            }
+            vTris += L"\n";
+        }
+        //--
+        for (LONG j=0;j<allPoints.GetCount();j++)
+        {
+            vPoints +=  L" "+ CString(allPoints[j][0]) + L" "+  CString(allPoints[j][1]) + L" "+ CString(allPoints[j][2])+L"\n";
+        }
+     */   //-------------------------------------------------------
+
+    //--
+   
+    Shader s((Light(o).GetShaders())[0]);
+    s.GetColorParameterValue(L"color",a,b,c,alpha );
+    //--
+    CString lName = findInGroup(o.GetName());
     CString group_name; 
+    
+    if (lName != L"") 
+    {
+        group_name = lName.GetAsciiString(); 
+    } 
+    else 
+    {
+        group_name = o.GetName().GetAsciiString();
+    }
+    //--
     int lType = Light(o).GetParameterValue(L"Type");
     app.LogMessage(L" light type: "+ CString(lType) );
     //--
     bool vSiArealight = o.GetParameterValue(L"LightArea");
     bool vSiArea_vis = o.GetParameterValue(L"LightAreaVisible");
     int vlight_geo = o.GetParameterValue(L"LightAreaGeom");
-    float vIntensity = s.GetParameterValue(L"intensity");
     float vLightCone = o.GetParameterValue(L"LightCone"); 
-    float vspotblend = s.GetParameterValue(L"spread");
-   //--
-    if (lName != L"") {
-        group_name = lName.GetAsciiString();
-    } else {
-        group_name = o.GetName().GetAsciiString();
-    }
-    f << "\nLightGroup \""<< group_name.GetAsciiString() <<"\" \n";
+    float vIntensity = s.GetParameterValue(L"intensity");
+    float vSpotblend = s.GetParameterValue(L"spread"); //
     //--
-	CString light_type; 
-	string::size_type loc = string(CString(o.GetName()).GetAsciiString()).find( "IES", 0 );
-	if (loc != string::npos) light_type = L"IES";
-	
-    //-- commons parameters
+    f << "\nLightGroup \""<< group_name.GetAsciiString() <<"\" \n";
     
-
     if (lType == 2) //-- spot
     {
         //-- values
         f << "\nLightSource \"spot\"\n";
         f << "  \"float gain\" [" << vIntensity << "]\n";
         f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
+        if ( vUse_IES )
+        {
+            f << "  \"string iesname\" [\"" << replace(ies_file.GetAsciiString()) << "\"]\n";
+        }
         f << "  \"point from\" [" << light_from.GetX() << " " << light_from.GetY() << " "  << light_from.GetZ()  << "] \n";
         f << "  \"point to\" ["<< light_to.GetX() << " " << light_to.GetY() << " "<< light_to.GetZ() << "]\n";
         f << "  \"float coneangle\" [" << vLightCone << "]\n";
-        f << "  \"float conedeltaangle\" [" << vLightCone - vspotblend << "]\n";
+        f << "  \"float conedeltaangle\" [" << vLightCone - vSpotblend << "]\n";
     } 
     else if  (lType == 1) //-- infinite
     {
@@ -1843,9 +1890,9 @@ void writeLuxsiLight(X3DObject o)
             f << "  \"float gain\" [" << vIntensity << "]\n";
             f << "  \"float importance\" [1.0]\n"; // TODO
             f << "  \"string mapname\" [\"" << replace(vFile_env.GetAsciiString()) << "\"]\n";
-            f << "  \"string mapping\" [\"angular\"]\n"; // TODO
+            f << "  \"string mapping\" [\"latlong\"]\n"; // TODO
             f << "  \"float gamma\" [1.0]\n";
-            f << "  \"integer nsamples\" [1]\n";
+            f << "  \"integer nsamples\" [1]\n"; // TODO
             f << "\nTransformEnd \n";
         } 
         else
@@ -1854,24 +1901,85 @@ void writeLuxsiLight(X3DObject o)
             f << "  \"float gain\" [" << vIntensity << "]\n";
             f << "  \"float importance\" [1.0]\n"; // TODO
             f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
-            /*
+        }
+         /*
             CMatrix4 sunTransMat = o.GetKinematics().GetLocal().GetTransform().GetMatrix4();
             f << "\nLightSource \"sunsky\"\n";
             f << "  \"integer nsamples\" [4]\n";
             f << "  \"vector sundir\" [ "<< sunTransMat.GetValue(2,0) << " " << sunTransMat.GetValue(2,1) << " " << sunTransMat.GetValue(2,2) << " ]\n";
             f << "  \"float gain\" [" << vIntensity << "]\n";
             */
-        }
     } 
     else 
     {
         // Pointlight
-        f << "\nLightSource \"point\"\n";
-        f << "  \"float gain\" [" << vIntensity << "]\n";
-        f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
-        f << "  \"point from\" [" << light_to.GetX() << " " << light_to.GetY() << " " << light_to.GetZ() << "]\n";
-        f << "  \"float gain\" ["<< (float)s.GetParameterValue(L"intensity") << "]\n";
-
+        //-- in Softimage, light area, only work into 'point' or 'spot' lights
+        if ( vSiArealight )
+        {
+            //--
+            float areaX(o.GetParameterValue(L"LightAreaXformSX"));
+            float areaY(o.GetParameterValue(L"LightAreaXformSY"));
+            float areaZ(o.GetParameterValue(L"LightAreaXformSZ"));
+            //-- rotate; use int, float crash
+            int R_areaX(o.GetParameterValue(L"LightAreaXformRX"));
+            int R_areaY(o.GetParameterValue(L"LightAreaXformRY"));
+            int R_areaZ(o.GetParameterValue(L"LightAreaXformRZ"));
+            //--
+            CString A_rotation = L"";// for test, replace by Matriz
+            if ( R_areaX != 0 )  A_rotation += "Rotate "+ CString(R_areaX) + L" 1 0 0 \n";
+            if ( R_areaY != 0 )  A_rotation += "Rotate "+ CString(R_areaY) + L" 0 1 0 \n";
+            if ( R_areaZ != 0 )  A_rotation += "Rotate "+ CString(R_areaZ) + L" 0 0 1 \n";
+            //--
+            //CVector3 axis;
+            //double rot = global_transf.GetRotationAxisAngle(axis);
+                        
+            //-- samples U + V / 2
+            int U_area_samples = o.GetParameterValue(L"LightAreaSampU");
+            int V_area_samples = o.GetParameterValue(L"LightAreaSampV");
+            //--
+            CString aPoints = L""; // like luxblend
+            aPoints += L""+ CString( -areaX/2.0 ) + L" "+ CString( areaY/2.0 ) + L" "+ CString( 0.0 );
+            aPoints += L" "+ CString( areaX/2.0 ) + L" "+ CString( areaY/2.0 ) + L" "+ CString( 0.0 ); 
+            aPoints += L" "+ CString( areaX/2.0 ) + L" "+ CString( -areaY/2.0 ) + L" "+ CString( 0.0 );
+            aPoints += L" "+ CString( -areaX/2.0 ) + L" "+ CString( -areaY/2.0 ) + L" "+ CString( 0.0 );
+            //--
+            f << "\nTransformBegin \n";
+            f << "Translate "<< light_from.GetX() <<" "<< light_from.GetY() <<" "<< light_from.GetZ() <<"\n";
+            if (A_rotation != L"")
+            {
+                f << A_rotation.GetAsciiString() <<"\n";;
+            }
+            //--
+            f << "\nAreaLightSource \"area\"\n";
+	        f << "  \"float gain\" [" << vIntensity << "]\n";
+            f << "  \"float importance\" [1.0]\n"; // TODO
+	        f << "  \"float power\" ["<< float(o.GetParameterValue(L"LightEnergyIntens"))/100 <<"]\n"; //-- ;
+	        f << "  \"float efficacy\" [17.0]\n";
+	        f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
+	        f << "  \"integer nsamples\" ["<< (U_area_samples + V_area_samples)/2 <<"]\n"; 
+	        if ( vUse_IES )
+            {
+                f << "  \"string iesname\" [\"" << replace(ies_file.GetAsciiString()) << "\"]\n";
+            }           
+            //--
+            f << "\nShape \"trianglemesh\"\n";
+	        f << "  \"integer indices\" [0 1 2 0 2 3]\n";
+	        f << "  \"point P\" ["<< aPoints.GetAsciiString() <<"]\n";
+            //--
+            f << "\nTransformEnd \n";         
+        }
+        else
+        {
+            f << "\nLightSource \"point\"\n";
+            f << "  \"float gain\" [" << vIntensity << "]\n";
+            f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
+            if ( vUse_IES )
+            {
+                f << "  \"string iesname\" [\"" << replace(ies_file.GetAsciiString()) << "\"]\n";
+                f << "  \"bool flipz\" [\"true\"]\n"; // TODO; option into 'special' tab
+            }
+            f << "  \"point from\" [" << light_from.GetX() << " " << light_from.GetY() << " " << light_from.GetZ() << "]\n";
+        }
     }
 }
 //--
@@ -2339,7 +2447,7 @@ int writeLuxsiObj(X3DObject o, CString vType){
     CTransformation localTransformation = ga.GetTransform();
     KinematicState  gs = o.GetKinematics().GetLocal();
     CTransformation gt = gs.GetTransform();
-    CMatrix4 mat4(gt.GetMatrix4());
+    CMatrix4 mat4(gt.GetMatrix4()); 
     //--
     if (int(g.GetTriangles().GetCount()) > 0 )
     {
@@ -2360,7 +2468,8 @@ int writeLuxsiObj(X3DObject o, CString vType){
             {
                 f << (o.GetName()).GetAsciiString();
             }
-            float incandescence(float(s.GetParameterValue(L"inc_inten")));
+           //--
+            float incandescence(s.GetParameterValue(L"inc_inten"));
             f << "\"\n";
             f << "\nAreaLightSource \"area\" \"integer nsamples\" [1]";
             f << "\"color L\" ["<< (red * incandescence) <<" "<<(green * incandescence) <<" "<<(blue * incandescence )<<"]";
@@ -2380,7 +2489,7 @@ int writeLuxsiObj(X3DObject o, CString vType){
         CVector3 axis;
         double rot = gt.GetRotationAxisAngle(axis);
         //-- TODO; changed for matrix
-        f << "Translate " << gt.GetPosX() << " " << gt.GetPosY() << " "<< gt.GetPosZ() << "\n";
+        f << "Translate "<< gt.GetPosX() <<" "<< gt.GetPosY() <<" "<< gt.GetPosZ() <<"\n";
         if (rot!=0)
         {
             f << "Rotate " << (rot*180/PI) << " "<< axis[0] << " " << axis[1] << " "<< axis[2] << "\n";
