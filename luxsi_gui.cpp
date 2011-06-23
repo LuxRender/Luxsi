@@ -52,10 +52,11 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddItem(L"resume", L"Resume render");
     lay.EndGroup();
 
-    lay.AddGroup(L"Export hidden...");
+    lay.AddGroup(L"Export hidden items...");
         lay.AddItem(L"use_hidden_obj", L"Objects");
         lay.AddItem(L"use_hidden_cam", L"Cameras");
         lay.AddItem(L"use_hidden_light", L"Lights");
+        lay.AddItem(L"use_hidden_surf", L"Surfaces");
     lay.EndGroup();
     lay.AddGroup(L"Subdivided mesh options"); // TODO:  to shader spdl file, per individuals flags?
         lay.AddItem(L"smooth_mesh", L"Export smooth meshes");
