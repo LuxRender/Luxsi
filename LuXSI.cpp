@@ -82,14 +82,15 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     Parameter oParam;
     prop = ctxt.GetSource();
 
-    prop.AddParameter( L"use_hidden_obj",   CValue::siBool, sps,L"",L"", vIsHiddenObj,   dft,dft,dft,dft, oParam );
-    prop.AddParameter( L"use_hidden_light", CValue::siBool, sps,L"",L"", vIsHiddenLight, dft,dft,dft,dft, oParam );
-    prop.AddParameter( L"use_hidden_cam",   CValue::siBool, sps,L"",L"", vIsHiddenCam,   dft,dft,dft,dft, oParam );
-//  prop.AddParameter( L"exp_one",          CValue::siBool, sps,L"",L"", vExpOne,        dft,dft,dft,dft, oParam );
-    prop.AddParameter( L"smooth_mesh",      CValue::siBool, sps,L"",L"", vSmooth_mesh,   dft,dft,dft,dft, oParam );
-    prop.AddParameter( L"sharp_bound",      CValue::siBool, sps,L"",L"", vSharp_bound,   dft,dft,dft,dft, oParam );
+    prop.AddParameter( L"use_hidden_obj",   CValue::siBool, sps,L"",L"", vIsHiddenObj,     dft,dft,dft,dft, oParam );
+    prop.AddParameter( L"use_hidden_light", CValue::siBool, sps,L"",L"", vIsHiddenLight,   dft,dft,dft,dft, oParam );
+    prop.AddParameter( L"use_hidden_surf",  CValue::siBool, sps,L"",L"", vIsHiddenSurface, dft,dft,dft,dft, oParam );
+    prop.AddParameter( L"use_hidden_cam",   CValue::siBool, sps,L"",L"", vIsHiddenCam,     dft,dft,dft,dft, oParam );
+//  prop.AddParameter( L"exp_one",          CValue::siBool, sps,L"",L"", vExpOne,          dft,dft,dft,dft, oParam );
+    prop.AddParameter( L"smooth_mesh",      CValue::siBool, sps,L"",L"", vSmooth_mesh,     dft,dft,dft,dft, oParam );
+    prop.AddParameter( L"sharp_bound",      CValue::siBool, sps,L"",L"", vSharp_bound,     dft,dft,dft,dft, oParam );
     
-    //-- lights / blights
+    //-- lights  
     //prop.AddParameter( L"blights",      CValue::siInt4,  sps,L"",L"", vlights,        0l,4l,0l,4l,  oParam );
     prop.AddParameter( L"bIES_file",    CValue::siString, sps, L"",L"", ies_file,    oParam);
     prop.AddParameter( L"bUse_IES",     CValue::siBool,   sps, L"",L"", vUse_IES,    dft,dft,dft,dft,    oParam);
@@ -1661,34 +1662,50 @@ void writeLuxsiCam(X3DObject o){
         c=o.GetChildren()[0];
     }
 
-    CVector3 vnegZ(0,0,-1);
-
     // Operations to calculate look at position.
+    CVector3 vnegZ(0,0,-1);
+    //--
     vnegZ.MulByMatrix3InPlace(c.GetKinematics().GetGlobal().GetTransform().GetRotationMatrix3());
     vnegZ.NormalizeInPlace();
     vnegZ.ScaleInPlace((double) c.GetParameterValue(L"interestdist"));
     vnegZ.AddInPlace(c.GetKinematics().GetGlobal().GetTransform().GetTranslation());
 
-    CTransformation localTransformation = o2.GetKinematics().GetLocal().GetTransform();
+    CTransformation local_transf = o2.GetKinematics().GetLocal().GetTransform();
     KinematicState  gs = o2.GetKinematics().GetGlobal();
     CTransformation gt = gs.GetTransform();
-    CVector3 translation(localTransformation.GetTranslation());
-    bool vDof=false;
-
+    CVector3 translation(local_transf.GetTranslation());
+    
     X3DObject ci(o.GetChildren()[1]);
     CValue vCType=L"pinhole";
     float vFdist = 0.0, vLensr = 0.0, vFocal = 0;
+    int vdof_mode = 0;
 
     CRefArray cShaders = c.GetShaders();
     for (int i=0;i<cShaders.GetCount();i++)
     {
         CString vCSID((Shader(cShaders[i]).GetProgID()).Split(L".")[1]);
-
+        app.LogMessage(L" lens shader: "+ CString(vCSID)); //---------------------
         if (vCSID==L"sib_dof") 
         {
-            // Depth_of_field shader found
+            //-- Depth_of_field shader found
+            vdof_mode = Shader(cShaders[i]).GetParameterValue(L"mode");
+            //--
+            if ( vdof_mode = 0 ) //- custom
+            {
+                /* custom_near_focus, custom_far_focus, custom_coc */
+            }
+            if ( vdof_mode = 1 ) //- auto
+            {
+                vFdist = Shader(cShaders[i]).GetParameterValue(L"auto_focal_distance");
+            }
+            if ( vdof_mode = 2 ) //- lens
+            {
+                /* len_focal_distance, len_focal_lenght, len_fstop, len_coc */
+                vFdist = Shader(cShaders[i]).GetParameterValue(L"len_focal_distance");
+            }
+            //-- commons
             vLensr = Shader(cShaders[i]).GetParameterValue(L"strenght");
-            vFdist = Shader(cShaders[i]).GetParameterValue(L"auto_focal_distance");
+            
         }
     }
 
@@ -1699,18 +1716,18 @@ void writeLuxsiCam(X3DObject o){
     CTransformation target=o2.GetKinematics().GetGlobal().GetTransform().AddLocalTranslation(tranlation);
     CVector3 up(target.GetTranslation());
     float vfov;
-    if ((int)c.GetParameterValue(CString(L"fovtype"))==1) 
+    if ((int)c.GetParameterValue(L"fovtype")==1) 
     {
         // calculate the proper FOV (horizontal -> vertical)
         float hfov = (float)c.GetParameterValue(L"fov");
-        vfov=(float) (2* atan(1/(float)c.GetParameterValue(L"aspect") * tan(hfov/2*PI/180))*180/PI);
+        vfov = float(2* atan(1/(float)c.GetParameterValue(L"aspect") * tan(hfov/2*PI/180))*180/PI);
     } 
     else
     {
         // keep vertical FOV
         vfov = (float)c.GetParameterValue(L"fov");
     }
-    // lookat: posX posY posZ targetX targetY targetZ upX upY upZ
+    //--
     double x,y,z;
     vnegZ.Get( x,y,z );
     CVector3 new_pos = gt.GetTranslation();
@@ -1719,16 +1736,16 @@ void writeLuxsiCam(X3DObject o){
     //--
     int camera_proj = c.GetParameterValue(L"proj");
     //--
-    f << "LookAt " << new_pos.GetX() << " " << new_pos.GetY() << " " << new_pos.GetZ() << "\n";
-    f << "       "<< new_pos_ci.GetX() << " " << new_pos_ci.GetY() << " " << new_pos_ci.GetZ() <<"\n";
+    f << "LookAt "<< new_pos.GetX() <<" "<< new_pos.GetY() <<" "<< new_pos.GetZ() <<"\n";
+    f << "       "<< new_pos_ci.GetX() <<" "<< new_pos_ci.GetY() <<" "<< new_pos_ci.GetZ() <<"\n";
     f << "       0 1 0 \n"; //<< CString(up.GetZ()).GetAsciiString() << "\n"; // not working correct
         
     if ( camera_proj == 1 )
     {
         f << "Camera \"perspective\" \n";
-        f << "  \"float fov\" [" << vfov << "] \n";
-        f << "  \"float lensradius\" [" << vLensr << "] \n";
-        f << "  \"float focaldistance\" [" << vFdist << "] \n";
+        f << "  \"float fov\" ["<< vfov <<"] \n";
+        f << "  \"float lensradius\" ["<< vLensr/10 <<"] \n";
+        f << "  \"float focaldistance\" ["<< vFdist <<"] \n";
     }
     else
     {
@@ -1755,11 +1772,14 @@ void writeLuxsiLight(X3DObject o)
     CRefArray aEnv = app.GetActiveProject().GetActiveScene().GetActivePass().GetNestedObjects();
     for (int i=0;i<aEnv.GetCount();i++)
     {
+        app.LogMessage(L"object render pass: "+ CString(SIObject(aEnv[i]).GetName()));
+            
         if (SIObject(aEnv[i]).GetName()==L"Environment Shader Stack")
         {
             CRefArray aImages = SIObject(aEnv[i]).GetNestedObjects();
             for (int j=0;j<aImages.GetCount();j++)
             {
+                app.LogMessage(L"Nested object render pass: "+ CString(SIObject(aImages[j]).GetType()));
                 if (SIObject(aImages[j]).GetType()==L"Shader")
                 {
                     Shader s(aImages[j]);
@@ -1772,7 +1792,6 @@ void writeLuxsiLight(X3DObject o)
                         env_mode = s.GetParameterValue(L"mode");
                         app.LogMessage(L"mod env: "+ CString(env_mode));
                         //--
-                    
                         vFile_env = vImgClipSrc.GetParameterValue( L"path");
                         if (vFile_env !=L"")
                         {
@@ -1797,12 +1816,13 @@ void writeLuxsiLight(X3DObject o)
 
     //-- point to 
     X3DObject li;
+
     li= X3DObject(o.GetParent()).GetChildren()[1];
     CTransformation lt = li.GetKinematics().GetLocal().GetTransform();
     CVector3 light_to(lt.GetTranslation());
     
     //--
-    KinematicState  local_state = o.GetKinematics().GetLocal();
+    KinematicState  local_state = o.GetKinematics().GetLocal(); 
     CTransformation local_transf = local_state.GetTransform();
    
   /*
@@ -1917,9 +1937,9 @@ void writeLuxsiLight(X3DObject o)
         if ( vSiArealight )
         {
             //--
-            float areaX(o.GetParameterValue(L"LightAreaXformSX"));
-            float areaY(o.GetParameterValue(L"LightAreaXformSY"));
-            float areaZ(o.GetParameterValue(L"LightAreaXformSZ"));
+            float size_X(o.GetParameterValue(L"LightAreaXformSX"));
+            float size_Y(o.GetParameterValue(L"LightAreaXformSY"));
+            float size_Z(o.GetParameterValue(L"LightAreaXformSZ"));
             //-- rotate; use int, float crash
             int R_areaX(o.GetParameterValue(L"LightAreaXformRX"));
             int R_areaY(o.GetParameterValue(L"LightAreaXformRY"));
@@ -1936,12 +1956,13 @@ void writeLuxsiLight(X3DObject o)
             //-- samples U + V / 2
             int U_area_samples = o.GetParameterValue(L"LightAreaSampU");
             int V_area_samples = o.GetParameterValue(L"LightAreaSampV");
+            
             //--
             CString aPoints = L""; // like luxblend
-            aPoints += L""+ CString( -areaX/2.0 ) + L" "+ CString( areaY/2.0 ) + L" "+ CString( 0.0 );
-            aPoints += L" "+ CString( areaX/2.0 ) + L" "+ CString( areaY/2.0 ) + L" "+ CString( 0.0 ); 
-            aPoints += L" "+ CString( areaX/2.0 ) + L" "+ CString( -areaY/2.0 ) + L" "+ CString( 0.0 );
-            aPoints += L" "+ CString( -areaX/2.0 ) + L" "+ CString( -areaY/2.0 ) + L" "+ CString( 0.0 );
+            aPoints += L""+ CString( -size_X/2.0 ) + L" "+ CString( size_Y/2.0 ) + L" "+ CString( 0.0 );
+            aPoints += L" "+ CString( size_X/2.0 ) + L" "+ CString( size_Y/2.0 ) + L" "+ CString( 0.0 ); 
+            aPoints += L" "+ CString( size_X/2.0 ) + L" "+ CString( -size_Y/2.0 ) + L" "+ CString( 0.0 );
+            aPoints += L" "+ CString( -size_X/2.0 ) + L" "+ CString( -size_Y/2.0 ) + L" "+ CString( 0.0 );
             //--
             f << "\nTransformBegin \n";
             f << "Translate "<< light_from.GetX() <<" "<< light_from.GetY() <<" "<< light_from.GetZ() <<"\n";
@@ -2591,17 +2612,17 @@ int writeLuxsiCloud(X3DObject obj){
 
     for( int i = 0; i<attrs.GetCount(); i++ ) {
             ICEAttribute attr = attrs[i];
-            /*
-            xsi.LogMessage( L"*******************************************************************" );
-            xsi.LogMessage( L"Name: " + attr.GetName() );
-            xsi.LogMessage( L"DataType: " + CString(attr.GetDataType()) );
-            xsi.LogMessage( L"StructType: " + CString(attr.GetStructureType()) );
-            xsi.LogMessage( L"ContextType: " + CString(attr.GetContextType()) );
-            xsi.LogMessage( L"IsConstant: " + CString(attr.IsConstant()) );
-            xsi.LogMessage( L"Readonly: " + CString(attr.IsReadonly()) );
-            xsi.LogMessage( L"AttributeCategory: " + CString(attr.GetAttributeCategory()) );
-            xsi.LogMessage( L"Element count: " + CString(attr.GetElementCount()) );
-            */
+            
+            app.LogMessage( L"*******************************************************************" );
+            app.LogMessage( L"Name: " + attr.GetName() );
+            app.LogMessage( L"DataType: " + CString(attr.GetDataType()) );
+            app.LogMessage( L"StructType: " + CString(attr.GetStructureType()) );
+            app.LogMessage( L"ContextType: " + CString(attr.GetContextType()) );
+            app.LogMessage( L"IsConstant: " + CString(attr.IsConstant()) );
+            app.LogMessage( L"Readonly: " + CString(attr.IsReadonly()) );
+            app.LogMessage( L"AttributeCategory: " + CString(attr.GetAttributeCategory()) );
+            app.LogMessage( L"Element count: " + CString(attr.GetElementCount()) );
+            //--
             if (attr.GetName() == L"PointPosition"){
                 attr.GetDataArray(aPointPosition);
             }
@@ -2747,58 +2768,62 @@ void luxsi_write(){
         for ( int i=0; i<array.GetCount();i++ )
         {
             X3DObject o(array[i]);
-            //app.LogMessage( L"\tObject name: " + o.GetName() + L":" +o.GetType() + L" parent:"+X3DObject(o.GetParent()).GetType());
-            Property visi=o.GetProperties().GetItem(L"Visibility");
-            // Collection objects
+            app.LogMessage( L"\tObject name: " + o.GetName() + L":" +o.GetType() + L" parent:"+X3DObject(o.GetParent()).GetType());
+            //--
+            Property visi = o.GetProperties().GetItem(L"Visibility");
+            bool view_visbl = (bool)visi.GetParameterValue(L"viewvis");
+            bool rend_visbl = (bool)visi.GetParameterValue(L"rendvis");
+
+            //-- Collection objects / visibilty check
             if (o.GetType()==L"polymsh")
             {
-                if (vIsHiddenObj || (vIsHiddenObj==false && ((bool)visi.GetParameterValue(L"viewvis")==true && (bool)visi.GetParameterValue(L"rendvis")==true)))
+                if (vIsHiddenObj || (vIsHiddenObj == false && (view_visbl == true && rend_visbl == true)))
                 {
                     aObj.Add(o);
                 }
             }
             if (o.GetType()==L"CameraRoot")
             {
-                if (vIsHiddenCam || (vIsHiddenCam==false && ((bool)visi.GetParameterValue(L"viewvis")==true && (bool)visi.GetParameterValue(L"rendvis")==true)))
+                if (vIsHiddenCam || (vIsHiddenCam==false && (view_visbl == true && rend_visbl == true)))
                 {
-                    aCam.Add(o);    // visibilty check
+                    aCam.Add(o);    
                 }
             }
             if (o.GetType()==L"camera" && X3DObject(o.GetParent()).GetType()!=L"CameraRoot")
             {
-                if (vIsHiddenCam || (vIsHiddenCam==false && ((bool)visi.GetParameterValue(L"viewvis")==true && (bool)visi.GetParameterValue(L"rendvis")==true)))
+                if (vIsHiddenCam || (vIsHiddenCam == false && (view_visbl == true && rend_visbl == true)))
                 {
-                    aCam.Add(o);    // visibilty check
+                    aCam.Add(o); 
                 }
             }
             if (o.GetType()==L"light")
             {
-                if (vIsHiddenLight || (vIsHiddenLight==false && ((bool)visi.GetParameterValue(L"viewvis")==true && (bool)visi.GetParameterValue(L"rendvis")==true)))
+                if (vIsHiddenLight || (vIsHiddenLight == false && (view_visbl == true && rend_visbl == true)))
                 {
-                    aLight.Add(o);  // visibilty check
+                    aLight.Add(o);  
                 }
             }
             if (o.GetType()==L"surfmsh")
             {
-                if (vIsHiddenSurface || (vIsHiddenSurface==false && ((bool)visi.GetParameterValue(L"viewvis")==true && (bool)visi.GetParameterValue(L"rendvis")==true)))
+                if (vIsHiddenSurface || (vIsHiddenSurface == false && (view_visbl == true && rend_visbl == true)))
                 {
-                    aSurfaces.Add(o);   // visibilty check
+                    aSurfaces.Add(o);   
                 }
             }
             if (o.GetType()==L"pointcloud")
             {
-                if (vIsHiddenClouds || (vIsHiddenClouds==false && ((bool)visi.GetParameterValue(L"viewvis")==true && (bool)visi.GetParameterValue(L"rendvis")==true)))
+                if (vIsHiddenClouds || (vIsHiddenClouds == false && (view_visbl == true && rend_visbl == true)))
                 {
-                    aClouds.Add(o); // visibilty check
+                    aClouds.Add(o); 
                 }
             }
             if (o.GetType()==L"#model")
             {   // model
                 if (Model(o).GetModelKind()==2)
                 {   // instances
-                    if (vIsHiddenObj || (vIsHiddenObj==false && ((bool)visi.GetParameterValue(L"viewvis")==true && (bool)visi.GetParameterValue(L"rendvis")==true)))
+                    if (vIsHiddenObj || (vIsHiddenObj == false && (view_visbl == true && rend_visbl == true)))
                     {
-                        aInstance.Add(o);   // visibilty check
+                        aInstance.Add(o);   
                     }
                 }
             }
