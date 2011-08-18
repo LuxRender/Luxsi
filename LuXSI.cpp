@@ -46,7 +46,7 @@ CString readIni();
 void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext ctxt, PPGLayout lay);
 
 void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext ctxt);
-void dynamic_luxsi_UI(Parameter changed, PPGEventContext ctxt);
+void dynamic_luxsi_UI(Parameter changed, CString paramName, PPGEventContext ctxt);
 
 //--
 XSIPLUGINCALLBACK CStatus XSILoadPlugin( PluginRegistrar& in_reg )
@@ -324,7 +324,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
     {
         Parameter changed = ctxt.GetSource() ;
         CustomProperty prop = changed.GetParent() ;
-        CString   paramName = changed.GetScriptName() ;
+        CString paramName = changed.GetScriptName() ;
 
         app.LogMessage( L"Parameter Changed: " + paramName ) ;
 
@@ -536,19 +536,21 @@ void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext c
     } else {
        // app.LogMessage(L"Tab 'Render' update values.");
     }
-       dynamic_luxsi_UI(changed, ctxt);
+       dynamic_luxsi_UI(changed, paramName, ctxt);
 }
 //--
 void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext ctxt)
 {
+    //--
+    int numparams = prop.GetParameters().GetCount();
     //-- options
     if ( changed.GetName() == L"bpresets" ) 
     {
         vpresets = prop.GetParameterValue( L"bpresets" );
-        //-- commons values for all presets
-        //    Parameter(prop.GetParameters().GetItem( L"bexpert" )).PutValue( vExpert = false );
-            Parameter(prop.GetParameters().GetItem( L"hSpp" )).PutValue( vhaltspp = 0 );
-            Parameter(prop.GetParameters().GetItem( L"hTime" )).PutValue( vhalttime = 0 );
+        //-- commons values for all presets 
+        //--
+        Parameter(prop.GetParameters().GetItem( L"hSpp" )).PutValue( vhaltspp = 0 );
+        Parameter(prop.GetParameters().GetItem( L"hTime" )).PutValue( vhalttime = 0 );
          
         //--
         if ( vpresets == 0 ) // Custom parameters
@@ -557,13 +559,44 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
         }
         else if ( vpresets == 1 ) // Preview; Instant Global Illumination
         {
-            //-- sampler; low
+           /* //--
+            MtBool[ vdirectsampleall ] 
+            vdirectsamples 
+            MtBool[ vdirectdiffuse ]
+            MtBool[vdirectglossy]
+            MtBool[ vindirectsampleall ] 
+            vindirectsamples 
+            MtBool[ vindirectdiffuse ] 
+            MtBool[ vindirectglossy ] 
+            vdiffusereflectdepth 
+            vdiffusereflectsamples 
+            vdiffuserefractdepth 
+            vdiffuserefractsamples 
+            vglossyreflectdepth 
+            vglossyreflectsamples 
+            vglossyrefractdepth 
+            vglossyrefractsamples 
+            vspecularreflectdepth 
+            vspecularrefractdepth 
+            MtBool[0] 
+            vdiff_reflect_reject_thr 
+            MtBool[0] 
+            vdiff_refract_reject_thr 
+            MtBool[0] 
+            vglossy_reflect_reject_thr 
+            MtBool[0] 
+            vglossy_refract_reject_thr 
+        if ( vsexpert )
+           MtlightST[vLight_str]
+*/ 
+            //-- sampler
             vSampler = 2 ;
             vPixsampler = 3 ; // low
             vPixelsamples = 1 ;
-            //-- surfaceintegrator; distributepath
-            vSurfaceInt = 3 ;
-            Parameter(prop.GetParameters().GetItem( L"blight_str" )).PutValue( vLight_str = 2 );
+            //-- distributepath
+            vSurfaceInt = 3 ; 
+            vLight_str = 2;
+           // Parameter(prop.GetParameters().GetItem( L"blight_str" )).PutValue( vLight_str = 2 );
             Parameter(prop.GetParameters().GetItem( L"directsampleall" )).PutValue( vdirectsampleall =  true );
             Parameter(prop.GetParameters().GetItem( L"bdirectsamples" )).PutValue( vdirectsamples = 1 );
             Parameter(prop.GetParameters().GetItem( L"bindirectsampleall" )).PutValue( vindirectsampleall = false );
@@ -592,11 +625,8 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
             vSampler = 2 ;
             vPixsampler = 1 ;
             vPixelsamples = 2 ;
-            
-            //-- surfaceintegrator; directlighting
-            vSurfaceInt = 2 ;
+            vSurfaceInt = 2 ; //-- directlighting
             vmaxdepth = 5 ;
-            
             //--
             app.LogMessage(L" Parameters for render presets 2, loaded..");
         }
@@ -645,6 +675,7 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
             //--
             vSurfaceInt = 1 ; // path
             vmaxdepth = 10 ;
+            
             Parameter(prop.GetParameters().GetItem( L"binc_env" )).PutValue( vInc_env = true );
             //--
             app.LogMessage(L"Parameters for render presets 5; loaded..");
@@ -665,13 +696,13 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
         {
             vSampler = 1 ;
             vchainlength = 512 ;
-            Parameter(prop.GetParameters().GetItem( L"bbasampler" )).PutValue( vbasampler = 1 );
+            vbasampler = 1 ;
             vPixsampler = 2 ; 
             vPixelsamples = 1 ;
             //-- surf
             vSurfaceInt = 1 ; // path
             vmaxdepth = 10 ;
-            Parameter(prop.GetParameters().GetItem( L"binc_env" )).PutValue( vInc_env = true );
+            vInc_env = true ;
             //--
             app.LogMessage(L" Parameters for render presets 7; loaded..");
         }
@@ -696,7 +727,7 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
             vSurfaceInt = 1 ; // path
             vsexpert = false ;
             vmaxdepth = 10 ; 
-            Parameter(prop.GetParameters().GetItem( L"binc_env" )).PutValue( vInc_env = true );
+            vInc_env = true ;
             //-- filter - commons
             app.LogMessage(L" Parameters for render presets 9; loaded..");
         }
@@ -731,7 +762,6 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
             Parameter(prop.GetParameters().GetItem( L"blight_depth" )).PutValue( vLight_depth ); 
             Parameter(prop.GetParameters().GetItem( L"beye_depth" )).PutValue( vEye_depth );
             
-           
             //-- Accelerator; 'qbvh' 
             Parameter(prop.GetParameters().GetItem( L"bAccel" )).PutValue( vAccel = 0 );
             Parameter(prop.GetParameters().GetItem( L"bmaxprimsperleaf" )).PutValue( vmaxprimsperleaf = 4 );
@@ -743,11 +773,13 @@ void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext
     } //-- end cases...
 }
 //--
-void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt) 
+void dynamic_luxsi_UI( Parameter changed, CString paramName, PPGEventContext ctxt) 
 {
     //-- load parameters data
     
     PPGLayout lay = ctxt.GetSource() ; 
+    int numparams = prop.GetParameters().GetCount();
+    
 
     //-- convention names;
     //-- prefix l; for Parameter ( logic )
@@ -761,7 +793,7 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
             //--
             lmode_rtga.PutCapabilityFlag( siNotInspectable, changed.GetValue() == false );
             ltga_gamut.PutCapabilityFlag( siNotInspectable, changed.GetValue() == false );
-                ctxt.PutAttribute(L"Refresh", true);
+            ctxt.PutAttribute(L"Refresh", true);
         }
         //------------------------------------
         if ( changed.GetName() == L"save_exr")
@@ -891,19 +923,19 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
         if (( vfilter == 1 ) && ( vfexpert )) //-- gauss
         {
             lbfalpha.PutCapabilityFlag( siNotInspectable, false );
-                ctxt.PutAttribute(L"Refresh", true);
+            ctxt.PutAttribute(L"Refresh", true);
         }
         else if (( vfilter == 2 ) && ( vfexpert )) //-- mitchell
         {
             lssample.PutCapabilityFlag( siNotInspectable, false );
             lbF_B.PutCapabilityFlag( siNotInspectable, false );
             lbF_C.PutCapabilityFlag( siNotInspectable, false );
-                ctxt.PutAttribute(L"Refresh", true);
+            ctxt.PutAttribute(L"Refresh", true);
         }
         else if (( vfilter == 3 ) && ( vfexpert )) //-- sinc
         {
             lbTau.PutCapabilityFlag( siNotInspectable, false );
-                ctxt.PutAttribute(L"Refresh", true);
+            ctxt.PutAttribute(L"Refresh", true);
         }
         else //-- box
         {
@@ -1110,15 +1142,40 @@ void dynamic_luxsi_UI( Parameter changed, PPGEventContext ctxt)
             lbindirectglossy.PutCapabilityFlag( siNotInspectable, false );        
             lbspecularreflectdepth.PutCapabilityFlag( siNotInspectable, false );  
             lbspecularrefractdepth.PutCapabilityFlag( siNotInspectable, false );
+
             lbdiff_reflect_reject_thr.PutCapabilityFlag( siNotInspectable, false );
             lbdiff_refract_reject_thr.PutCapabilityFlag( siNotInspectable, false );
             lbglossy_reflect_reject_thr.PutCapabilityFlag( siNotInspectable, false );
             lbglossy_refract_reject_thr.PutCapabilityFlag( siNotInspectable, false );
             //--
             lbdiff_reflect_reject.PutCapabilityFlag( siNotInspectable, false );
+            if ( vdiff_reflect_reject == false )
+            {
+                lbdiff_reflect_reject_thr.PutCapabilityFlag( siReadOnly, true );
+            }
+            else
+            {
+                lbdiff_reflect_reject_thr.PutCapabilityFlag( siReadOnly, false );
+            }
+
+            //--
             lbdiff_refract_reject.PutCapabilityFlag( siNotInspectable, false );
+            if ( vdiff_refract_reject == false )
+            {
+                lbdiff_refract_reject_thr.PutCapabilityFlag( siReadOnly, true );
+            }
+            //--
             lbglossy_reflect_reject.PutCapabilityFlag( siNotInspectable, false );
+            if ( vglossy_reflect_reject == false )
+            {
+                lbglossy_reflect_reject_thr.PutCapabilityFlag( siReadOnly, true );
+            }
+            //--
             lbglossy_refract_reject.PutCapabilityFlag( siNotInspectable, false );
+            if ( vglossy_refract_reject == false )
+            {
+                lbglossy_refract_reject_thr.PutCapabilityFlag( siReadOnly, true );
+            }
 
             //--
             if ( vsexpert )
@@ -1334,23 +1391,23 @@ void writeLuxsiBasics(){
 
     //-- convention names; prefix Mt;
     //----//------>
-    char MtRRst [3] [12] = { "none", "probability", "efficiency"};
-    char ARmode [2] [8] = { "GUI", "console"};
-    char MtlightST [7] [12] = { "one", "all", "auto", "importance", "powerimp", "allpowerimp", "logpowerimp"};
-    char Aengine [2] [8] = { "classic", "hybrid" };
-    char ArgbT [3] [5] = { "Y", "RGB", "RGBA" }; // iterator  vRtga
-    char AZb_norm [3] [22] = { "Camera Start/End clip", "Min/Max", "None" }; //exr
-    char ArgbP [4] [5] = { "Y", "YA", "RGB", "RGBA" }; // iterator  vRpng
-    char aFilter [5] [9] = { "box", "gaussian", "mitchell", "sinc", "triangle" }; // iter vfilter
-    char aSampler [4] [15] = { "metropolis", "erpt", "lowdiscrepancy", "random" }; // mode, Asampler [vSampler]
-    char aPxSampler [6] [15] = { "linear", "vegas", "random", "lowdiscrepancy", "tile", "hilbert" };
-    char MtSurf [6] [16] = { "bidirectional", "path", "directlighting", "distributedpath", "igi", "exphotonmap",  };
-    char MtRendering [2] [15] = { "path", "directlighting" };
+    const char *MtRRst [3] = { "none", "probability", "efficiency"};
+    const char *ARmode [2] = { "GUI", "console"};
+    const char *MtlightST [7] = { "one", "all", "auto", "importance", "powerimp", "allpowerimp", "logpowerimp"};
+    const char *Aengine [2] = { "classic", "hybrid" };
+    const char *ArgbT [3] = { "Y", "RGB", "RGBA" }; // iterator  vRtga
+    const char *AZb_norm [3] = { "Camera Start/End clip", "Min/Max", "None" }; //exr
+    const char *ArgbP [4] = { "Y", "YA", "RGB", "RGBA" }; // iterator  vRpng
+    const char *aFilter [5] = { "box", "gaussian", "mitchell", "sinc", "triangle" }; // iter vfilter
+    const char *aSampler [4] = { "metropolis", "erpt", "lowdiscrepancy", "random" }; // mode, Asampler [vSampler]
+    const char *aPxSampler [6] = { "linear", "vegas", "random", "lowdiscrepancy", "tile", "hilbert" };
+    const char *MtSurf [6] = { "bidirectional", "path", "directlighting", "distributedpath", "igi", "exphotonmap" };
+    const char *MtRendering [2] = { "path", "directlighting" };
     //---
-    string fname=vFileObjects.GetAsciiString();
+    string fname = vFileObjects.GetAsciiString();
     int loc=(int)fname.rfind(".");
 
-    f << "Film \"fleximage\"\n"; //----
+    f << "\nFilm \"fleximage\"\n"; //----
     f << "  \"integer xresolution\" ["<< vXRes << "]\n  \"integer yresolution\" ["<< vYRes <<"]\n";
     f << "  \"string filename\" [\""<< replace(fname.substr(0,loc)) << "\"]\n";
 
@@ -1461,8 +1518,8 @@ void writeLuxsiBasics(){
         f << "  \"integer lightdepth\" ["<< vLight_depth <<"]\n";
         if ( vsexpert )
         {
-            f << "  \"float eyerrthreshold\" ["<< vEyeRRthre <<"]\n"; // TODO;
-            f << "  \"float lightrrthreshold\" ["<< vLightRRthre <<"]\n"; // TODO;
+            f << "  \"float eyerrthreshold\" ["<< vEyeRRthre <<"]\n"; 
+            f << "  \"float lightrrthreshold\" ["<< vLightRRthre <<"]\n"; 
         }
     }
     else if ( vSurfaceInt == 1 )//-- path
@@ -1654,12 +1711,13 @@ void writeLuxsiCam(X3DObject o){
 
     X3DObject o2;
     Camera c;
-    if (o.GetType()==L"camera") {
-        o2=o;
-        c=o;
-    } else {
-        o2=o.GetChildren()[0];
-        c=o.GetChildren()[0];
+    if (o.GetType()==L"camera") 
+    {
+        o2=o;  c=o;
+    }
+    else 
+    {
+        o2=o.GetChildren()[0];  c=o.GetChildren()[0];
     }
 
     // Operations to calculate look at position.
@@ -1772,19 +1830,18 @@ void writeLuxsiLight(X3DObject o)
     CRefArray aEnv = app.GetActiveProject().GetActiveScene().GetActivePass().GetNestedObjects();
     for (int i=0;i<aEnv.GetCount();i++)
     {
-        app.LogMessage(L"object render pass: "+ CString(SIObject(aEnv[i]).GetName()));
-            
+        // app.LogMessage(L"object render pass: "+ CString(SIObject(aEnv[i]).GetName()));
         if (SIObject(aEnv[i]).GetName()==L"Environment Shader Stack")
         {
             CRefArray aImages = SIObject(aEnv[i]).GetNestedObjects();
             for (int j=0;j<aImages.GetCount();j++)
             {
-                app.LogMessage(L"Nested object render pass: "+ CString(SIObject(aImages[j]).GetType()));
+                //app.LogMessage(L"Nested object render pass: "+ CString(SIObject(aImages[j]).GetType()));
                 if (SIObject(aImages[j]).GetType()==L"Shader")
                 {
                     Shader s(aImages[j]);
-                    CRefArray aEnvImg=s.GetImageClips();
-                    for (int k=0;k<aEnvImg.GetCount();k++)
+                    CRefArray aEnvImg = s.GetImageClips();
+                    for (int k=0; k < aEnvImg.GetCount(); k++)
                     {
                         ImageClip2 vImgClip(aEnvImg[k]);
                         Source vImgClipSrc(vImgClip.GetSource());
@@ -1805,18 +1862,17 @@ void writeLuxsiLight(X3DObject o)
          //   break;
         }
     }
-    //--
-    CTransformation localTransformation = o.GetKinematics().GetGlobal().GetTransform();
+    
+    CTransformation localTransformation = o.GetKinematics().GetLocal().GetTransform();
     //-- point from
     KinematicState  global_kinex_state = o.GetKinematics().GetGlobal();
     CTransformation global_transf = global_kinex_state.GetTransform();
     CVector3 light_from(global_transf.GetTranslation());
-    //--
+    //
     float a=0, b=0, c=0, alpha=0;
 
     //-- point to 
     X3DObject li;
-
     li= X3DObject(o.GetParent()).GetChildren()[1];
     CTransformation lt = li.GetKinematics().GetLocal().GetTransform();
     CVector3 light_to(lt.GetTranslation());
@@ -1825,45 +1881,12 @@ void writeLuxsiLight(X3DObject o)
     KinematicState  local_state = o.GetKinematics().GetLocal(); 
     CTransformation local_transf = local_state.GetTransform();
    
-  /*
     //--
-    Geometry g(Light(o).GetActivePrimitive().GetGeometry()) ;
-    //--
-    CString vTris = L"", vPoints = L"";
-    CTriangleRefArray triangles(g.GetTriangles()); // miga
-        CLongArray indices( triangles.GetIndexArray() );
-        CVector3Array allPoints(triangles.GetCount()*3);
-       
-        long index=0;
-        for (int i=0; i<triangles.GetCount();i++)
-        {
-            Triangle triangle(triangles.GetItem(i));
-            for (int j=0;j<triangle.GetPoints().GetCount();j++)
-            {
-                TriangleVertex vertex0(triangle.GetPoints().GetItem(j));
-                CVector3 pos(vertex0.GetPosition());
-            
-                long arrayPos=index++;
-                allPoints[arrayPos] = pos;
-                vTris += CValue(arrayPos).GetAsText()+L" ";
-            }
-            vTris += L"\n";
-        }
-        //--
-        for (LONG j=0;j<allPoints.GetCount();j++)
-        {
-            vPoints +=  L" "+ CString(allPoints[j][0]) + L" "+  CString(allPoints[j][1]) + L" "+ CString(allPoints[j][2])+L"\n";
-        }
-     */   //-------------------------------------------------------
-
-    //--
-   
     Shader s((Light(o).GetShaders())[0]);
     s.GetColorParameterValue(L"color",a,b,c,alpha );
     //--
     CString lName = findInGroup(o.GetName());
     CString group_name; 
-    
     if (lName != L"") 
     {
         group_name = lName.GetAsciiString(); 
@@ -1954,8 +1977,8 @@ void writeLuxsiLight(X3DObject o)
             //double rot = global_transf.GetRotationAxisAngle(axis);
                         
             //-- samples U + V / 2
-            int U_area_samples = o.GetParameterValue(L"LightAreaSampU");
-            int V_area_samples = o.GetParameterValue(L"LightAreaSampV");
+            int U_samples = o.GetParameterValue(L"LightAreaSampU");
+            int V_samples = o.GetParameterValue(L"LightAreaSampV");
             
             //--
             CString aPoints = L""; // like luxblend
@@ -1977,7 +2000,7 @@ void writeLuxsiLight(X3DObject o)
 	        f << "  \"float power\" ["<< float(o.GetParameterValue(L"LightEnergyIntens"))/100 <<"]\n"; //-- ;
 	        f << "  \"float efficacy\" [17.0]\n";
 	        f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
-	        f << "  \"integer nsamples\" ["<< (U_area_samples + V_area_samples)/2 <<"]\n"; 
+	        f << "  \"integer nsamples\" ["<< (U_samples + V_samples)/2 <<"]\n"; 
 	        if ( vUse_IES )
             {
                 f << "  \"string iesname\" [\"" << replace(ies_file.GetAsciiString()) << "\"]\n";
@@ -2417,6 +2440,48 @@ void writeLuxsiShader(){
     }
 }
 //--
+int writeLuxsiSurface(X3DObject o, CString vType)
+{
+    //--
+    Geometry g(o.GetActivePrimitive().GetGeometry()) ;
+    CRefArray mats(o.GetMaterials()); // Array of all materials of the object
+    Material m = mats[0];
+    CRefArray shad(m.GetShaders()); // Array of all shaders attached to the material [e.g. phong]
+    Shader s(shad[0]);
+    //--
+    KinematicState  gs = o.GetKinematics().GetLocal(); 
+    CTransformation gt = gs.GetTransform();
+    //--
+    CVector3 axis;
+        double rot = gt.GetRotationAxisAngle(axis);
+        //-- TODO; changed for matrix
+        f << "\nTransformBegin\n";
+        f << "\nTranslate "<< gt.GetPosX() <<" "<< gt.GetPosY() <<" "<< gt.GetPosZ() <<"\n";
+        if (rot!= 0)
+        {
+            f << "Rotate " << (rot*180/PI) << " "<< axis[0] << " " << axis[1] << " "<< axis[2] << "\n";
+        }
+        if (gt.GetSclX()!=1 || gt.GetSclY()!=1 || gt.GetSclZ()!=1) 
+        {
+            f << "Scale " << gt.GetSclX() << " " << gt.GetSclY() << " "<< gt.GetSclZ() << "\n";
+        }
+        //--
+        float vradius = o.GetParameterValue(L"radius");// 
+        float vzmin = o.GetParameterValue(L"startuangle");
+        float vzmax = o.GetParameterValue(L"enduangle");
+        float vphimax = o.GetParameterValue(L"endvangle");
+        //--
+        f << " Shape  \"sphere\" \n";
+            f << "  \"float radius\" [" << vradius << "]\n";
+            f << "  \"float zmin\" [" << -vzmax /2  << "]\n";
+            f << "  \"float zmax\" [" << vzmax /2  << "]\n";
+            f << "  \"float phimax\" [" << vphimax * 2 << "]\n";
+            //--
+        f << "TransformEnd\n";
+
+    return 0;
+}
+//--
 int writeLuxsiObj(X3DObject o, CString vType){
     //
     // Writes objects
@@ -2439,12 +2504,11 @@ int writeLuxsiObj(X3DObject o, CString vType){
     CString vUV=L"",vNormals=L"",vTris=L"",vMod=L"",vPoints=L"";
     
     LONG subdLevel=0;
-
     Property geopr=o.GetProperties().GetItem(L"Geometry Approximation");
     if ((int)geopr.GetParameterValue(L"gapproxmordrsl") > 0 ) 
     {
         vIsSubD=true;
-        subdLevel = (int)geopr.GetParameterValue(L"gapproxmordrsl"); //-- only render, ignore if is for display
+        subdLevel = (int)geopr.GetParameterValue(L"gapproxmordrsl"); //-- only render
     }
     else
     {
@@ -2452,73 +2516,26 @@ int writeLuxsiObj(X3DObject o, CString vType){
     }
     //--
     CRefArray vImags=m.GetShaders();
-        for (int i=0;i<vImags.GetCount();i++)
+    for (int i=0;i<vImags.GetCount();i++)
+    {
+        CRefArray vImags2=Shader(vImags[i]).GetShaders();
+        for (int j=0;j<vImags2.GetCount();j++)
         {
-            CRefArray vImags2=Shader(vImags[i]).GetShaders();
-            for (int j=0;j<vImags2.GetCount();j++)
+            CString vWhat((Shader(vImags2[j]).GetProgID()).Split(L".")[1]);
+            if (vWhat==L"txt2d-image-explicit" || vWhat==L"Softimage.txt2d-image-explicit.1")
             {
-                CString vWhat((Shader(vImags2[j]).GetProgID()).Split(L".")[1]);
-                if (vWhat==L"txt2d-image-explicit" || vWhat==L"Softimage.txt2d-image-explicit.1")
-                {
-                    vText = true;
-                }
+                vText = true;
             }
         }
+    }
     //--
     CTransformation localTransformation = ga.GetTransform();
-    KinematicState  gs = o.GetKinematics().GetLocal();
+    KinematicState  gs = o.GetKinematics().GetLocal(); 
     CTransformation gt = gs.GetTransform();
     CMatrix4 mat4(gt.GetMatrix4()); 
     //--
     if (int(g.GetTriangles().GetCount()) > 0 )
     {
-        f << "\nAttributeBegin #" << o.GetName().GetAsciiString();
-        if ((float)s.GetParameterValue(L"inc_inten")> 0 )
-        {
-            // check for Meshlight
-            vIsMeshLight = true;
-            float red=0.0f,green=0.0f,blue=0.0f,alpha=0.0f;
-            s.GetColorParameterValue(L"incandescence",red,green,blue,alpha );
-            CString lName = findInGroup(o.GetName());
-            f << " LightGroup \"";
-            if (lName!=L"") 
-            {
-                f << lName.GetAsciiString();
-            } 
-            else 
-            {
-                f << (o.GetName()).GetAsciiString();
-            }
-           //--
-            float incandescence(s.GetParameterValue(L"inc_inten"));
-            f << "\"\n";
-            f << "\nAreaLightSource \"area\" \"integer nsamples\" [1]";
-            f << "\"color L\" ["<< (red * incandescence) <<" "<<(green * incandescence) <<" "<<(blue * incandescence )<<"]";
-            f << "\"float gain\" [" << incandescence << "] \n";
-
-        }
-        else
-        {
-            //shader = writeLuxsiShader(o);
-            f << "\nNamedMaterial \""<< m.GetName().GetAsciiString() <<"\"\n";
-        }
-        //-- write triangles
-        if (vType==L"instance") 
-        {
-            f << "Identity\n";
-        }
-        CVector3 axis;
-        double rot = gt.GetRotationAxisAngle(axis);
-        //-- TODO; changed for matrix
-        f << "Translate "<< gt.GetPosX() <<" "<< gt.GetPosY() <<" "<< gt.GetPosZ() <<"\n";
-        if (rot!=0)
-        {
-            f << "Rotate " << (rot*180/PI) << " "<< axis[0] << " " << axis[1] << " "<< axis[2] << "\n";
-        }
-        if (gt.GetSclX()!=1 && gt.GetSclY()!=1 && gt.GetSclZ()!=1) 
-        {
-            f << "Scale " << gt.GetSclX() << " " << gt.GetSclY() << " "<< gt.GetSclZ() << "\n";
-        }
         //--
         CTriangleRefArray triangles(g.GetTriangles()); // miga
         CLongArray indices( triangles.GetIndexArray() );
@@ -2538,26 +2555,67 @@ int writeLuxsiObj(X3DObject o, CString vType){
                 CVector3 normal(vertex0.GetNormal());
                 CUV uvs(vertex0.GetUV());
 
-                long arrayPos=index++;
+                long arrayPos = index++;
                 allPoints[arrayPos] = pos;
+                
                 allNormals[arrayPos] = normal;
                 allUV[arrayPos] = CVector3(uvs.u, uvs.v,0);
-                vTris += CValue(arrayPos).GetAsText()+L" ";
+                vTris += L" "+ CString(arrayPos) + L" ";
             }
             vTris += L"\n";
         }
-
+       
         //  app.LogMessage(L"count: "+CValue(allPoints.GetCount()).GetAsText());
-        for (LONG j=0;j<allPoints.GetCount();j++)
+        for (LONG j=0; j < allPoints.GetCount(); j++)
         {
-            vPoints +=  L" "+ CString(allPoints[j][0]) + L" "+  CString(allPoints[j][1]) + L" "+ CString(allPoints[j][2])+L"\n";
+            //-- test
+            CVector3 new_pos(allPoints[j][0], allPoints[j][1], allPoints[j][2]);
+            new_pos.MulByTransformationInPlace(gt);
+            //--
+            vPoints += L" "+ CString(new_pos[0]) + L" "+  CString(new_pos[1]) + L" "+ CString(new_pos[2]) + L"\n";
             vUV +=  L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]) + L"\n";
-            vNormals +=  L" "+ CString(allNormals[j][0]) + L" "+  CString(allNormals[j][1]) + L" "+ CString(allNormals[j][2])+L"\n";
+            vNormals +=  L" "+ CString(allNormals[j][0]) + L" "+  CString(allNormals[j][1]) + L" "+ CString(allNormals[j][2]) + L"\n";
         }
-        //-- write portal
+        //--
+        f << "\nAttributeBegin #" << o.GetName().GetAsciiString();
+        
+        //-- test
+        f << "\nNamedMaterial \""<< m.GetName().GetAsciiString() <<"\"\n";
+        //-- meshlight
+        if (float(s.GetParameterValue(L"inc_inten"))> 0 )
+        {
+            vIsMeshLight = true;
+            float red = 0.0f, green = 0.0f, blue = 0.0f, alpha = 0.0f;
+            s.GetColorParameterValue(L"incandescence",red,green,blue,alpha );
+            float incandescence(s.GetParameterValue(L"inc_inten"));
+            CString lName = findInGroup(o.GetName());
+            //--
+            f << " LightGroup \"";
+            if (lName!=L"") 
+            {
+                f << lName.GetAsciiString();
+            } 
+            else 
+            {
+                f << (o.GetName()).GetAsciiString();
+            }
+           //--
+            f << "\"\n";
+            f << "\nAreaLightSource \"area\" \n";
+            f << "  \"float importance\" [1.00] \n";
+            f << "  \"float gain\" ["<< incandescence <<"] \n";
+            //"float power" [100.000000000000000]
+	        //"float efficacy" [17.000000000000000]
+            f << "  \"color L\" ["<< (red * incandescence) <<" "<<(green * incandescence) <<" "<<(blue * incandescence )<<"]";   
+        }
+      /* 
+        //-- search portal light
+        bool vIsPortal = false;
         string::size_type loc = string(CString(o.GetName()).GetAsciiString()).find( "PORTAL", 0 );
         if (loc != string::npos) 
         {
+            vIsPortal = true; 
+        //--
             f << " PortalShape ";
             f << " \"trianglemesh\"\n \"integer indices\" [\n";
             f << vTris.GetAsciiString();
@@ -2566,44 +2624,99 @@ int writeLuxsiObj(X3DObject o, CString vType){
             f << "] \"normal N\" [\n";
             f << vNormals.GetAsciiString();
             f << "]\n";
+       
+        }
+        else 
+        */
+
+        if ( vIsMeshLight )
+        {
+            f << " Shape  \"mesh\" \n";
+            f << "  \"integer triindices\" [\n" << vTris.GetAsciiString() << "\n ]";
+            f << "  \"point P\" [\n" << vPoints.GetAsciiString() << "\n ]";
+            f << "  \"normal N\" [\n" << vNormals.GetAsciiString() << "\n ]";
         }
         else 
         {
             f << " Shape  \"mesh\" \n";
-            f << "  \"integer nsubdivlevels\" [" << subdLevel <<"] \"string subdivscheme\" [\"loop\"] \n";// Not CatmullClark..??
+            f << "  \"integer nsubdivlevels\" [" << subdLevel <<"] \"string subdivscheme\" [\"loop\"] \n";
             f << "  \"bool dmnormalsmooth\" [\""<< MtBool[vSmooth_mesh] <<"\"]";
-            f << "  \"bool dmsharpboundary\" [\""<< MtBool[vSharp_bound] <<"\"] \n";// preserve edges [ or (
+            f << "  \"bool dmsharpboundary\" [\""<< MtBool[vSharp_bound] <<"\"] \n";
             f << "  \"string acceltype\" [\""<< MtAccel[vAccel] <<"\"] \"string tritype\" [\"wald\"] \n";//TODO; create menu option type... "
-            f << "  \"integer triindices\" [\n ";// integer indices, also work corrected
-            f << vTris.GetAsciiString();
-            f << "\n ] \"point P\" [\n";
-            f << vPoints.GetAsciiString();
-            f << "\n ]";
-            if ( vNormals != L"" )
+            f << "  \"integer triindices\" [\n" << vTris.GetAsciiString() << "\n ]";
+            f << "  \"point P\" [\n" << vPoints.GetAsciiString() << "\n ]";
+            //--
+            if ( vSmooth_mesh && vNormals != L"" )
             {
-                f << " \"normal N\" [\n";
-                f << vNormals.GetAsciiString();
-                f << "\n ]";
+                f << "  \"normal N\" [\n" << vNormals.GetAsciiString() << "\n ]";
             }
-            if( vText )
+            //--
+            if( vText && vUV !=L"")
             {
-                f << " \"float uv\" [\n";
-                f << vUV.GetAsciiString();
-                f << " ]\n";
+                f << " \"float uv\" [\n" << vUV.GetAsciiString() << "\n ]";   
             }
         }
+      /*  if ( vType == L"surface")
+        {
+            //--
+            NurbsSurfaceMesh surf(o.GetActivePrimitive().GetGeometry());
+			CNurbsSurfaceRefArray  surfaces = surf.GetSurfaces();
+			NurbsSurface nSurface(surfaces[0]);
+			CNurbsSurfaceData out; 
+			nSurface.Get(siSINurbs,out);
+			CTransformation localTransformation = o.GetKinematics().GetLocal().GetTransform();
+			KinematicState  gs = o.GetKinematics().GetGlobal();
+			CTransformation gt = gs.GetTransform();
+			
+			f << " Shape  \"nurbs\" \n";
+			f << "  nu ["<< out.m_lNbUControlPoints <<"]\n nv ["<< out.m_lNbVControlPoints <<"]\n";
+			f << "  wrap false false\n";
+			//f << "  \" point P\";
+			
+			//for (int i=0; i<surfaces.GetCount();i++){
+				//NurbsSurface nSurface(surfaces[i]);
+				CControlPointRefArray ca = nSurface.GetControlPoints();  
+				for (int j=0; j<ca.GetCount();j++){
+					ControlPoint cp = ca.GetItem(j);
+					
+					Point point(ca.GetItem(j) );
+					
+					CVector3 pos(MapObjectPositionToWorldSpace(  gt,  point.GetPosition()));
+					
+					
+					f << pos.GetX() << " "<< pos.GetY() << " "<< pos.GetZ() << " ";
+			//	}
+				}
+				f << "\n";
+        }
+      */ //--
         f << "\nAttributeEnd #" << o.GetName().GetAsciiString() << "\n";
-    }
+    } 
     return 0;
 }
 //--
-int writeLuxsiCloud(X3DObject obj){
+int writeLuxsiCloud(X3DObject obj)
+{
+    //-----------------------------------------------------------------
+    ICEAttribute attr = obj.GetActivePrimitive().GetGeometry().GetICEAttributeFromName( L"PointPosition" );
+
+		CICEAttributeDataArrayVector3f points;
+		attr.GetDataArray( points );
+
+		Application xsi;
+		for( ULONG i=0; i<points.GetCount( ); i++ )
+		{
+			xsi.LogMessage( CString( points[ i ] ) );
+		}
+
+    //-------------------------------------------------------------
+       
     //
     // Writes pointclouds
     //
-
+/*
     ICEAttribute attr;
-    CICEAttributeDataArrayVector3f aPointPosition;
+    CICEAttributeDataArrayVector3f aPointPosition; 
     CICEAttributeDataArrayLong aID;
     CICEAttributeDataArrayFloat aSize;
     CICEAttributeDataArrayVector3f aVel;
@@ -2622,11 +2735,11 @@ int writeLuxsiCloud(X3DObject obj){
             app.LogMessage( L"Readonly: " + CString(attr.IsReadonly()) );
             app.LogMessage( L"AttributeCategory: " + CString(attr.GetAttributeCategory()) );
             app.LogMessage( L"Element count: " + CString(attr.GetElementCount()) );
-            //--
+           //--
             if (attr.GetName() == L"PointPosition"){
-                attr.GetDataArray(aPointPosition);
+                attr..GetDataArray(aPointPosition);
             }
-            if (attr.GetName() == L"ID"){
+            if (attr.GetName() == L"State_ID"){
                 attr.GetDataArray(aID);
             }
             if (attr.GetName() == L"Size"){
@@ -2637,56 +2750,65 @@ int writeLuxsiCloud(X3DObject obj){
             }
         }
 
+*/
 
-
-    for (unsigned int i=0;i<aPointPosition.GetCount();i++){
+    //for (unsigned int i=0;i<aPointPosition.GetCount();i++)
+        for (unsigned int i=0;i<points.GetCount();i++)
+    {
         // get all points
 
-        f << "\nAttributeBegin #\"" << obj.GetName().GetAsciiString() << (int)aID[i] << "\" \n";
-        f << "  Translate " << (float)aPointPosition[i][0] << " " << (float)aPointPosition[i][1] << " "<< (float)aPointPosition[i][2] << "\n";
+        f << "\nAttributeBegin #\n";//" << obj.GetName().GetAsciiString() << (int)aID[i] << "\" \n";
+        f << "  Translate " << (float)points[i][0] << " " << (float)points[i][1] << " "<< (float)points[i][2] << "\n";
         f << "  Material \"matte\" \"color Kd\" [0 0.8 0.8 ]\n";
-        f << "  Shape \"sphere\" \"float radius\" [" << (float)aSize[i] << "]\n";
+        f << "  Shape \"sphere\" \"float radius\" [0.5]\n";
+        // f << "  Shape \"sphere\" \"float radius\" [" << (float)aSize[i] << "]\n";
         f << "AttributeEnd #"<< obj.GetName().GetAsciiString()<<"\n";
 
     }
 
     return 0;
+   
 }
 //--
 int writeLuxsiInstance(X3DObject o){
     // instance
-
     //write source object [won't be displayed]
+    Model vModel = Model(o).GetInstanceMaster();
+    CRefArray vGroup = X3DObject(vModel).GetChildren();
 
-    Model m = Model(o).GetInstanceMaster();
-
-
-    CRefArray vGroup = X3DObject(m).GetChildren();
-
-    if ( find(aInstanceList, m.GetName() ) ) {
-    } else {
-        f << "\nObjectBegin \""<< m.GetName().GetAsciiString()<<"\"";
-        for (int i=0;i<vGroup.GetCount();i++){
+    if ( find(aInstanceList, vModel.GetName() ) ) 
+    {
+        return 0;
+    }
+    else
+    {
+        f << "\nObjectBegin \""<< vModel.GetName().GetAsciiString()<<"\"";
+        for (int i=0;i<vGroup.GetCount();i++)
+        {
             writeLuxsiObj(X3DObject(vGroup[i]),L"instance");
         }
         f << "\nObjectEnd #"<< o.GetName().GetAsciiString()<<"\n";
-        aInstanceList.Add(m.GetName());
+        aInstanceList.Add(vModel.GetName());
     }
 
     f << "\nAttributeBegin #" << o.GetName().GetAsciiString();
     KinematicState  gs = o.GetKinematics().GetGlobal();
     CTransformation gt = gs.GetTransform();
-    CMatrix4 mat4(gt.GetMatrix4());
+    CMatrix4 mat4(gt.GetMatrix4()); 
 
     CVector3 axis;
     double rot = gt.GetRotationAxisAngle(axis);
-    f << "\nTranslate " << CString(gt.GetPosX()).GetAsciiString() << " " << CString(-gt.GetPosZ()).GetAsciiString() << " "<< CString(gt.GetPosY()).GetAsciiString() << "\n";
-    if (rot!=0){
-    f << "Rotate " << (rot*180/PI) << " "<< CString(axis[0]).GetAsciiString() << " " << CString(-axis[2]).GetAsciiString() << " "<< CString(axis[1]).GetAsciiString() << "\n";
-    }
-    if (gt.GetSclX()==1 && gt.GetSclY()==1 && gt.GetSclZ()==1) {} else {
-        f << "Scale " << CString(gt.GetSclX()).GetAsciiString() << " " << CString(gt.GetSclZ()).GetAsciiString() << " "<< CString(gt.GetSclY()).GetAsciiString() << "\n";
-    }
+    //
+    f << "\nTranslate "<< gt.GetPosX() <<" "<< gt.GetPosY() <<" "<< gt.GetPosZ() <<"\n";
+        //--
+    if (rot!= 0)
+        {
+            f << "Rotate " << (rot*180/PI) << " "<< axis[0] << " " << axis[1] << " "<< axis[2] << "\n";
+        }
+    if (gt.GetSclX()!=1 || gt.GetSclY()!=1 || gt.GetSclZ()!=1) //-- changed && to ||, add support for not uniform scale
+        {
+            f << "Scale " << gt.GetSclX() << " " << gt.GetSclY() << " "<< gt.GetSclZ() << "\n";
+        }
     f << "ObjectInstance \"" << Model(o).GetInstanceMaster().GetName().GetAsciiString() <<"\"\n";
     f << "AttributeEnd #" << o.GetName().GetAsciiString() << "\n\n";
     return 0;
@@ -2749,7 +2871,7 @@ void luxsi_write(){
     if (vFileObjects != L""){
 
         CRefArray array,aObj,aLight,aCam,aSurfaces,aClouds,aInstance;
-        sLight.str("");
+        //sLight.str(("");
         //--
         CStringArray emptyArray;
         emptyArray.Clear();
@@ -2768,7 +2890,7 @@ void luxsi_write(){
         for ( int i=0; i<array.GetCount();i++ )
         {
             X3DObject o(array[i]);
-            app.LogMessage( L"\tObject name: " + o.GetName() + L":" +o.GetType() + L" parent:"+X3DObject(o.GetParent()).GetType());
+            app.LogMessage( L"\tObject name: " + o.GetName() + L":" + o.GetType() + L" parent:"+ X3DObject(o.GetParent()).GetType());
             //--
             Property visi = o.GetProperties().GetItem(L"Visibility");
             bool view_visbl = (bool)visi.GetParameterValue(L"viewvis");
@@ -2828,14 +2950,15 @@ void luxsi_write(){
                 }
             }
         } //-- end for visibility check
+        int vNumObj = aObj.GetCount() + aSurfaces.GetCount();
 
-        if (aObj.GetCount()==0)
+        if ( vNumObj == 0)
         {
-            app.LogMessage(L"No objects are exported! Check if objects are visible in XSI or switch on 'export hidden objects'",siFatalMsg );
+            app.LogMessage(L"Any objects/surfaces to export! Check if objects are visible in XSI or switch on 'export hidden objects / surfaces'",siFatalMsg );
         }
         else if (aCam.GetCount()==0)
         {
-            app.LogMessage(L"No cameras are exported! Check if a camera is visible in XSI or switch on 'export hidden cameras'",siFatalMsg );
+            app.LogMessage(L"Any camera to export! Check if a camera is visible in XSI or switch on 'export hidden cameras'",siFatalMsg );
         }
         else
         {
@@ -2871,8 +2994,8 @@ void luxsi_write(){
             f << "\nWorldBegin \n";
 
             //-- includes
-            f << "\nInclude ""\""<< vFileLXM.GetAsciiString() <<"\" \n";
-            f << "Include ""\""<< vFileLXO.GetAsciiString() <<"\" \n";
+            f << "\nInclude \""<< vFileLXM.GetAsciiString() <<"\" \n";
+            f << "Include \""<< vFileLXO.GetAsciiString() <<"\" \n";
 
             f << "\nAttributeBegin \n";
 
@@ -2916,6 +3039,7 @@ void luxsi_write(){
             //-- surfaces
             for (int i=0;i<aSurfaces.GetCount();i++) {
                 if (writeLuxsiObj(aSurfaces[i],L"surface")==-1) break;
+                //if (writeLuxsiSurface(aSurfaces[i],L"surface")==-1) break;
                 if (pb.IsCancelPressed() ) break;
                 pb.Increment();
             }
