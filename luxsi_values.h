@@ -129,6 +129,6 @@ char MtAccel [3] [7] = { "qbvh", "bvh", "kdtree" }; // iter vAccel
 
 //--
 CRefArray aGroups;
-CStringArray aMatList,aInstanceList;
+CStringArray aMatList, aInstanceList;
 
 CString vSun=L"", vHDRI=L"", vLuXSIPath=L"", vFileObjects=L"", vLux_console = L"";
