@@ -55,17 +55,20 @@ float vglossy_refract_reject_thr = 10.0f;
 
 
 //-- photonmap --------
-int vmaxdepth = 8, vmaxphotondepth = 10, vshadowraycount = 0, vdirectphotons = 1000000, vcausticphotons = 20000;
+int vmaxeyedepth = 8, vmaxphotondepth = 10, vshadowraycount = 0, vdirectphotons = 1000000, vcausticphotons = 20000;
 int vindirectphotons = 200000, vradiancephotons = 20000, vnphotonsused = 50, vfinalgathersamples = 32, vrenderingmode=0;
 float vmaxphotondist = 0.10f, vgatherangle = 10.0f, vdistancethreshold = 0.75f;
 bool vfinalgather = false, vdbg_direct = false, vdbg_radiancemap = false, vdbg_indircaustic = false;
 bool vdbg_indirdiffuse = false, vdbg_indirspecular = false;
+CString bphotonmaps = L"";
+//-- bphotonmaps
 
 //-- surface integrator
-int vSurfaceInt = 0, vRRstrategy = 0, vEye_depth=16, vLight_depth=16, vLight_str = 2;
+int vSurfaceInt = 0, vRRstrategy = 0, vEye_depth=16, vLight_depth=16, vLight_str = 2, vmaxdepth = 10;
 float vEyeRRthre = 0.0f, vLightRRthre = 0.0f, vrrcon_prob = 0.65f;
 bool vInc_env = false, vsexpert = false; 
-//--
+//-- volume integrator
+int vvolumeint = 0;
 // Accelerator	
 int vmaxprimsperleaf = 4, vfullsweepthr = 16, vskipfactor = 1, vtreetype = 2; // combo
 int vcostsamples = 0, vmaxprims = 1, vacmaxdepth = -1;
