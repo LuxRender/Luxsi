@@ -168,48 +168,17 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.EndRow();
     lay.EndGroup();
 //--
-    lay.AddGroup(L"Sampler"); //***
-        lay.AddRow();
-            CValueArray vItem3(8);
-                vItem3[0] = L"metropolis" ;     vItem3[1] = 0;
-                vItem3[2] = L"erpt" ;           vItem3[3] = 1;
-                vItem3[4] = L"lowdiscrepancy" ; vItem3[5] = 2;
-                vItem3[6] = L"random" ;         vItem3[7] = 3;
-            lay.AddEnumControl( L"bsampler", vItem3, L"Sampler", siControlCombo );
-            lay.AddItem(L"bexpert", L"Advanced").PutWidthPercentage(6);
-        lay.EndRow();
-            lay.AddItem( L"bchainlength", L"Chainlength").PutLabelPercentage(60);
-            CValueArray vItbase(6);
-                vItbase[0] = L"metropolis" ;     vItbase[1] = 0;
-                vItbase[2] = L"lowdiscrepancy" ; vItbase[3] = 1;
-                vItbase[4] = L"random" ;         vItbase[5] = 2;
-            lay.AddEnumControl( L"bbasampler", vItbase, L"Base sampler", siControlCombo ).PutLabelPercentage(60);
-        //--
-            CValueArray vItem5(12);
-                vItem5[0] = L"linear" ;         vItem5[1] = 0;
-                vItem5[2] = L"vegas" ;          vItem5[3] = 1;
-                vItem5[4] = L"random" ;         vItem5[5] = 2;
-                vItem5[6] = L"lowdiscrepancy" ; vItem5[7] = 3;
-                vItem5[8] = L"tile" ;           vItem5[9] = 4;
-                vItem5[10] = L"hilbert" ;       vItem5[11] = 5;
-            lay.AddEnumControl( L"bpixsampler", vItem5, L"Pixelsampler", siControlCombo ) ;
-            lay.AddItem( L"pixelsamples", L"Pixelsamples");
-        //--
-            lay.AddItem( L"bmutation", L"Large Mut. prob.").PutLabelPercentage(60);
-            lay.AddItem( L"bmaxrej", L"Max cons. rejects").PutLabelPercentage(60);
-            lay.AddItem( L"buservarian", L"User Variance");
-        //--
-    lay.EndGroup(); //--
+    
     //--
     lay.AddGroup(L"Surface Integrator"); //-- surface
         lay.AddRow();
             CValueArray vItem6(12);
-                vItem6[0]  = L"Bidirectional";   vItem6[1] = 0;
-                vItem6[2]  = L"Path";            vItem6[3] = 1;
-                vItem6[4]  = L"Directlighting";  vItem6[5] = 2;
-                vItem6[6]  = L"Distributedpath"; vItem6[7] = 3;
-                vItem6[8]  = L"I. Global Illu."; vItem6[9] = 4;
-                vItem6[10] = L"Ex-Photonmap";    vItem6[11] = 5;
+                vItem6[0]  = L"Bidirectional";      vItem6[1] = 0;
+                vItem6[2]  = L"Path";               vItem6[3] = 1;
+                vItem6[4]  = L"Directlighting";     vItem6[5] = 2;
+                vItem6[6]  = L"Distributedpath";    vItem6[7] = 3;
+                vItem6[8]  = L"Inst. Global Illu."; vItem6[9] = 4;
+                vItem6[10] = L"Ex-Photonmap";       vItem6[11] = 5;
             lay.AddEnumControl( L"bsurfaceint", vItem6, L"Integrator", siControlCombo ) ;
             lay.AddItem(L"bsexpert", L"Advanced").PutWidthPercentage(6);
         lay.EndRow();
@@ -226,6 +195,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
 
             //-- bidireccional / path / directlighting
             lay.AddItem( L"bmaxdepth", L"Max. depth").PutLabelPercentage(70);
+            lay.AddItem( L"bshadowraycount", L"Shadow Ray Count").PutLabelPercentage(70);
             lay.AddItem( L"beye_depth",   L"Eye Depth").PutLabelPercentage(70);
             lay.AddItem( L"blight_depth", L"Light Depth").PutLabelPercentage(70);
             lay.AddItem( L"beyerrthre",   L"Eye RR Thresh.").PutLabelPercentage(70);
@@ -296,7 +266,8 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             
             //-- exphotonmap
             lay.AddItem( L"bstrategy", L"");
-            lay.AddItem( L"bshadowraycount", L"");
+            //lay.AddItem( L"bshadowraycount", L"Shadow Ray Count").PutLabelPercentage(70);
+            lay.AddItem( L"bmaxeyedepth", L"Max. eye depth").PutLabelPercentage(70);
             lay.AddItem( L"bmaxphotondepth", L"Max. photon depth").PutLabelPercentage(70);
             lay.AddItem( L"bdirectphotons",  L"Direct photons").PutLabelPercentage(70);
             lay.AddItem( L"bcausticphotons", L"Caustic photons").PutLabelPercentage(70);
@@ -327,15 +298,62 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             PPGItem phf = lay.GetItem( L"bphotonmaps" );
             phf.PutAttribute( siUIFileFilter, L"Photonmap files|*.map" ) ;
             //--
-            lay.AddItem( L"bdbg_enabledirect", L"Debug: Enable direct");
-            lay.AddItem( L"bdbg_enableradiancemap", L"Debug: Enable radiance map");
-            lay.AddItem( L"bdbg_enableindircaustic", L"Debug: Enable indirect caustics");
-            lay.AddItem( L"bdbg_enableindirdiffuse", L"Debug: Enable indirect diffuse");
-            lay.AddItem( L"bdbg_enableindirspecular", L"Debug: Enable indirect specular");
+            lay.AddGroup(L"Enable Debug").PutLabelPercentage(60);
+                lay.AddRow();
+                lay.AddItem( L"bdbg_enabledirect", L"Direct");
+                lay.AddItem( L"bdbg_enableradiancemap", L"Radiance map");
+                lay.EndRow();
+                lay.AddRow();
+                lay.AddItem( L"bdbg_enableindircaustic", L"Indirect caustics");
+                lay.AddItem( L"bdbg_enableindirdiffuse", L"Indirect diffuse");
+                lay.EndRow();
+                lay.AddItem( L"bdbg_enableindirspecular", L"Enable indirect specular");
+            lay.EndGroup();
         lay.EndGroup(); //-- no label
     lay.EndGroup(); //-- surface
-       
-    //---------
+     //---------
+    lay.AddGroup(L"Sampler"); //***
+        lay.AddRow();
+            CValueArray vItem3(8);
+                vItem3[0] = L"metropolis" ;     vItem3[1] = 0;
+                vItem3[2] = L"erpt" ;           vItem3[3] = 1;
+                vItem3[4] = L"lowdiscrepancy" ; vItem3[5] = 2;
+                vItem3[6] = L"random" ;         vItem3[7] = 3;
+            lay.AddEnumControl( L"bsampler", vItem3, L"Sampler", siControlCombo );
+            lay.AddItem(L"bexpert", L"Advanced").PutWidthPercentage(6);
+        lay.EndRow();
+            lay.AddItem( L"bchainlength", L"Chainlength").PutLabelPercentage(60);
+            CValueArray vItbase(6);
+                vItbase[0] = L"metropolis" ;     vItbase[1] = 0;
+                vItbase[2] = L"lowdiscrepancy" ; vItbase[3] = 1;
+                vItbase[4] = L"random" ;         vItbase[5] = 2;
+            lay.AddEnumControl( L"bbasampler", vItbase, L"Base sampler", siControlCombo ).PutLabelPercentage(60);
+        //--
+            CValueArray vItem5(12);
+                vItem5[0] = L"linear" ;         vItem5[1] = 0;
+                vItem5[2] = L"vegas" ;          vItem5[3] = 1;
+                vItem5[4] = L"random" ;         vItem5[5] = 2;
+                vItem5[6] = L"lowdiscrepancy" ; vItem5[7] = 3;
+                vItem5[8] = L"tile" ;           vItem5[9] = 4;
+                vItem5[10] = L"hilbert" ;       vItem5[11] = 5;
+            lay.AddEnumControl( L"bpixsampler", vItem5, L"Pixelsampler", siControlCombo ) ;
+            lay.AddItem( L"pixelsamples", L"Pixelsamples");
+        //--
+            lay.AddItem( L"bmutation", L"Large Mut. prob.").PutLabelPercentage(60);
+            lay.AddItem( L"bmaxrej", L"Max cons. rejects").PutLabelPercentage(60);
+            lay.AddItem( L"buservarian", L"User Variance");
+        //--
+    lay.EndGroup();
+    lay.AddGroup(L"Volume integrator");
+        lay.AddRow();
+            CValueArray vItvolume(6);
+                vItvolume[0] = L"Multi" ;    vItvolume[1] = 0;
+                vItvolume[2] = L"Single" ;   vItvolume[3] = 1;
+                vItvolume[4] = L"Emission" ; vItvolume[5] = 2;
+            lay.AddEnumControl(L"bvolumeint",vItvolume,L"Volume Integrator",siControlCombo );
+            lay.AddItem(L"bvolexpert", L"Advanced").PutWidthPercentage(6);
+        lay.EndRow();
+    lay.EndGroup();
     //-- filter
     lay.AddGroup(L"Filter"); //***
         lay.AddRow();
@@ -360,7 +378,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddItem(L"ssample", L"Supersample");
             lay.AddItem(L"bTau", L"Tau"); 
     lay.EndGroup(); //---]
-
+    //--
     lay.AddGroup(L"Accelerator");
         lay.AddRow();
             CValueArray vItAccel(6);
