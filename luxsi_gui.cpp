@@ -61,6 +61,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
     lay.AddGroup(L"Subdivided mesh options"); // TODO:  to shader spdl file, per individuals flags?
         lay.AddItem(L"smooth_mesh", L"Export smooth meshes");
         lay.AddItem(L"sharp_bound", L"Preserve sharp edges");
+        lay.AddItem(L"bplymesh", L"Export to PLY file");
     lay.EndGroup();
 
     lay.AddGroup(L"Settings output"); //[----
@@ -83,7 +84,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddEnumControl(L"mode_Znorm",vItZb_nor,L"Mode Zbuffer",siControlCombo ) ;
         lay.EndGroup(); //-----]
     lay.EndRow();//--------------------
-    lay.AddGroup(); //-- png
+    lay.AddGroup(); //-- 
         lay.AddRow(); //----
             lay.AddItem(L"save_png_16", L"16 Bits");
             CValueArray vItrpng(8);
@@ -156,7 +157,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         //--
         lay.AddItem(L"fLuxPath",L"Path to Luxrender",siControlFilePath);
         PPGItem lpath = lay.GetItem( L"fLuxPath" );
-            lpath.PutAttribute( siUIFileFilter, L"LuxRender bin|*.exe" ) ;
+            lpath.PutAttribute( siUIFileFilter, L"LuxRender executable|*.exe" ) ;
         //    lpath.PutAttribute( siUIOpenFile, 1 ) ;
         //    lpath.PutAttribute( siUIFileMustExist, 1 ) ;
         //    lpath.PutAttribute( siControlFilePath , "test" ) ;
