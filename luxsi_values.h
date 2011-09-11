@@ -109,7 +109,7 @@ bool vExportDone=false,vResume=false,vUseJitter=true,vExpOne=true;
 bool vAmbBack=false;
 
 //-- export
-bool vSmooth_mesh = false, vSharp_bound = false;
+bool vSmooth_mesh = false, vSharp_bound = false, vplymesh = false;;
 bool vSupers = false;
 float vCSize=0.4f, vGITolerance=0.025f, vSpacingX=0.1f, vSpacingY=0.1f, vContrast=2.2f;
 float vrrprob=0.65f;
@@ -134,4 +134,4 @@ char MtAccel [3] [7] = { "qbvh", "bvh", "kdtree" }; // iter vAccel
 CRefArray aGroups;
 CStringArray aMatList, aInstanceList;
 
-CString vSun=L"", vHDRI=L"", vLuXSIPath=L"", vFileObjects=L"", vLux_console = L"";
+CString vSun=L"", vHDRI=L"", vLuXSIPath=L"", vFileObjects=L"", vLux_console = L"", vFilePLY = L"";
