@@ -89,6 +89,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 //  prop.AddParameter( L"exp_one",          CValue::siBool, sps,L"",L"", vExpOne,          dft,dft,dft,dft, oParam );
     prop.AddParameter( L"smooth_mesh",      CValue::siBool, sps,L"",L"", vSmooth_mesh,     dft,dft,dft,dft, oParam );
     prop.AddParameter( L"sharp_bound",      CValue::siBool, sps,L"",L"", vSharp_bound,     dft,dft,dft,dft, oParam );
+    prop.AddParameter( L"bplymesh",         CValue::siBool, sps,L"",L"", vplymesh,         dft,dft,dft,dft, oParam );
     
     //-- lights  
     //prop.AddParameter( L"blights",      CValue::siInt4,  sps,L"",L"", vlights,        0l,4l,0l,4l,  oParam );
@@ -378,9 +379,10 @@ void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext c
     } else if (paramName == L"use_hidden_cam")  { vIsHiddenCam      = changed.GetValue();
     } else if (paramName == L"use_hidden_light"){ vIsHiddenLight    = changed.GetValue();
 
-    //-- mesh export
+    //-- mesh export /bplymesh
     } else if (paramName == L"smooth_mesh")     { vSmooth_mesh  = changed.GetValue();
     } else if (paramName == L"sharp_bound")     { vSharp_bound  = changed.GetValue();
+     } else if (paramName == L"bplymesh")       { vplymesh  = changed.GetValue();
    
     //-- save images /----/ tga /--->
     } else if (paramName == L"tga_gamut")   { vTga_gamut    = changed.GetValue();
@@ -2558,8 +2560,7 @@ int writeLuxsiObj(X3DObject o, CString vType)
             }
             vTris += L"\n";
         }
-        //-- test 
-        
+               
         //  app.LogMessage(L"count: "+CValue(allPoints.GetCount()).GetAsText());
         for (LONG j=0; j < allPoints.GetCount(); j++)
         {
@@ -2573,8 +2574,7 @@ int writeLuxsiObj(X3DObject o, CString vType)
         }
         //--
         f << "\nAttributeBegin #" << o.GetName().GetAsciiString();
-        
-        //-- test
+        //--
         f << "\nNamedMaterial \""<< m.GetName().GetAsciiString() <<"\"\n";
         
         //-- meshlight
@@ -2622,7 +2622,18 @@ int writeLuxsiObj(X3DObject o, CString vType)
             f << "]\n";
         }        
         */
+
         
+        else if ( vplymesh )
+        {
+            //--
+            CString vInput_FileName = vFileObjects.GetAsciiString();
+            int Loc = (int)vInput_FileName.ReverseFindString(".");
+            vFilePLY = vInput_FileName.GetSubString(0,Loc) + L"_"+ o.GetName() + L".ply";
+            //--
+            f << "\n Shape \"plymesh\" \n";
+            f << "  \"string filename\" [\"" << replace(vFilePLY.GetAsciiString()) << "\"] \n";
+        }
         else
         {
             f << " Shape  \"mesh\" \n";
@@ -2645,10 +2656,94 @@ int writeLuxsiObj(X3DObject o, CString vType)
                 f << " \"float uv\" [\n" << vUV.GetAsciiString() << "\n ]";   
             }
         }
+        
+        //--
         f << "\nAttributeEnd #" << o.GetName().GetAsciiString() << "\n";
     } 
     return 0;
 }
+//--
+void write_ply_object(X3DObject o, CString vFilePLY)
+{
+    Geometry g(o.GetActivePrimitive().GetGeometry());
+    KinematicState  global_kinec_state = o.GetKinematics().GetGlobal(); 
+    CTransformation global_trans = global_kinec_state.GetTransform();
+    
+    //--
+    CTriangleRefArray triangles(g.GetTriangles());
+    CLongArray indices(triangles.GetIndexArray());
+
+    CVector3Array allPoints(triangles.GetCount()*3);
+    CVector3Array allUV(triangles.GetCount()*3);
+    //CVector3Array allNormals(triangles.GetCount()*3);
+
+    long index=0; 
+    for (int i=0; i<triangles.GetCount();i++)
+    {
+        Triangle triangle(triangles.GetItem(i));
+        for (int j=0;j<triangle.GetPoints().GetCount();j++)
+        {
+             TriangleVertex vertex0(triangle.GetPoints().GetItem(j));
+             CVector3 pos(vertex0.GetPosition());
+             // CVector3 normal(vertex0.GetNormal());
+             CUV uvs(vertex0.GetUV());
+             //--
+             long arrayPos = index++;
+             allPoints[arrayPos] = pos;
+             // allNormals[arrayPos] = normal;
+             allUV[arrayPos] = CVector3(uvs.u, uvs.v,0);
+        }
+    }
+    //----------------------------------------------------------
+    //-- vertex
+    long vCount(triangles.GetCount()*3);
+    long pCount(g.GetTriangles().GetCount());
+       
+    //-- vertex
+    CString sPos;
+    for (LONG j=0; j < allPoints.GetCount(); j++)
+    {
+        CVector3 point_pos(allPoints[j][0], allPoints[j][1], allPoints[j][2]);
+        point_pos.MulByTransformationInPlace(global_trans);
+        sPos += CString(point_pos[0]) + L" "+ CString(point_pos[1]) + L" "+ CString(point_pos[2]) + L" 0 0 0\n";
+    }
+    //-- triangles
+    CString vFaces;
+    LONG nIndices = indices.GetCount();
+    for ( LONG k=0; k < nIndices; k += 3 )
+    {
+        //--
+        vFaces += L"3 "+ CString(int(k)) + L" "+ CString(int(k+1)) + L" "+ CString(int(k+2));
+        vFaces += L"\n";   
+    }
+    //--
+    
+    vFilePLY += L"_"+ o.GetName() + L".ply";
+    f.open(vFilePLY.GetAsciiString(), ios.out | ios.binary);
+    f << "ply\n";
+    f << "format ascii 1.0\n";
+	f << "comment LuXSI; LuxRender Exporter for Autodesk Softimage\n";
+	f << "element vertex "<< CString(vCount).GetAsciiString() <<"\n";
+	f << "property float x\n";
+	f << "property float y\n";
+	f << "property float z\n";
+	f << "property uchar red\n";
+	f << "property uchar green\n";
+	f << "property uchar blue\n";
+	f << "element face "<< CString(pCount).GetAsciiString() <<"\n";
+	f << "property list uchar uint vertex_indices\n";
+	f << "end_header\n";
+   
+    //-- vertex
+    f << sPos.GetAsciiString();
+    //-- faces
+    f << vFaces.GetAsciiString();
+	
+	f.close();
+    //----------------------------------
+
+}
+        
 //--
 int writeLuxsiCloud(X3DObject obj)
 {
@@ -2807,7 +2902,8 @@ void write_header_files()
     f <<"# continued by P. Alcaide, aka povmaniaco. \n \n";
 }
 //--
-void luxsi_write(){
+void luxsi_write()
+{
     // write objects, materials, lights, cameras
     root= app.GetActiveSceneRoot();
     vIsLinux = CUtils::IsLinuxOS(); // linux check
@@ -2828,7 +2924,9 @@ void luxsi_write(){
     if (vFileObjects != L""){
 
         CRefArray array,aObj,aLight,aCam,aSurfaces,aClouds,aInstance;
-        //sLight.str(("");
+        //--
+        CRefArray aPlymesh;
+        aPlymesh.Clear();
         //--
         CStringArray emptyArray;
         emptyArray.Clear();
@@ -2858,7 +2956,8 @@ void luxsi_write(){
             {
                 if (vIsHiddenObj || (vIsHiddenObj == false && (view_visbl == true && rend_visbl == true)))
                 {
-                    aObj.Add(o);
+                    aObj.Add(o); // for create link into _geo.lxo file
+                    if ( vplymesh ) aPlymesh.Add(o); // for write .ply file
                 }
             }
             if (o.GetType()==L"CameraRoot")
@@ -2886,7 +2985,8 @@ void luxsi_write(){
             {
                 if (vIsHiddenSurface || (vIsHiddenSurface == false && (view_visbl == true && rend_visbl == true)))
                 {
-                    aSurfaces.Add(o);   
+                    aSurfaces.Add(o);
+                   // if ( vplymesh ) aPlymesh.Add(o);
                 }
             }
             if (o.GetType()==L"pointcloud")
@@ -2906,7 +3006,8 @@ void luxsi_write(){
                     }
                 }
             }
-        } //-- end for visibility check
+        } 
+        //-- end for visibility check
         int vNumObj = aObj.GetCount() + aSurfaces.GetCount();
 
         if ( vNumObj == 0)
@@ -2927,6 +3028,8 @@ void luxsi_write(){
             vFileLXM = vInput_FileName.GetSubString(0,Loc) + (L"_mat.lxm");
             vFileLXO = vInput_FileName.GetSubString(0,Loc) + (L"_geo.lxo");
             // vFileVOL = vInput_FileName.GetSubString(0,Loc) + (L"_vol.lxm");
+            vFilePLY = vInput_FileName.GetSubString(0,Loc);
+
 
             //-- init progress bar
             pb.PutValue(0);
@@ -2956,13 +3059,8 @@ void luxsi_write(){
 
             f << "\nAttributeBegin \n";
 
-             //-- environment, test
-            //write_environment();
-
             //-- lights
             for (int i=0;i<aLight.GetCount();i++) writeLuxsiLight(aLight[i]);
-
-           
 
             f << "\nAttributeEnd \n \n";
 
@@ -2970,10 +3068,10 @@ void luxsi_write(){
 
             f.close(); //-- end lxs
 
-            // open file _mat.lxm --->
-            f.open (vFileLXM.GetAsciiString()); //--->
+            //-- open file _mat.lxm 
+            f.open(vFileLXM.GetAsciiString()); 
 
-            //-- insert header for files
+            //-- insert header
                 write_header_files();
 
             //-- write materials
@@ -2981,14 +3079,24 @@ void luxsi_write(){
 
             f.close(); //--< end lxm
 
-            // open file  _geom.lxo --->
-            f.open(vFileLXO.GetAsciiString()); //--->
+            //-- test ply
+            for (int i=0;i<aPlymesh.GetCount();i++)
+            {
+                // if (write_ply_object(aPlymesh[i],vFilePLY)==-1) break;
+                write_ply_object(aPlymesh[i],vFilePLY);
+                if (pb.IsCancelPressed() ) break;
+                pb.Increment();
+            }
 
-            //-- insert header for files
-                write_header_files();
+            //-- open file  _geom.lxo 
+            f.open(vFileLXO.GetAsciiString()); 
+
+            //-- insert header
+            write_header_files();
 
             //-- objects
-            for (int i=0;i<aObj.GetCount();i++) {
+            for (int i=0;i<aObj.GetCount();i++) 
+            {
                 if (writeLuxsiObj(aObj[i],L"obj")==-1) break;
                 if (pb.IsCancelPressed() ) break;
                 pb.Increment();
