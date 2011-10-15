@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(XSISDK_ROOT)\include\Core;$(XSISDK_ROOT)\include"
+				AdditionalIncludeDirectories="H:\XSISDK2012\include\Core;H:\XSISDK2012\include"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -59,7 +59,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(XSISDK_ROOT)\lib\nt-x86\sicppsdk.lib $(XSISDK_ROOT)\lib\nt-x86\sicoresdk.lib"
+				AdditionalDependencies="H:\XSISDK2012\lib\nt-x86\sicppsdk.lib H:\XSISDK2012\lib\nt-x86\sicoresdk.lib"
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
@@ -112,7 +112,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="$(XSISDK_ROOT)\include\Core;$(XSISDK_ROOT)\include"
+				AdditionalIncludeDirectories="H:\XSISDK\include\Core;H:\XSISDK\include"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				TreatWChar_tAsBuiltInType="false"
@@ -130,7 +130,80 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(XSISDK_ROOT)\lib\nt-x86\sicppsdk.lib $(XSISDK_ROOT)\lib\nt-x86\sicoresdk.lib"
+				AdditionalDependencies="H:\XSISDK\lib\nt-x86\sicppsdk.lib H:\XSISDK\lib\nt-x86\sicoresdk.lib"
+				GenerateDebugInformation="true"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release 2012|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="2"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="H:\XSISDK2012\include\Core;H:\XSISDK2012\include"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				TreatWChar_tAsBuiltInType="false"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="H:\XSISDK2012\lib\nt-x86\sicppsdk.lib H:\XSISDK2012\lib\nt-x86\sicoresdk.lib"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -183,6 +256,10 @@
 			>
 			<File
 				RelativePath=".\luxsi_main.h"
+				>
+			</File>
+			<File
+				RelativePath=".\luxsi_values.h"
 				>
 			</File>
 		</Filter>
