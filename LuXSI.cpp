@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #include "luxsi_values.h"
+#include "plymesh/rply.h"
 //--
 using namespace XSI;
 using namespace MATH;
@@ -74,7 +75,7 @@ XSIPLUGINCALLBACK CStatus XSIUnloadPlugin( const PluginRegistrar& in_reg )
 //--
 XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 {
-    Context ctxt( in_ctxt );
+    Context ctxt( in_ctxt ); 
     // for save space
     int sps = siPersistable;
     CValue dft;  // change for CValue()
@@ -288,7 +289,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
 
         ctxt.PutAttribute(L"Refresh",true);
 
-        CRefArray params = prop.GetParameters();;
+        params = prop.GetParameters();;
         for (int i=0;i<params.GetCount();i++)
         {
             // Update values on init
@@ -891,48 +892,39 @@ void dynamic_luxsi_UI( Parameter changed, CString paramName, PPGEventContext ctx
     {
         vfilter = prop.GetParameterValue(L"bfilter");
         vfexpert = prop.GetParameterValue(L"bfexpert");
-
-        //-- create list of parameters
-        Parameter lbxwidth  = prop.GetParameters().GetItem( L"bxwidth" );
-        Parameter lbywidth  = prop.GetParameters().GetItem( L"bywidth" );
-        Parameter lbfalpha  = prop.GetParameters().GetItem( L"bfalpha" );
-        Parameter lssample  = prop.GetParameters().GetItem( L"ssample" );
-        Parameter lbF_B     = prop.GetParameters().GetItem( L"bF_B" );
-        Parameter lbF_C     = prop.GetParameters().GetItem( L"bF_C" );
-        Parameter lbTau     = prop.GetParameters().GetItem( L"bTau" );
-
-        //-- assing flags for hidden
-        lbfalpha.PutCapabilityFlag( siNotInspectable, true );
-        lssample.PutCapabilityFlag( siNotInspectable, true );
-        lbF_B.PutCapabilityFlag( siNotInspectable, true );
-        lbF_C.PutCapabilityFlag( siNotInspectable, true );
-        lbTau.PutCapabilityFlag( siNotInspectable, true );
-        lbxwidth.PutCapabilityFlag( siNotInspectable, true );
-        lbywidth.PutCapabilityFlag( siNotInspectable, true );
-
+    
+        //--- change form
+        const char *ui_filter [7] = {"bxwidth", "bywidth", "bfalpha", "ssample", "bF_B", "bF_C", "bTau" };
+        //--
+        for ( long f = 0; f < 7;)
+        {
+            Parameter(params.GetItem(ui_filter[f])).PutCapabilityFlag(siNotInspectable, true);
+            f++;
+        }
+        
         //-- show with all options, if mode expert is true
         if ( vfexpert )
         {
-            lbxwidth.PutCapabilityFlag( siNotInspectable, false );
-            lbywidth.PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bxwidth")).PutCapabilityFlag( siNotInspectable, false ) ;
+            Parameter(params.GetItem(L"bywidth")).PutCapabilityFlag( siNotInspectable, false ) ;
             ctxt.PutAttribute(L"Refresh", true);
         }
 
         if (( vfilter == 1 ) && ( vfexpert )) //-- gauss
         {
-            lbfalpha.PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bfalpha")).PutCapabilityFlag( siNotInspectable, false ) ;
             ctxt.PutAttribute(L"Refresh", true);
         }
         else if (( vfilter == 2 ) && ( vfexpert )) //-- mitchell
         {
-            lssample.PutCapabilityFlag( siNotInspectable, false );
-            lbF_B.PutCapabilityFlag( siNotInspectable, false );
-            lbF_C.PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"ssample")).PutCapabilityFlag( siNotInspectable, false ) ;
+            Parameter(params.GetItem(L"bF_B")).PutCapabilityFlag( siNotInspectable, false ) ;
+            Parameter(params.GetItem(L"bF_C")).PutCapabilityFlag( siNotInspectable, false ) ;
             ctxt.PutAttribute(L"Refresh", true);
         }
         else if (( vfilter == 3 ) && ( vfexpert )) //-- sinc
         {
-            lbTau.PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bTau")).PutCapabilityFlag( siNotInspectable, false ) ;
             ctxt.PutAttribute(L"Refresh", true);
         }
         else //-- box
@@ -951,207 +943,92 @@ void dynamic_luxsi_UI( Parameter changed, CString paramName, PPGEventContext ctx
         vSurfaceInt  = prop.GetParameterValue(L"bsurfaceint");
         vsexpert = prop.GetParameterValue(L"bsexpert");
 
-        //-- bidirectional
-        Parameter lblight_depth = prop.GetParameters().GetItem( L"blight_depth" );
-        Parameter lbeye_depth   = prop.GetParameters().GetItem( L"beye_depth" );
-        Parameter lbeyerrthre   = prop.GetParameters().GetItem( L"beyerrthre" );
-        Parameter lblightrrthre = prop.GetParameters().GetItem( L"blightrrthre" );
-        //-- path
-        Parameter lblight_str   = prop.GetParameters().GetItem( L"blight_str" );
-        Parameter lbinc_env     = prop.GetParameters().GetItem( L"binc_env" );
-        Parameter lbrrstrategy  = prop.GetParameters().GetItem( L"brrstrategy" );
-        Parameter lbmaxdepth    = prop.GetParameters().GetItem( L"bmaxdepth" );
-        Parameter lbrrcon_prob  = prop.GetParameters().GetItem( L"brrcon_prob" );
-        //-- ditributepath
-        Parameter lbdirectsampleall       = prop.GetParameters().GetItem( L"bdirectsampleall");
-        Parameter lbdirectsamples         = prop.GetParameters().GetItem( L"bdirectsamples");
-        Parameter lbindirectsampleall     = prop.GetParameters().GetItem( L"bindirectsampleall");
-        Parameter lbindirectsamples       = prop.GetParameters().GetItem( L"bindirectsamples");
-        Parameter lbdiffusereflectdepth   = prop.GetParameters().GetItem( L"bdiffusereflectdepth");
-        Parameter lbdiffusereflectsamples = prop.GetParameters().GetItem( L"bdiffusereflectsamples");
-        Parameter lbdiffuserefractdepth   = prop.GetParameters().GetItem( L"bdiffuserefractdepth");
-        Parameter lbdiffuserefractsamples = prop.GetParameters().GetItem( L"bdiffuserefractsamples");
-        Parameter lbdirectdiffuse         = prop.GetParameters().GetItem( L"bdirectdiffuse");
-        Parameter lbindirectdiffuse       = prop.GetParameters().GetItem( L"bindirectdiffuse");
-        Parameter lbglossyreflectdepth    = prop.GetParameters().GetItem( L"bglossyreflectdepth");
-        Parameter lbglossyreflectsamples  = prop.GetParameters().GetItem( L"bglossyreflectsamples");
-        Parameter lbglossyrefractdepth    = prop.GetParameters().GetItem( L"bglossyrefractdepth");
-        Parameter lbglossyrefractsamples  = prop.GetParameters().GetItem( L"bglossyrefractsamples");
-        Parameter lbdirectglossy          = prop.GetParameters().GetItem( L"bdirectglossy");
-        Parameter lbindirectglossy        = prop.GetParameters().GetItem( L"bindirectglossy");
-        Parameter lbspecularreflectdepth  = prop.GetParameters().GetItem( L"bspecularreflectdepth");
-        Parameter lbspecularrefractdepth  = prop.GetParameters().GetItem( L"bspecularrefractdepth");
-        Parameter lbdiff_reflect_reject_thr = prop.GetParameters().GetItem( L"bdiff_reflect_reject_thr");
-        Parameter lbdiff_refract_reject_thr = prop.GetParameters().GetItem( L"bdiff_refract_reject_thr");
-        Parameter lbglossy_reflect_reject_thr = prop.GetParameters().GetItem( L"bglossy_reflect_reject_thr");
-        Parameter lbglossy_refract_reject_thr = prop.GetParameters().GetItem( L"bglossy_refract_reject_thr");
+        //--------------------------------
+        const char *u_intgrator [58] = {/*bidirectional*/"blight_depth", "beye_depth", "beyerrthre", "blightrrthre",
+            /*path*/"blight_str", "binc_env", "brrstrategy", "bmaxdepth", "brrcon_prob",
+            /*ditributepath*/"bdirectsampleall", "bdirectsamples", "bindirectsampleall", "bindirectsamples", "bdiffusereflectdepth",
+            "bdiffusereflectsamples", "bdiffuserefractdepth", "bdiffuserefractsamples", "bdirectdiffuse", "bindirectdiffuse",
+            "bglossyreflectdepth", "bglossyreflectsamples", "bglossyrefractdepth", "bglossyrefractsamples", "bdirectglossy", 
+            "bindirectglossy", "bspecularreflectdepth", "bspecularrefractdepth", "bdiff_reflect_reject_thr", "bdiff_refract_reject_thr", 
+            "bglossy_reflect_reject_thr", "bglossy_refract_reject_thr", "bdiff_reflect_reject", "bdiff_refract_reject",
+            "bglossy_reflect_reject", "bglossy_refract_reject", /*IGI*/"bnsets", "bnlights", "bmindist",
+            /*exphotonmap*/"bstrategy", "bshadowraycount", "bmaxphotondepth", "bmaxeyedepth", "bmaxphotondist", "bnphotonsused",
+            "bindirectphotons", "bdirectphotons", "bcausticphotons", "bradiancephotons", "bfinalgather", "brenderingmode",
+            "bfinalgathersamples", "bgatherangle", "bdistancethreshold", "bdbg_enabledirect", "bdbg_enableradiancemap",
+            "bdbg_enableindircaustic", "bdbg_enableindirdiffuse", "bdbg_enableindirspecular" };
+       
         //--
-        Parameter lbdiff_reflect_reject = prop.GetParameters().GetItem( L"bdiff_reflect_reject");
-        Parameter lbdiff_refract_reject = prop.GetParameters().GetItem( L"bdiff_refract_reject");
-        Parameter lbglossy_reflect_reject = prop.GetParameters().GetItem( L"bglossy_reflect_reject");
-        Parameter lbglossy_refract_reject = prop.GetParameters().GetItem( L"bglossy_refract_reject");
-        
-        //-- IGI
-        Parameter lbnsets       = prop.GetParameters().GetItem( L"bnsets" );
-        Parameter lbnlights     = prop.GetParameters().GetItem( L"bnlights" );
-        Parameter lbmindist     = prop.GetParameters().GetItem( L"bmindist" );
-   
-        //-- exphotonmap    
-        Parameter lbstrategy                = prop.GetParameters().GetItem( L"bstrategy" );
-        Parameter lbshadowraycount          = prop.GetParameters().GetItem( L"bshadowraycount" );
-        Parameter lbmaxphotondepth          = prop.GetParameters().GetItem( L"bmaxphotondepth" );
-        Parameter lbmaxeyedepth             = prop.GetParameters().GetItem( L"bmaxeyedepth" );
-        Parameter lbmaxphotondist           = prop.GetParameters().GetItem( L"bmaxphotondist" );
-        Parameter lbnphotonsused            = prop.GetParameters().GetItem( L"bnphotonsused" );
-        Parameter lbindirectphotons         = prop.GetParameters().GetItem( L"bindirectphotons" );
-        Parameter lbdirectphotons           = prop.GetParameters().GetItem( L"bdirectphotons" );
-        Parameter lbcausticphotons          = prop.GetParameters().GetItem( L"bcausticphotons" );
-        Parameter lbradiancephotons         = prop.GetParameters().GetItem( L"bradiancephotons" );
-        Parameter lbfinalgather             = prop.GetParameters().GetItem( L"bfinalgather" );
-        Parameter lbrenderingmode           = prop.GetParameters().GetItem( L"brenderingmode" );
-        Parameter lbfinalgathersamples      = prop.GetParameters().GetItem( L"bfinalgathersamples" );
-        Parameter lbgatherangle             = prop.GetParameters().GetItem( L"bgatherangle" );
-        Parameter lbdistancethreshold       = prop.GetParameters().GetItem( L"bdistancethreshold" );
-        Parameter lbdbg_enabledirect        = prop.GetParameters().GetItem( L"bdbg_enabledirect" );
-        Parameter lbdbg_enableradiancemap   = prop.GetParameters().GetItem( L"bdbg_enableradiancemap" );
-        Parameter lbdbg_enableindircaustic  = prop.GetParameters().GetItem( L"bdbg_enableindircaustic" );
-        Parameter lbdbg_enableindirdiffuse  = prop.GetParameters().GetItem( L"bdbg_enableindirdiffuse" );
-        Parameter lbdbg_enableindirspecular = prop.GetParameters().GetItem( L"bdbg_enableindirspecular" );
-
-    //-- flags
-   
-        //-- bidi
-        lblight_depth.PutCapabilityFlag( siNotInspectable, true );
-        lbeye_depth.PutCapabilityFlag( siNotInspectable, true );
-        lbeyerrthre.PutCapabilityFlag( siNotInspectable, true );
-        lblightrrthre.PutCapabilityFlag( siNotInspectable, true );
-        
-        
-        //-- path
-        lblight_str.PutCapabilityFlag( siNotInspectable, true );
-        lbrrstrategy.PutCapabilityFlag( siNotInspectable, true );
-        lbinc_env.PutCapabilityFlag( siNotInspectable, true );
-        lbmaxdepth.PutCapabilityFlag( siNotInspectable, true );
-        lbrrcon_prob.PutCapabilityFlag( siNotInspectable, true );
-        
-        //-- distrubute
-        lbdirectsampleall.PutCapabilityFlag( siNotInspectable, true );
-        lbdirectsamples.PutCapabilityFlag( siNotInspectable, true );
-        lbindirectsampleall.PutCapabilityFlag( siNotInspectable, true );
-        lbindirectsamples.PutCapabilityFlag( siNotInspectable, true );
-        lbdiffusereflectdepth.PutCapabilityFlag( siNotInspectable, true );   
-        lbdiffusereflectsamples.PutCapabilityFlag( siNotInspectable, true );
-        lbdiffuserefractdepth.PutCapabilityFlag( siNotInspectable, true );
-        lbdiffuserefractsamples.PutCapabilityFlag( siNotInspectable, true ); 
-        lbdirectdiffuse.PutCapabilityFlag( siNotInspectable, true );         
-        lbindirectdiffuse.PutCapabilityFlag( siNotInspectable, true );      
-        lbglossyreflectdepth.PutCapabilityFlag( siNotInspectable, true );   
-        lbglossyreflectsamples.PutCapabilityFlag( siNotInspectable, true );  
-        lbglossyrefractdepth.PutCapabilityFlag( siNotInspectable, true );    
-        lbglossyrefractsamples.PutCapabilityFlag( siNotInspectable, true );  
-        lbdirectglossy.PutCapabilityFlag( siNotInspectable, true );          
-        lbindirectglossy.PutCapabilityFlag( siNotInspectable, true );        
-        lbspecularreflectdepth.PutCapabilityFlag( siNotInspectable, true );  
-        lbspecularrefractdepth.PutCapabilityFlag( siNotInspectable, true );  
-        lbdiff_reflect_reject_thr.PutCapabilityFlag( siNotInspectable, true );
-        lbdiff_refract_reject_thr.PutCapabilityFlag( siNotInspectable, true );
-        lbglossy_reflect_reject_thr.PutCapabilityFlag( siNotInspectable, true );
-        lbglossy_refract_reject_thr.PutCapabilityFlag( siNotInspectable, true );
+        for ( long in = 0; in < 58;)
+        {
+            Parameter(params.GetItem(u_intgrator[in])).PutCapabilityFlag(siNotInspectable, true);
+            in++;
+        }
         //--
-        lbdiff_reflect_reject.PutCapabilityFlag( siNotInspectable, true );
-        lbdiff_refract_reject.PutCapabilityFlag( siNotInspectable, true );
-        lbglossy_reflect_reject.PutCapabilityFlag( siNotInspectable, true );
-        lbglossy_refract_reject.PutCapabilityFlag( siNotInspectable, true );
-
-        //-- IGI 
-        lbnsets.PutCapabilityFlag( siNotInspectable, true );
-        lbnlights.PutCapabilityFlag( siNotInspectable, true );
-        lbmindist.PutCapabilityFlag( siNotInspectable, true );
-
-        //-- exphotonmap
-        lbrenderingmode.PutCapabilityFlag( siNotInspectable, true );
-        lbstrategy.PutCapabilityFlag( siNotInspectable, true );
-        lbshadowraycount.PutCapabilityFlag( siNotInspectable, true ); 
-        lbmaxphotondepth.PutCapabilityFlag( siNotInspectable, true );
-        lbmaxeyedepth.PutCapabilityFlag( siNotInspectable, true );
-        lbmaxphotondist.PutCapabilityFlag( siNotInspectable, true );
-        lbnphotonsused.PutCapabilityFlag( siNotInspectable, true );
-        lbindirectphotons.PutCapabilityFlag( siNotInspectable, true ); 
-        lbdirectphotons.PutCapabilityFlag( siNotInspectable, true );
-        lbcausticphotons.PutCapabilityFlag( siNotInspectable, true ); 
-        lbradiancephotons.PutCapabilityFlag( siNotInspectable, true ); 
-        lbfinalgather.PutCapabilityFlag( siNotInspectable, true ); 
-        lbdistancethreshold.PutCapabilityFlag( siNotInspectable, true ); 
-        lbfinalgathersamples.PutCapabilityFlag( siNotInspectable, true );
-        lbgatherangle.PutCapabilityFlag( siNotInspectable, true );
-        lbdbg_enabledirect.PutCapabilityFlag( siNotInspectable, true ); 
-        lbdbg_enableradiancemap.PutCapabilityFlag( siNotInspectable, true ); 
-        lbdbg_enableindircaustic.PutCapabilityFlag( siNotInspectable, true );
-        lbdbg_enableindirdiffuse.PutCapabilityFlag( siNotInspectable, true ); 
-        lbdbg_enableindirspecular.PutCapabilityFlag( siNotInspectable, true ); 
-
         if ( vSurfaceInt == 0 ) //-- bidirectional
         {
-            lblight_depth.PutCapabilityFlag( siNotInspectable, false );
-            lbeye_depth.PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"blight_depth")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"beye_depth")).PutCapabilityFlag( siNotInspectable, false );
+            //--
             if ( vsexpert )
             {
-                lbeyerrthre.PutCapabilityFlag( siNotInspectable, false );
-                lblightrrthre.PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"beyerrthre")).PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"blightrrthre")).PutCapabilityFlag( siNotInspectable, false );
             }
             ctxt.PutAttribute(L"Refresh", true );
         }
         else if ( vSurfaceInt == 1 ) //-- path
         {
-            lbmaxdepth.PutCapabilityFlag( siNotInspectable, false );
-            lbinc_env.PutCapabilityFlag( siNotInspectable, false );
-            lbrrstrategy.PutCapabilityFlag( siNotInspectable, false );
-            lbrrcon_prob.PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bmaxdepth")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"binc_env")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"brrstrategy")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"brrcon_prob")).PutCapabilityFlag( siNotInspectable, false );
+            //--
             if ( vsexpert )
             {
-                lblight_str.PutCapabilityFlag( siNotInspectable, false );
-                lbshadowraycount.PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"blight_str")).PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"blight_depth")).PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"bshadowraycount")).PutCapabilityFlag( siNotInspectable, false ); // dude, revised
             }
             ctxt.PutAttribute(L"Refresh", true );
         }
         else if ( vSurfaceInt == 2 ) //-- directlighting
         {
-            lbmaxdepth.PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bmaxdepth")).PutCapabilityFlag( siNotInspectable, false );
+            //--
             if ( vsexpert )
             {
-                lbshadowraycount.PutCapabilityFlag( siNotInspectable, false ); 
-                lblight_str.PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"bshadowraycount")).PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"blight_str")).PutCapabilityFlag( siNotInspectable, false );
             }
             ctxt.PutAttribute(L"Refresh", true );
         }
         else if ( vSurfaceInt == 3 ) //-- distributepath
         {
-            lbdirectsampleall.PutCapabilityFlag( siNotInspectable, false );
-            lbdirectsamples.PutCapabilityFlag( siNotInspectable, false );
-            lbindirectsampleall.PutCapabilityFlag( siNotInspectable, false );
-            lbindirectsamples.PutCapabilityFlag( siNotInspectable, false );
-            lbdiffusereflectdepth.PutCapabilityFlag( siNotInspectable, false );   
-            lbdiffusereflectsamples.PutCapabilityFlag( siNotInspectable, false );
-            lbdiffuserefractdepth.PutCapabilityFlag( siNotInspectable, false );
-            lbdiffuserefractsamples.PutCapabilityFlag( siNotInspectable, false ); 
-            lbdirectdiffuse.PutCapabilityFlag( siNotInspectable, false );         
-            lbindirectdiffuse.PutCapabilityFlag( siNotInspectable, false );      
-            lbglossyreflectdepth.PutCapabilityFlag( siNotInspectable, false );   
-            lbglossyreflectsamples.PutCapabilityFlag( siNotInspectable, false );  
-            lbglossyrefractdepth.PutCapabilityFlag( siNotInspectable, false );    
-            lbglossyrefractsamples.PutCapabilityFlag( siNotInspectable, false );  
-            lbdirectglossy.PutCapabilityFlag( siNotInspectable, false );          
-            lbindirectglossy.PutCapabilityFlag( siNotInspectable, false );        
-            lbspecularreflectdepth.PutCapabilityFlag( siNotInspectable, false );  
-            lbspecularrefractdepth.PutCapabilityFlag( siNotInspectable, false );
-
-            lbdiff_reflect_reject_thr.PutCapabilityFlag( siNotInspectable, false );
-            lbdiff_refract_reject_thr.PutCapabilityFlag( siNotInspectable, false );
-            lbglossy_reflect_reject_thr.PutCapabilityFlag( siNotInspectable, false );
-            lbglossy_refract_reject_thr.PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bdirectsampleall")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bdirectsamples")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bindirectsampleall")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bindirectsamples")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bdiffusereflectdepth")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bdiffusereflectsamples")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bdiffuserefractdepth")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bdiffuserefractsamples")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bdirectdiffuse")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bindirectdiffuse")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bglossyreflectdepth")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bglossyreflectsamples")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bglossyrefractdepth")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bglossyrefractsamples")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bdirectglossy")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bindirectglossy")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bspecularreflectdepth")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bspecularrefractdepth")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bdiff_reflect_reject_thr")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bdiff_refract_reject_thr")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bglossy_reflect_reject_thr")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bglossy_refract_reject_thr")).PutCapabilityFlag( siNotInspectable, false );
             //--
-            lbdiff_reflect_reject.PutCapabilityFlag( siNotInspectable, false );
-            if ( vdiff_reflect_reject == false )
+            Parameter(params.GetItem(L"bdiff_reflect_reject")).PutCapabilityFlag( siNotInspectable, false );
+            if ( vdiff_reflect_reject == false )// 
             {
             //    lbdiff_reflect_reject_thr.PutCapabilityFlag( siReadOnly, true );
             }
@@ -1161,75 +1038,77 @@ void dynamic_luxsi_UI( Parameter changed, CString paramName, PPGEventContext ctx
             }
 
             //--
-            lbdiff_refract_reject.PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bdiff_refract_reject")).PutCapabilityFlag( siNotInspectable, false );
             if ( vdiff_refract_reject == false )
             {
             //    lbdiff_refract_reject_thr.PutCapabilityFlag( siReadOnly, true );
             }
             //--
-            lbglossy_reflect_reject.PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bglossy_reflect_reject")).PutCapabilityFlag( siNotInspectable, false );
             if ( vglossy_reflect_reject == false )
             {
             //    lbglossy_reflect_reject_thr.PutCapabilityFlag( siReadOnly, true );
             }
             //--
-            lbglossy_refract_reject.PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bglossy_refract_reject")).PutCapabilityFlag( siNotInspectable, false );
+            //--
+            Parameter(params.GetItem(L"bglossy_refract_reject_thr")).PutCapabilityFlag( siReadOnly, false );
             if ( vglossy_refract_reject == false )
             {
-            //    lbglossy_refract_reject_thr.PutCapabilityFlag( siReadOnly, true );
+                Parameter(params.GetItem(L"bglossy_refract_reject_thr")).PutCapabilityFlag( siReadOnly, true );
             }
 
             //--
             if ( vsexpert )
             {
-                lblight_str.PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"blight_str")).PutCapabilityFlag( siNotInspectable, false );
             }
             ctxt.PutAttribute(L"Refresh", true );
         }
         else if ( vSurfaceInt == 4 ) //-- IGI
         {
-            lbnsets.PutCapabilityFlag( siNotInspectable, false );
-            lbnlights.PutCapabilityFlag( siNotInspectable, false );
-            lbmaxdepth.PutCapabilityFlag( siNotInspectable, false );
-            lbmindist.PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bnsets")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bnlights")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bmaxdepth")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bmindist")).PutCapabilityFlag( siNotInspectable, false );
             //--
             if ( vsexpert )
             {
-                lblight_str.PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"blight_str")).PutCapabilityFlag( siNotInspectable, false );
             }
              ctxt.PutAttribute(L"Refresh", true );
         }
         else
         {
-            lbmaxeyedepth.PutCapabilityFlag( siNotInspectable, false ); 
-            lbmaxphotondepth.PutCapabilityFlag( siNotInspectable, false );
-            lbdirectphotons.PutCapabilityFlag( siNotInspectable, false );
-            lbcausticphotons.PutCapabilityFlag( siNotInspectable, false ); 
-            lbindirectphotons.PutCapabilityFlag( siNotInspectable, false );
-            lbradiancephotons.PutCapabilityFlag( siNotInspectable, false ); 
-            lbnphotonsused.PutCapabilityFlag( siNotInspectable, false );
-            lbmaxphotondist.PutCapabilityFlag( siNotInspectable, false );
-            lbfinalgather.PutCapabilityFlag( siNotInspectable, false ); 
+            Parameter(params.GetItem(L"bmaxeyedepth")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bmaxphotondepth")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bdirectphotons")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bcausticphotons")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bindirectphotons")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bradiancephotons")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bnphotonsused")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bmaxphotondist")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bfinalgather")).PutCapabilityFlag( siNotInspectable, false );
             //--
             if ( vfinalgather )
             {
-                lbfinalgathersamples.PutCapabilityFlag( siNotInspectable, false );
-                lbgatherangle.PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"bfinalgathersamples")).PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"bgatherangle")).PutCapabilityFlag( siNotInspectable, false );
              }
-            lbrenderingmode.PutCapabilityFlag( siNotInspectable, false ); //-- combo
-            lbrrstrategy.PutCapabilityFlag( siNotInspectable, false );
-            lbrrcon_prob.PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"brenderingmode")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"brrstrategy")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"brrcon_prob")).PutCapabilityFlag( siNotInspectable, false );
             //--
             if ( vsexpert )
             {
-                lbshadowraycount.PutCapabilityFlag( siNotInspectable, false ); 
-                lblight_str.PutCapabilityFlag( siNotInspectable, false );
-                lbdistancethreshold.PutCapabilityFlag( siNotInspectable, false ); 
-                lbdbg_enabledirect.PutCapabilityFlag( siNotInspectable, false ); 
-                lbdbg_enableradiancemap.PutCapabilityFlag( siNotInspectable, false ); 
-                lbdbg_enableindircaustic.PutCapabilityFlag( siNotInspectable, false );
-                lbdbg_enableindirdiffuse.PutCapabilityFlag( siNotInspectable, false ); 
-                lbdbg_enableindirspecular.PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"bshadowraycount")).PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"blight_str")).PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"bdistancethreshold")).PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"bdbg_enabledirect")).PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"bdbg_enableradiancemap")).PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"bdbg_enableindircaustic")).PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"bdbg_enableindirdiffuse")).PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"bdbg_enableindirspecular")).PutCapabilityFlag( siNotInspectable, false );
             }
             ctxt.PutAttribute(L"Refresh", true );
         }
@@ -1244,45 +1123,33 @@ void dynamic_luxsi_UI( Parameter changed, CString paramName, PPGEventContext ctx
         vAccel = prop.GetParameterValue(L"bAccel");
         vacexpert = prop.GetParameterValue(L"bacexpert"); //-- provisional
         //--
-        Parameter lbmaxprimsperleaf= prop.GetParameters().GetItem( L"bmaxprimsperleaf");
-        Parameter lbfullsweepthreshold= prop.GetParameters().GetItem( L"bfullsweepthreshold"); 
-        Parameter lbskipfactor= prop.GetParameters().GetItem( L"bskipfactor");
-       // Parameter lbtreetype= prop.GetParameters().GetItem( L"btreetype");           
-        Parameter lbcostsamples= prop.GetParameters().GetItem( L"bcostsamples");        
-       // Parameter lbrefineimmediately= prop.GetParameters().GetItem( L"brefineimmediately");  
-        Parameter lbintersectcost= prop.GetParameters().GetItem( L"bintersectcost");      
-        Parameter lbtraversalcost= prop.GetParameters().GetItem( L"btraversalcost");      
-        Parameter lbmaxprims= prop.GetParameters().GetItem( L"bmaxprims");          
-        Parameter lbacmaxdepth= prop.GetParameters().GetItem( L"bacmaxdepth");         
-        Parameter lbemptybonus= prop.GetParameters().GetItem( L"bemptybonus");
+        const char *ui_accel [9] = {/*qbvh*/ "bmaxprimsperleaf", "bfullsweepthreshold", "bskipfactor",
+            /*bvh*/"bcostsamples", "bintersectcost", "btraversalcost", "bmaxprims", "bacmaxdepth", "bemptybonus" };
         //--
-        lbmaxprimsperleaf.PutCapabilityFlag( siNotInspectable, true );
-        lbfullsweepthreshold.PutCapabilityFlag( siNotInspectable, true );
-        lbskipfactor.PutCapabilityFlag( siNotInspectable, true );
+        for ( long ac = 0; ac < 9;)
+        {
+            Parameter(params.GetItem(ui_accel[ac])).PutCapabilityFlag(siNotInspectable, true);
+            ac++;
+        }
 
-       //lbtreetype.PutCapabilityFlag( siNotInspectable, true );           
-        lbcostsamples.PutCapabilityFlag( siNotInspectable, true );
-        //lbrefineimmediately.PutCapabilityFlag( siNotInspectable, true );
-        lbintersectcost.PutCapabilityFlag( siNotInspectable, true );
-        lbtraversalcost.PutCapabilityFlag( siNotInspectable, true );
-        lbmaxprims.PutCapabilityFlag( siNotInspectable, true );
-        lbacmaxdepth.PutCapabilityFlag( siNotInspectable, true );
-        lbemptybonus.PutCapabilityFlag( siNotInspectable, true );
+        // Parameter lbrefineimmediately= prop.GetParameters().GetItem( L"brefineimmediately");
+        // Parameter lbtreetype= prop.GetParameters().GetItem( L"btreetype"); 
+        
         //--
         if (( vAccel == 0 ) && ( vacexpert )) //-- qbvh
         {
-            lbmaxprimsperleaf.PutCapabilityFlag( siNotInspectable, false );
-            lbfullsweepthreshold.PutCapabilityFlag( siNotInspectable, false );
-            lbskipfactor.PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bmaxprimsperleaf")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bfullsweepthreshold")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bskipfactor")).PutCapabilityFlag( siNotInspectable, false );
             ctxt.PutAttribute(L"Refresh", true );
         }
         else if (( vAccel == 1 )&& ( vacexpert )) //-- bvh
         {
 //            lbtreetype.PutCapabilityFlag( siNotInspectable, false ); //-- combo          
-            lbcostsamples.PutCapabilityFlag( siNotInspectable, false );
-            lbintersectcost.PutCapabilityFlag( siNotInspectable, false );
-            lbtraversalcost.PutCapabilityFlag( siNotInspectable, false );
-            lbemptybonus.PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bcostsamples")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bintersectcost")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"btraversalcost")).PutCapabilityFlag( siNotInspectable, false );
+            Parameter(params.GetItem(L"bemptybonus")).PutCapabilityFlag( siNotInspectable, false );
             ctxt.PutAttribute(L"Refresh", true );
         }
 //        else if (( vAccel == 2 )&& ( vsexpert )) //-- grid
@@ -1294,11 +1161,11 @@ void dynamic_luxsi_UI( Parameter changed, CString paramName, PPGEventContext ctx
         {
             if ( vacexpert )//-- KD Tree
             {
-                lbintersectcost.PutCapabilityFlag( siNotInspectable, false );
-                lbtraversalcost.PutCapabilityFlag( siNotInspectable, false );
-                lbemptybonus.PutCapabilityFlag( siNotInspectable, false );
-                lbmaxprims.PutCapabilityFlag( siNotInspectable, false );
-                lbacmaxdepth.PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"bintersectcost")).PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"btraversalcost")).PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"bemptybonus")).PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"bmaxprims")).PutCapabilityFlag( siNotInspectable, false );
+                Parameter(params.GetItem(L"bacmaxdepth")).PutCapabilityFlag( siNotInspectable, false );
             }
             ctxt.PutAttribute(L"Refresh", true );
         }
@@ -1369,14 +1236,17 @@ bool find(CStringArray a, CString s){
 }
 
 //--
-CString findInGroup(CString s){
-
+CString findInGroup(CString s)
+{
     CRefArray grps = root.GetGroups();
-
-    for (int i=0;i<grps.GetCount();i++){
+    //--
+    for (int i=0;i<grps.GetCount();i++)
+    {
         CRefArray a=Group(grps[i]).GetMembers();
-        for (int j=0;j<a.GetCount();j++){
-            if (X3DObject(a[j]).GetName()==s) {
+        for (int j=0;j<a.GetCount();j++)
+        {
+            if (X3DObject(a[j]).GetName()==s) 
+            {
                 //app.LogMessage(L"Group: " + Group(grps[i]).GetName() + L"Childname: "+X3DObject(a[j]).GetName());
                 return Group(grps[i]).GetName();
             }
@@ -1405,7 +1275,7 @@ void writeLuxsiBasics(){
     const char *MtSurf [6] = { "bidirectional", "path", "directlighting", "distributedpath", "igi", "exphotonmap" };
     const char *MtRendering [2] = { "path", "directlighting" };
     //---
-    string fname = vFileObjects.GetAsciiString();
+    std::string fname = vFileObjects.GetAsciiString();
     int loc=(int)fname.rfind(".");
 
     f << "\nFilm \"fleximage\"\n"; //----
@@ -2028,11 +1898,10 @@ void writeLuxsiLight(X3DObject o)
     }
 }
 //--
-void writeLuxsiShader(){
-    //
+void writeLuxsiShader()
+{
     // Writes shader
-    //
-
+ 
     Scene scene = app.GetActiveProject().GetActiveScene();
     Library matlib = scene.GetActiveMaterialLibrary();
 
@@ -2051,7 +1920,8 @@ void writeLuxsiShader(){
     aShader[10] = L"mattetranslucent";
     int ret=0;
 
-    for ( LONG i=0; i < materials.GetCount(); i++ ) {
+    for ( LONG i=0; i < materials.GetCount(); i++ )
+    {
         Texture vTexture;
         CString shaderString;
         CString shaderType;
@@ -2064,14 +1934,12 @@ void writeLuxsiShader(){
         Shader vBumpTex;
         CString texFact=L"";
         bool vIsSet=false;
-        bool vText=false,vNorm=false;
-        CValue vDiffType,vMore,vCol,vMore2,vMore3,vTexStr,vMore1,vMore4,vMore5;
+        bool vText=false, vNorm=false;
+        //CValue vDiffType,vMore,vCol,vMore2,vMore3,vTexStr,vMore1,vMore4,vMore5;
         Material m( materials[i] );
 
-        if ( (int)m.GetUsedBy().GetCount()==0)
-        {
-            continue;
-        }
+        if ( int(m.GetUsedBy().GetCount())== 0 ) continue;
+        
         
         CRefArray shad(m.GetShaders()); // Array of all shaders attached to the material [e.g. phong]
         Shader s(shad[0]);
@@ -2079,27 +1947,22 @@ void writeLuxsiShader(){
         char sname[256];
         strcpy(sname,m.GetName().GetAsciiString());
 
-        if ( find(aMatList, m.GetName() ) ) 
-        {
-            continue;
-        } 
-        else 
-        {
-            aMatList.Add(m.GetName());
-        }
+        if ( !find(aMatList, m.GetName() ) ) aMatList.Add(m.GetName()); 
+        else continue;
+       
         //app.LogMessage(L"Shader: " + CString(Parameter(s.GetParameterValue(L"bump")).GetValue()));
 
         if (vMatID==L"lux_glass") 
         {
             shaderType=L"glass";
             s.GetColorParameterValue(L"kt",red,green,blue,alpha );
-            shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-            s.GetColorParameterValue(L"kr",red,green,blue,alpha );
+            shaderString += L"  \"color Kd\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]\n";
+            s.GetColorParameterValue(L"kr", red, green, blue, alpha );
             shaderString += L"  \"color Kr\" [" + CString(red) + L" "  + CString(green) +  L" "  + CString(blue) + L"]\n";
             shaderString += L"  \"float index\" [" + CString((float)s.GetParameterValue(L"index")) + L"]\n";
             shaderString += L"  \"float cauchyb\" [" + CString((float)s.GetParameterValue(L"cauchyb")) + L"]\n";
-            shaderString += L"\"bool architectural\" [\""+ CString((bool)s.GetParameterValue(L"architectural")) + L"\"]\n";
-          
+            shaderString += L"  \"bool architectural\" [\""+ CString((bool)s.GetParameterValue(L"architectural")) + L"\"]\n";
+            //---------          
             vIsSet=true;
         }
         else if (vMatID==L"lux_roughglass") 
@@ -2111,6 +1974,7 @@ void writeLuxsiShader(){
             shaderString += L"  \"color Kr\" [" + CString(red) + L" "  + CString(green) +  L" "  + CString(blue) + L"]\n";
             shaderString += L"  \"float index\" [" + CString((float)s.GetParameterValue(L"index")) + L"]\n";
             shaderString += L"  \"float cauchyb\" [" + CString((float)s.GetParameterValue(L"cauchyb")) + L"]\n";
+            //---------
             vIsSet=true;
         } 
         else if (vMatID==L"lux_matte") 
@@ -2119,6 +1983,7 @@ void writeLuxsiShader(){
             s.GetColorParameterValue(L"kd",red,green,blue,alpha );
             shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
             shaderString += L"  \"float sigma\" [" + CString((float)s.GetParameterValue(L"sigma")) + L"]\n";
+            //----------
             vIsSet=true;
         } 
         else if (vMatID==L"lux_mirror") 
@@ -2126,15 +1991,16 @@ void writeLuxsiShader(){
             s.GetColorParameterValue(L"kr",red,green,blue,alpha );
             shaderType=L"mirror";
             shaderString += L"  \"color Kr\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+            //----------
             vIsSet=true;
         } 
         else if (vMatID==L"lux_metal") 
         {
-            char ametal [5][17] = {"amorphous carbon", "silver", "gold", "copper", "aluminium"}; 
+            const char *ametal [5] = {"amorphous carbon", "silver", "gold", "copper", "aluminium"}; 
             int nmetal = s.GetParameterValue(L"mname");
             //--
-            shaderString += L"  \"float uroughness\" ["+ CString((float)s.GetParameterValue(L"roughness")) + L"]\n";
-            shaderString += L"  \"float vroughness\" ["+ CString((float)s.GetParameterValue(L"roughness")) + L"]\n";
+            shaderString += L"  \"float uroughness\" ["+ CString(float(s.GetParameterValue(L"roughness"))) + L"]\n";
+            shaderString += L"  \"float vroughness\" ["+ CString(float(s.GetParameterValue(L"roughness"))) + L"]\n";
             shaderString += L"  \"string name\" [\""+ CString(ametal[nmetal]) + L"\"]\n";
             shaderString += L"  \"string type\" [\"metal\"] \n";
             ret=9;
@@ -2143,25 +2009,24 @@ void writeLuxsiShader(){
         }
         else if (vMatID==L"lux_shinymetal") 
         {
-
             shaderType=L"shinymetal";
             s.GetColorParameterValue(L"ks",red,green,blue,alpha );
-            shaderString += L"  \"color Ks\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]";
-            shaderString += L"  \"float uroughness\" ["+ CString((float)s.GetParameterValue(L"roughness"))+L"]";
-            shaderString += L"  \"float vroughness\" ["+CString((float)s.GetParameterValue(L"roughness"))+L"]\n";
+            shaderString += L"  \"color Ks\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]";
+            shaderString += L"  \"float uroughness\" ["+ CString(float(s.GetParameterValue(L"roughness"))) + L"]";
+            shaderString += L"  \"float vroughness\" ["+ CString(float(s.GetParameterValue(L"roughness"))) + L"]\n";
             s.GetColorParameterValue(L"kr",red,green,blue,alpha );
-            shaderString += L"  \"color Kr\" [" + CString(red) + L" "  + CString(green) +  L" "  + CString(blue) + L"]\n";
+            shaderString += L"  \"color Kr\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]\n";
             vIsSet=true;
         }
         else if (vMatID==L"lux_substrate") 
         {
             shaderType=L"substrate";
             s.GetColorParameterValue(L"kd",red,green,blue,alpha );
-            shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]";
-            shaderString += L"  \"float uroughness\" ["+ CString((float)s.GetParameterValue(L"uroughness"))+L"]";
-            shaderString += L"  \"float vroughness\" ["+CString((float)s.GetParameterValue(L"vroughness"))+L"]\n";
+            shaderString += L"  \"color Kd\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]";
+            shaderString += L"  \"float uroughness\" ["+ CString(float(s.GetParameterValue(L"uroughness"))) + L"]";
+            shaderString += L"  \"float vroughness\" ["+ CString(float(s.GetParameterValue(L"vroughness"))) + L"]\n";
             s.GetColorParameterValue(L"ks",red,green,blue,alpha );
-            shaderString += L"  \"color Ks\" [" + CString(red) + L" "  + CString(green) +  L" "  + CString(blue) + L"]\n";
+            shaderString += L"  \"color Ks\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]\n";
             vIsSet=true;
         }
         else if (vMatID==L"lux_mattetranslucent") 
@@ -2174,33 +2039,147 @@ void writeLuxsiShader(){
             shaderString += L"  \"float sigma\" [" + CString((float)s.GetParameterValue(L"sigma")) + L"]\n";
             vIsSet=true;
         }
-
-        if (!vIsSet) {
-            if (s.GetParameterValue(L"refract_inuse")=="-1") {
-            //check if material is transparent: phong/lamber/blin/constant/cooktorrance/strauss
-            float ior=0.0f;
-            s.GetColorParameterValue(L"transparency",red,green,blue,alpha );
-            if (red>0 || green>0 || blue>0) {
-                shaderType=L"glass";
-
-                shaderString += L"  \"color Kt\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-                s.GetColorParameterValue(L"reflectivity",sp_red,sp_green,sp_blue,sp_alpha );
-                shaderString += L"  \"color Kr\" [" + CString(sp_red) + L" "  + CString(sp_green) +  L" "  + CString(sp_blue) + L"]\n";
-                shaderString += L"  \"float index\" [" + CString((float)s.GetParameterValue(L"index_of_refraction")) + L"]\n";
-                shaderString += L"  \"float cauchyb\" [0]\n";
-
-                if ((float)s.GetParameterValue(L"trans_glossy")>0 ) {
-                    shaderType=L"roughglass";
-                    shaderString += L"  \"float uroughness\" ["+ CString((float)s.GetParameterValue(L"trans_glossy"))+ L"]";
-                    shaderString += L"  \"float vroughness\" ["+CString((float)s.GetParameterValue(L"trans_glossy"))+ L"]\n";
+        // Material Stuff
+        else if (vMatID==L"lux_car_paint") 
+        {
+            //-- car paint
+            const char *A_carpaint [8] = {"2k acrylack", "blue", "blue matte", "bmw339",
+                "ford f8", "opel titan", "polaris silber", "white"};
+            int presets = s.GetParameterValue(L"presets");
+               
+            float spr,spg,spb,spa,spr2,spg2,spb2,spa2,r,g,b,a;
+            s.GetColorParameterValue(L"spec",spr,spg,spb,spa ); //spec primary
+            s.GetColorParameterValue(L"spec_sec",spr2,spg2,spb2,spa2 ); // spec secondary
+            s.GetColorParameterValue(L"kd",r,g,b,a );
+            s.GetColorParameterValue(L"reflectivity",r,g,b,a );
+            //--
+            if ( presets == 0 )
+            {
+                shaderString += L"  \"color Kd\" ["+ CString(r) + L" "+ CString(g) + L" "+ CString(b) + L"] \n";
+	            shaderString += L"  \"color Ks1\" ["+ CString(spr) + L" "+ CString(spg) + L" "+ CString(spb) + L"] \n";
+	            shaderString += L"  \"color Ks2\" ["+ CString(spr2) + L" "+ CString(spg2) + L" "+ CString(spb2) + L"] \n";
+	            shaderString += L"  \"color Ks3\" ["+ CString(spr2) + L" "+ CString(spg2) + L" "+ CString(spb2) + L"] \n";
+	            shaderString += L"  \"float M1\" ["+ CString(float(s.GetParameterValue(L"m1"))) + L"] \n";
+	            shaderString += L"  \"float M2\" ["+ CString(float(s.GetParameterValue(L"m2"))) + L"] \n";
+	            shaderString += L"  \"float M3\" ["+ CString(float(s.GetParameterValue(L"m3"))) + L"] \n";
+	            shaderString += L"  \"float R1\" ["+ CString(float(s.GetParameterValue(L"r1"))) + L"] \n";
+	            shaderString += L"  \"float R2\" ["+ CString(float(s.GetParameterValue(L"r2"))) + L"] \n";
+	            shaderString += L"  \"float R3\" ["+ CString(float(s.GetParameterValue(L"r3"))) + L"] \n";
+            }
+            else
+            {
+                shaderString += L"  \"string name\" [\""+ CString(A_carpaint[presets]) + L"\"]\n"; // presets
+            }
+	        shaderType=L"carpaint";
+            //--
+            vIsSet=true;
+        } 
+        else if (vMatID==L"mia_material_phen") 
+        {
+            // arch vis
+            s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
+            s.GetColorParameterValue(L"refl_color",sp_red,sp_green,sp_blue,sp_alpha );
+            mRough=(float)s.GetParameterValue(L"reflect_glossy");
+            float refl=(float)s.GetParameterValue(L"reflectivity");
+            float brdf=(float)s.GetParameterValue(L"brdf_0_degree_refl");
+            //--
+            if (refl > 0) 
+            {
+                shaderType = L"shinymetal";
+                shaderString += L"  \"color Kr\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"] ";
+                shaderString += L" \"float uroughness\" ["+ CString(1-mRough)+L"] \"float vroughness\" ["+CString(1-mRough)+L"]\n";
+                shaderString += L" \"color Ks\" [" + CString(refl*sp_red*brdf) + L" " + CString(refl*sp_green*brdf) + L" " + CString(refl*sp_blue*brdf) + L"]\n";
+            } 
+            else 
+            {
+                shaderType=L"matte";
+                s.GetColorParameterValue(L"kd",red,green,blue,alpha );
+                shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+                shaderString += L"  \"float sigma\" [" + CString(mRough) + L"]\n";
+            }
+            //--
+            vIsSet=true;
+        }
+        else if (vMatID==L"material-phong") 
+        {
+            shaderType=L"glossy";
+            s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
+            shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]";
+            shaderString += L"  \"float uroughness\" ["+ CString((float)(s.GetParameterValue(L"shiny"))/10)+L"]";
+            shaderString += L"  \"float vroughness\" ["+CString((float)(s.GetParameterValue(L"shiny"))/10)+L"]\n";
+            s.GetColorParameterValue(L"specular",red,green,blue,alpha );
+            shaderString += L"  \"color Ks\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+            //--
+            vIsSet=true;
+        } 
+        else if (vMatID==L"material-lambert")
+        {
+            shaderType=L"matte";
+            s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
+            shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+            shaderString += L"  \"float sigma\" [0]\n";
+            //--
+            vIsSet=true;
+        } 
+        else if (vMatID==L"material-ward")
+        {
+            s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
+            shaderType=L"glossy";
+            shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]";
+            shaderString += L"  \"float uroughness\" ["+ CString((float)(s.GetParameterValue(L"shiny_u"))/10)+ L"]";
+            shaderString += L"  \"float vroughness\" ["+ CString((float)(s.GetParameterValue(L"shiny_v"))/10)+ L"]\n";
+            shaderString += L"  \"color Ks\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+            //--
+            vIsSet=true;
+        } 
+        else if (vMatID==L"material-constant")
+        {
+            s.GetColorParameterValue(L"color",red,green,blue,alpha );
+            shaderType=L"matte";
+            shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+            shaderString += L"  \"float sigma\" [0]\n";
+            //--
+            vIsSet=true;
+        } 
+        else if (vMatID==L"material-strauss")
+        {
+            s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
+            shaderType=L"matte";
+            shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+            shaderString += L"  \"float sigma\" [0]\n";
+            //--
+            vIsSet=true;
+        }
+        //-- if yet vMatID is defined......
+        if (!vIsSet) 
+        {
+            if (s.GetParameterValue(L"refract_inuse")=="-1")
+            {
+                //check if material is transparent: phong/lamber/blin/constant/cooktorrance/strauss
+                float ior=0.0f;
+                s.GetColorParameterValue(L"transparency",red,green,blue,alpha );
+                if (red>0 || green>0 || blue>0)
+                {
+                    shaderType=L"glass";
+                    shaderString += L"  \"color Kt\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+                    s.GetColorParameterValue(L"reflectivity",sp_red,sp_green,sp_blue,sp_alpha );
+                    shaderString += L"  \"color Kr\" [" + CString(sp_red) + L" "  + CString(sp_green) +  L" "  + CString(sp_blue) + L"]\n";
+                    shaderString += L"  \"float index\" [" + CString((float)s.GetParameterValue(L"index_of_refraction")) + L"]\n";
+                    shaderString += L"  \"float cauchyb\" [0]\n";
+                    //--
+                    if ((float)s.GetParameterValue(L"trans_glossy")>0 )
+                    {
+                        shaderType=L"roughglass";
+                        shaderString += L"  \"float uroughness\" ["+ CString((float)s.GetParameterValue(L"trans_glossy"))+ L"]";
+                        shaderString += L"  \"float vroughness\" ["+ CString((float)s.GetParameterValue(L"trans_glossy"))+ L"]\n";
+                    }
                 }
-                vIsSet=true;
             }
         }
-    }
-
-        if (!vIsSet) {
-            if ( (float)s.GetParameterValue(L"transparency") > 0.0f ) {
+        if (!vIsSet)
+        {
+            if ( (float)s.GetParameterValue(L"transparency") > 0.0f )
+            {
                 float ior=0.0f;
                 // glass mia-arch shader
                 s.GetColorParameterValue(L"refr_color",red,green,blue,alpha );
@@ -2210,17 +2189,15 @@ void writeLuxsiShader(){
                 shaderString += L"  \"float index\" [" + CString((float)s.GetParameterValue(L"refr_ior")) + L"]\n";
                 shaderString += L"  \"float cauchyb\" [0]\n";
                 shaderType=L"glass";
-
-                if ((float)s.GetParameter(L"refr_gloss").GetValue()<1 ) {
+                if ((float)s.GetParameter(L"refr_gloss").GetValue()<1 )
+                {
                     shaderType=L"roughglass";
-                    shaderString += L"  \"float uroughness\" ["+ CString(1.0f-(float)s.GetParameterValue(L"refr_gloss"))+ L"]";
-                    shaderString += L"  \"float vroughness\" ["+ CString(1.0f-(float)s.GetParameterValue(L"refr_gloss"))+ L"]\n";
+                    shaderString += L"  \"float uroughness\" ["+ CString(1.0f - float(s.GetParameterValue(L"refr_gloss"))) + L"]";
+                    shaderString += L"  \"float vroughness\" ["+ CString(1.0f - float(s.GetParameterValue(L"refr_gloss"))) + L"]\n";
                 }
-                vIsSet=true;
             }
+            vIsSet=true;
         }
-
-
         if (!vIsSet) 
         {
             // check if its a reflecting material
@@ -2231,8 +2208,7 @@ void writeLuxsiShader(){
                 if (vMatID==L"mia_material_phen") 
                 {
                     s.GetColorParameterValue(L"refl_color",red,green,blue,alpha );
-                    mRough = 1-(float)s.GetParameterValue(L"refl_gloss");
-
+                    mRough = 1 - float(s.GetParameterValue(L"refl_gloss"));
                     red = red*a;
                     green = green*b;
                     blue = blue*c;
@@ -2242,11 +2218,12 @@ void writeLuxsiShader(){
                     s.GetColorParameterValue(L"reflectivity",red,green,blue,alpha );
                     mRough = (float)s.GetParameterValue(L"reflect_glossy");
                 }
-                if (red>0 || green>0 || blue>0) {
+                if (red>0 || green>0 || blue>0)
+                {
                     shaderType=L"shinymetal";
-                    shaderString += L"  \"color Kr\" [" + CString(a) + L" " + CString(b) + L" " + CString(c) + L"] ";
-                    shaderString += L" \"float uroughness\" ["+ CString(mRough/10)+L"] \"float vroughness\" ["+ CString(mRough/10)+ L"]\n";
-                    shaderString += L" \"color Ks\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+                    shaderString += L"  \"color Kr\" ["+ CString(a) + L" "+ CString(b) + L" "+ CString(c) + L"] ";
+                    shaderString += L" \"float uroughness\" ["+ CString(mRough/10) + L"] \"float vroughness\" ["+ CString(mRough/10)+ L"]\n";
+                    shaderString += L" \"color Ks\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]\n";
                     vIsSet=true;
                 }
             }
@@ -2255,127 +2232,27 @@ void writeLuxsiShader(){
         {
             //app.LogMessage(vMatID);
 
-            // Get Textures
-            /*
-            JScript Version to find shader in slot:
-
-            s = Selection(0).Material.Shaders(0);
-            for (i=0;i<s.parameters.count;i++){
-            t=s.parameters(i).source;
-            if (t) logmessage(s.parameters(i).name + "=" + t);
-            }
-
-            */
-
-
-            // Material Stuff
-            if (vMatID==L"lux_car_paint") 
-            {
-                //-- car paint
-                char A_carpaint [8][15] = {"2k acrylack", "blue", "blue matte", "bmw339",
-                    "ford f8", "opel titan", "polaris silber", "white"};
-                int presets = s.GetParameterValue(L"presets");
+                // Get Textures
                 
-                float spr,spg,spb,spa,spr2,spg2,spb2,spa2,r,g,b,a;
-                s.GetColorParameterValue(L"spec",spr,spg,spb,spa ); //spec primary
-                s.GetColorParameterValue(L"spec_sec",spr2,spg2,spb2,spa2 ); // spec secondary
-                s.GetColorParameterValue(L"kd",r,g,b,a );
-                s.GetColorParameterValue(L"reflectivity",r,g,b,a );
-                //--
-                if ( presets == 0 )
-                {
-                    shaderString += L"  \"color Kd\" [" + CString(r) + L" " + CString(g) + L" " + CString(b) + L"] \n";
-	                shaderString += L"  \"color Ks1\" [" + CString(spr) + L" " + CString(spg) + L" " + CString(spb) + L"] \n";
-	                shaderString += L"  \"color Ks2\" [" + CString(spr2) + L" " + CString(spg2) + L" " + CString(spb2) + L"] \n";
-	                shaderString += L"  \"color Ks3\" [" + CString(spr2) + L" " + CString(spg2) + L" " + CString(spb2) + L"] \n";
-	                shaderString += L"  \"float M1\" ["+ CString(float(s.GetParameterValue(L"m1"))) + L"] \n";
-	                shaderString += L"  \"float M2\" ["+ CString(float(s.GetParameterValue(L"m2"))) + L"] \n";
-	                shaderString += L"  \"float M3\" ["+ CString(float(s.GetParameterValue(L"m3"))) + L"] \n";
-	                shaderString += L"  \"float R1\" ["+ CString(float(s.GetParameterValue(L"r1"))) + L"] \n";
-	                shaderString += L"  \"float R2\" ["+ CString(float(s.GetParameterValue(L"r2"))) + L"] \n";
-	                shaderString += L"  \"float R3\" ["+ CString(float(s.GetParameterValue(L"r3"))) + L"] \n";
-                }
-                else
-                {
-                    shaderString += L"  \"string name\" [\""+ CString(A_carpaint[presets]) + L"\"]\n"; // presets
-                }
-	            shaderType=L"carpaint";
-            } 
-            else if (vMatID==L"mia_material_phen") 
-            {
-                // arch vis
-                s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
-                s.GetColorParameterValue(L"refl_color",sp_red,sp_green,sp_blue,sp_alpha );
-                mRough=(float)s.GetParameterValue(L"reflect_glossy");
-                float refl=(float)s.GetParameterValue(L"reflectivity");
-                float brdf=(float)s.GetParameterValue(L"brdf_0_degree_refl");
-                //--
-                if (refl>0) 
-                {
-                    shaderType=L"shinymetal";
-                    shaderString += L"  \"color Kr\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"] ";
-                    shaderString += L" \"float uroughness\" ["+ CString(1-mRough)+L"] \"float vroughness\" ["+CString(1-mRough)+L"]\n";
-                    shaderString += L" \"color Ks\" [" + CString(refl*sp_red*brdf) + L" " + CString(refl*sp_green*brdf) + L" " + CString(refl*sp_blue*brdf) + L"]\n";
-                } 
-                else 
-                {
-                    shaderType=L"matte";
-                    s.GetColorParameterValue(L"kd",red,green,blue,alpha );
-                    shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-                    shaderString += L"  \"float sigma\" [" + CString(mRough) + L"]\n";
-                }
-            }
-            else if (vMatID==L"material-phong") 
-            {
-                shaderType=L"glossy";
-                s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
-                shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]";
-                shaderString += L"  \"float uroughness\" ["+ CString((float)(s.GetParameterValue(L"shiny"))/10)+L"]";
-                shaderString += L"  \"float vroughness\" ["+CString((float)(s.GetParameterValue(L"shiny"))/10)+L"]\n";
-                s.GetColorParameterValue(L"specular",red,green,blue,alpha );
-                shaderString += L"  \"color Ks\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-            } 
-            else if (vMatID==L"material-lambert")
-            {
-                shaderType=L"matte";
-                s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
-                shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-                shaderString += L"  \"float sigma\" [0]\n";
-            } 
-            else if (vMatID==L"material-ward")
-            {
-                s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
-                shaderType=L"glossy";
-                shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]";
-                shaderString += L"  \"float uroughness\" ["+ CString((float)(s.GetParameterValue(L"shiny_u"))/10)+ L"]";
-                shaderString += L"  \"float vroughness\" ["+ CString((float)(s.GetParameterValue(L"shiny_v"))/10)+ L"]\n";
-                shaderString += L"  \"color Ks\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-            } 
-            else if (vMatID==L"material-constant")
-            {
-                s.GetColorParameterValue(L"color",red,green,blue,alpha );
-                shaderType=L"matte";
-                shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-                shaderString += L"  \"float sigma\" [0]\n";
-            } 
-            else if (vMatID==L"material-strauss")
-            {
-                s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
-                shaderType=L"matte";
-                shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-                shaderString += L"  \"float sigma\" [0]\n";
-            } 
-            else 
-            {
-                // fall back shader
-                shaderType=L"matte";
-                shaderString += L"  \"color Kd\" [0.7 0.7 0.7]\n";
-                shaderString += L"  \"float sigma\" [0]\n";
-            }
+                //JScript Version to find shader in slot:
+
+                //s = Selection(0).Material.Shaders(0);
+                //for (i=0;i<s.parameters.count;i++){
+                //t=s.parameters(i).source;
+                //if (t) logmessage(s.parameters(i).name + "=" + t);
+               
         }
-        //-- search for images
+        else 
+        {
+            // fall back shader
+            shaderType=L"matte";
+            shaderString += L"  \"color Kd\" [0.7 0.7 0.7]\n";
+            shaderString += L"  \"float sigma\" [0]\n";
+        }
+        
+        //-- search for texture image
         CRefArray vImags=m.GetShaders();
-        for (int i=0;i<vImags.GetCount();i++)
+        for (int i=0; i < vImags.GetCount(); i++)
         {
             CRefArray vImags2=Shader(vImags[i]).GetShaders();
             for (int j=0;j<vImags2.GetCount();j++)
@@ -2453,6 +2330,7 @@ int writeLuxsiSurface(X3DObject o, CString vType)
     KinematicState  gs = o.GetKinematics().GetLocal(); 
     CTransformation gt = gs.GetTransform();
     //--
+    f << "\nAttributeBegin\n";
     CVector3 axis;
         double rot = gt.GetRotationAxisAngle(axis);
         //-- TODO; changed for matrix
@@ -2479,7 +2357,7 @@ int writeLuxsiSurface(X3DObject o, CString vType)
             f << "  \"float phimax\" [" << vphimax * 2 << "]\n";
             //--
         f << "TransformEnd\n";
-
+    f << "\nAttributeEnd\n";
     return 0;
 }
 //--
@@ -2560,27 +2438,45 @@ int writeLuxsiObj(X3DObject o, CString vType)
             }
             vTris += L"\n";
         }
-               
-        //  app.LogMessage(L"count: "+CValue(allPoints.GetCount()).GetAsText());
-        for (LONG j=0; j < allPoints.GetCount(); j++)
+                             
+        //-- test to optimize processes
+        if ( !vplymesh )
         {
-            //-- test
-            CVector3 new_pos(allPoints[j][0], allPoints[j][1], allPoints[j][2]);
-            new_pos.MulByTransformationInPlace(global_trans);
-            //--
-            vPoints += L" "+ CString(new_pos[0]) + L" "+  CString(new_pos[1]) + L" "+ CString(new_pos[2]) + L"\n";
-            vUV +=  L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]) + L"\n";
-            vNormals +=  L" "+ CString(allNormals[j][0]) + L" "+  CString(allNormals[j][1]) + L" "+ CString(allNormals[j][2]) + L"\n";
+            for (LONG j=0; j < allPoints.GetCount(); j++)
+            {
+                //-- test
+                CVector3 new_pos(allPoints[j][0], allPoints[j][1], allPoints[j][2]);
+                new_pos.MulByTransformationInPlace(global_trans);
+                vPoints += L" "+ CString(new_pos[0]) + L" "+  CString(new_pos[1]) + L" "+ CString(new_pos[2]) + L"\n";
+                //--
+                CVector3 tr_normals(allNormals[j][0], allNormals[j][1], allNormals[j][2]);
+                tr_normals.MulByTransformationInPlace(global_trans);
+                vNormals +=  L" "+ CString(tr_normals[0]) + L" "+  CString(tr_normals[1]) + L" "+ CString(tr_normals[2]) + L"\n";
+                //-- UV need transpose?                
+                vUV +=  L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]) + L"\n";     
+            } 
         }
         //--
         f << "\nAttributeBegin #" << o.GetName().GetAsciiString();
         //--
         f << "\nNamedMaterial \""<< m.GetName().GetAsciiString() <<"\"\n";
-        
+
+        //-- Geometry associated to lights
+        bool vIsPortal = false;
+        string::size_type loc = string(CString(o.GetName()).GetAsciiString()).find( "PORTAL", 0 );
+        if (loc != string::npos) vIsPortal = true;
         //-- meshlight
-        if (float(s.GetParameterValue(L"inc_inten"))> 0 )
+        if (float(s.GetParameterValue(L"inc_inten"))> 0 ) vIsMeshLight = true;
+        CString type_mesh = L"mesh";
+        if ( vplymesh ) type_mesh = L"plymesh";
+        CString type_shape = L"Shape";
+        if ( vIsPortal ) type_shape = L"PortalShape";
+        
+        //-----------------
+        if ( vIsMeshLight )
+        //-----------------
         {
-            vIsMeshLight = true;
+            //--
             float red = 0.0f, green = 0.0f, blue = 0.0f, alpha = 0.0f;
             s.GetColorParameterValue(L"incandescence",red,green,blue,alpha );
             float inc_intensity(s.GetParameterValue(L"inc_inten"));
@@ -2593,62 +2489,36 @@ int writeLuxsiObj(X3DObject o, CString vType)
             f << "  \"float importance\" [1.00] \n";
             f << "  \"float gain\" ["<< inc_intensity <<"] \n";
             //f << "  \"float power\" [100.0]  \"float efficacy\" [17.0] \n";
-            f << "  \"color L\" ["<< (red * inc_intensity) <<" "<<(green * inc_intensity) <<" "<<(blue * inc_intensity )<<"]\n";
-            f << " Shape  \"trianglemesh\" \n";
-            f << "  \"integer indices\" [\n" << vTris.GetAsciiString() << "\n ]";
-            f << "  \"point P\" [\n" << vPoints.GetAsciiString() << "\n ]";
-            //--
-            if ( vSmooth_mesh && vNormals != L"" )
-            {
-                f << "  \"normal N\" [\n" << vNormals.GetAsciiString() << "\n ]";
-            }
+            f << "  \"color L\" ["<< (red * inc_intensity) <<" "<< (green * inc_intensity) <<" "<<(blue * inc_intensity ) <<"]\n";
         }
-
-        /* 
-        //-- search portal light
-        bool vIsPortal = false;
-        string::size_type loc = string(CString(o.GetName()).GetAsciiString()).find( "PORTAL", 0 );
-        if (loc != string::npos) 
-        {
-            vIsPortal = true; 
-        //--
-            f << " PortalShape ";
-            f << " \"trianglemesh\"\n \"integer indices\" [\n";
-            f << vTris.GetAsciiString();
-            f << " ] \"point P\" [\n" ;
-            f << vPoints.GetAsciiString();
-            f << "] \"normal N\" [\n";
-            f << vNormals.GetAsciiString();
-            f << "]\n";
-        }        
-        */
-
-        
-        else if ( vplymesh )
+        f << type_shape.GetAsciiString() <<" \""<< type_mesh.GetAsciiString() <<"\" \n";
+        //-------------
+        if ( vplymesh )
+        //-------------
         {
             //--
             CString vInput_FileName = vFileObjects.GetAsciiString();
             int Loc = (int)vInput_FileName.ReverseFindString(".");
             vFilePLY = vInput_FileName.GetSubString(0,Loc) + L"_"+ o.GetName() + L".ply";
-            //--
-            f << "\n Shape \"plymesh\" \n";
             f << "  \"string filename\" [\"" << replace(vFilePLY.GetAsciiString()) << "\"] \n";
         }
-        else
+        //-- share
+        f << "  \"integer nsubdivlevels\" [" << subdLevel  <<"] \"string subdivscheme\" [\"loop\"] \n";
+        f << "  \"bool dmnormalsmooth\" [\""<< MtBool[vSmooth_mesh] <<"\"]";
+        f << "  \"bool dmsharpboundary\" [\""<< MtBool[vSharp_bound] <<"\"] \n";         
+        //f << "  \"string displacementmap\" [\"none\"]\n"; 
+        //f << "  \"float dmscale\" [\"0.0\"] \"float dmoffset\" [\" 0.0\"]\n"; 
+
+        //--------------
+        if ( !vplymesh )
+        //--------------
         {
-            f << " Shape  \"mesh\" \n";
-            f << "  \"integer nsubdivlevels\" [" << subdLevel  <<"] \"string subdivscheme\" [\"loop\"] \n";
-            //f << "  \"string displacementmap\" [\"none\"]\n"; 
-            //f << "  \"float dmscale\" [\"0.0\"] \"float dmoffset\" [\" 0.0\"]\n";   
-            f << "  \"bool dmnormalsmooth\" [\""<< MtBool[vSmooth_mesh] <<"\"]";
-            f << "  \"bool dmsharpboundary\" [\""<< MtBool[vSharp_bound] <<"\"] \n";
             f << "  \"string acceltype\" [\""<< MtAccel[vAccel] <<"\"] \"string tritype\" [\"wald\"] \n";//TODO
             f << "  \"integer triindices\" [\n" << vTris.GetAsciiString() << "\n ]";
             f << "  \"point P\" [\n" << vPoints.GetAsciiString() << "\n ]";
-            //--
             if ( vSmooth_mesh && vNormals != L"" )
             {
-                f << "  \"normal N\" [\n" << vNormals.GetAsciiString() << "\n ]";
+                f << " \"normal N\" [\n" << vNormals.GetAsciiString() << "\n ]";
             }
             //--
             if ( vText && vUV != L"" )
@@ -2656,7 +2526,6 @@ int writeLuxsiObj(X3DObject o, CString vType)
                 f << " \"float uv\" [\n" << vUV.GetAsciiString() << "\n ]";   
             }
         }
-        
         //--
         f << "\nAttributeEnd #" << o.GetName().GetAsciiString() << "\n";
     } 
@@ -2675,7 +2544,7 @@ void write_ply_object(X3DObject o, CString vFilePLY)
 
     CVector3Array allPoints(triangles.GetCount()*3);
     CVector3Array allUV(triangles.GetCount()*3);
-    //CVector3Array allNormals(triangles.GetCount()*3);
+    CVector3Array allNormals(triangles.GetCount()*3);
 
     long index=0; 
     for (int i=0; i<triangles.GetCount();i++)
@@ -2685,12 +2554,12 @@ void write_ply_object(X3DObject o, CString vFilePLY)
         {
              TriangleVertex vertex0(triangle.GetPoints().GetItem(j));
              CVector3 pos(vertex0.GetPosition());
-             // CVector3 normal(vertex0.GetNormal());
+             CVector3 normal(vertex0.GetNormal());
              CUV uvs(vertex0.GetUV());
              //--
              long arrayPos = index++;
              allPoints[arrayPos] = pos;
-             // allNormals[arrayPos] = normal;
+             allNormals[arrayPos] = normal;
              allUV[arrayPos] = CVector3(uvs.u, uvs.v,0);
         }
     }
@@ -2703,9 +2572,18 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     CString sPos;
     for (LONG j=0; j < allPoints.GetCount(); j++)
     {
+        //-- vertex
         CVector3 point_pos(allPoints[j][0], allPoints[j][1], allPoints[j][2]);
         point_pos.MulByTransformationInPlace(global_trans);
-        sPos += CString(point_pos[0]) + L" "+ CString(point_pos[1]) + L" "+ CString(point_pos[2]) + L" 0 0 0\n";
+        //-- normals
+        CVector3 norm_idx(allNormals[j][0], allNormals[j][1], allNormals[j][2]);
+        norm_idx.MulByTransformationInPlace(global_trans);
+        //-- write all
+        sPos += CString(point_pos[0]) + L" "+ CString(point_pos[1]) + L" "+ CString(point_pos[2]);
+        if ( vSmooth_mesh ){
+        sPos += L" "+ CString(norm_idx[0]) + L" "+ CString(norm_idx[1]) + L" "+ CString(norm_idx[2]);
+        }
+        sPos += L"\n";
     }
     //-- triangles
     CString vFaces;
@@ -2719,7 +2597,8 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     //--
     
     vFilePLY += L"_"+ o.GetName() + L".ply";
-    f.open(vFilePLY.GetAsciiString(), ios.out | ios.binary);
+    //FILE * file=fopen(vFilePLY.GetAsciiString(), "wb"); // from kies project
+   // f.open(vFilePLY.GetAsciiString(), ios::out | ios::binary);
     f << "ply\n";
     f << "format ascii 1.0\n";
 	f << "comment LuXSI; LuxRender Exporter for Autodesk Softimage\n";
@@ -2727,9 +2606,16 @@ void write_ply_object(X3DObject o, CString vFilePLY)
 	f << "property float x\n";
 	f << "property float y\n";
 	f << "property float z\n";
-	f << "property uchar red\n";
+   /*
+    f << "property uchar red\n";
 	f << "property uchar green\n";
 	f << "property uchar blue\n";
+    */
+    if ( vSmooth_mesh ) {
+        f << "property float nx\n";
+	    f << "property float ny\n";
+	    f << "property float nz\n";
+    }
 	f << "element face "<< CString(pCount).GetAsciiString() <<"\n";
 	f << "property list uchar uint vertex_indices\n";
 	f << "end_header\n";
@@ -2740,7 +2626,7 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     f << vFaces.GetAsciiString();
 	
 	f.close();
-    //----------------------------------
+    //--
 
 }
         
@@ -2813,7 +2699,13 @@ int writeLuxsiCloud(X3DObject obj)
         f << "  Shape \"sphere\" \"float radius\" [0.5]\n";
         // f << "  Shape \"sphere\" \"float radius\" [" << (float)aSize[i] << "]\n";
         f << "AttributeEnd #"<< obj.GetName().GetAsciiString()<<"\n";
-
+        //--------------f << " Shape  \"sphere\" \n";
+/*           f << "  \"float radius\" [" << vradius << "]\n";
+            f << "  \"float zmin\" [" << -vzmax /2  << "]\n";
+            f << "  \"float zmax\" [" << vzmax /2  << "]\n";
+            f << "  \"float phimax\" [" << vphimax * 2 << "]\n";
+            //--
+*/
     }
 
     return 0;
@@ -2902,6 +2794,22 @@ void write_header_files()
     f <<"# continued by P. Alcaide, aka povmaniaco. \n \n";
 }
 //--
+void luxsi_mat_preview()
+{
+    //--
+    writeLuxsiShader();
+    if ( find(aMatList, L"Preview" ) ){
+       
+    
+    //------------------------------------
+        f << " Shape  \"sphere\" \n";
+        f << "  \"float radius\" [1.0]\n";
+        f << "  \"float zmin\" [-0.5]\n";
+        f << "  \"float zmax\" [0.5]\n";
+        f << "  \"float phimax\" [1.0]\n";
+            //--
+    }
+}
 void luxsi_write()
 {
     // write objects, materials, lights, cameras
@@ -3103,8 +3011,8 @@ void luxsi_write()
             }
             //-- surfaces
             for (int i=0;i<aSurfaces.GetCount();i++) {
-                if (writeLuxsiObj(aSurfaces[i],L"surface")==-1) break;
-                //if (writeLuxsiSurface(aSurfaces[i],L"surface")==-1) break;
+                //if (writeLuxsiObj(aSurfaces[i],L"surface")==-1) break;
+                if (writeLuxsiSurface(aSurfaces[i],L"surface")==-1) break;
                 if (pb.IsCancelPressed() ) break;
                 pb.Increment();
             }
