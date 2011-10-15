@@ -36,6 +36,8 @@ Null null;
 CustomProperty prop ;
 UIToolkit kit = app.GetUIToolkit();
 ProgressBar pb = kit.GetProgressBar();
+//--
+CRefArray params;
 
 
 
