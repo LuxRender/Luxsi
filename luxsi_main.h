@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
+#define __forceinline inline
 #pragma once
 //--
 #include <xsi_segment.h>
@@ -75,4 +76,4 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	#include <winioctl.h>
 #endif
 
-#define WIN32_LEAN_AND_MEAN 
+#define WIN32_LEAN_AND_MEAN
