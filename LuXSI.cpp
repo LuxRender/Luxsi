@@ -44,6 +44,10 @@ void writeLuxsiShader();
 void luxsi_write();
 void luxsi_execute();
 CString readIni();
+string replace(string input);
+//--
+bool find(CStringArray a, CString s);
+//--
 void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext ctxt);
 
 void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext ctxt);
@@ -58,6 +62,7 @@ XSIPLUGINCALLBACK CStatus XSILoadPlugin( PluginRegistrar& in_reg )
     in_reg.PutURL(L"http://www.migaweb.de");
     in_reg.PutVersion(0,6);
     in_reg.RegisterProperty(L"LuXSI");
+    in_reg.RegisterRenderer(L"LuxRender Renderer");
     in_reg.RegisterMenu(siMenuTbRenderRenderID,L"LuXSI_Menu",false,false);
     //RegistrationInsertionPoint - do not remove this line // siMenuTbRenderRenderID
     return CStatus::OK;
@@ -1898,426 +1903,6 @@ void writeLuxsiLight(X3DObject o)
     }
 }
 //--
-void writeLuxsiShader()
-{
-    // Writes shader
- 
-    Scene scene = app.GetActiveProject().GetActiveScene();
-    Library matlib = scene.GetActiveMaterialLibrary();
-
-    CRefArray materials = matlib.GetItems();
-//  char aBool[2][6]={"false","true"};
-    CValueArray aShader(11);
-    aShader[0] = L"matte" ;
-    aShader[1] = L"glass" ;
-    aShader[2] = L"glossy";
-    aShader[3] = L"shinymetal";
-    aShader[4] = L"matte";
-    aShader[6] = L"carpaint";
-    aShader[7] = L"roughglass";
-    aShader[8] = L"mirror";
-    aShader[9] = L"metal";
-    aShader[10] = L"mattetranslucent";
-    int ret=0;
-
-    for ( LONG i=0; i < materials.GetCount(); i++ )
-    {
-        Texture vTexture;
-        CString shaderString;
-        CString shaderType;
-        CString vFileBump;
-        CString vChanel=L"", vChanType=L"", shaderTexture=L"";
-
-        float b_red=0.0f,b_green=0.0f,b_blue=0.0f,b_alpha=0.0f,red=0.0f,green=0.0f,blue=0.0f,alpha=0.0f,sp_red=0.0f,sp_green=0.0f,sp_blue=0.0f,sp_alpha=0.0f,vModScale=0.0f,refl_red=0.0f,refl_green=0.0f,refl_blue=0.0f,refl_alpha=0.0f;
-        float mRough=0.0f;
-        ImageClip2 vBumpFile;
-        Shader vBumpTex;
-        CString texFact=L"";
-        bool vIsSet=false;
-        bool vText=false, vNorm=false;
-        //CValue vDiffType,vMore,vCol,vMore2,vMore3,vTexStr,vMore1,vMore4,vMore5;
-        Material m( materials[i] );
-
-        if ( int(m.GetUsedBy().GetCount())== 0 ) continue;
-        
-        
-        CRefArray shad(m.GetShaders()); // Array of all shaders attached to the material [e.g. phong]
-        Shader s(shad[0]);
-        CString vMatID((s.GetProgID()).Split(L".")[1]);
-        char sname[256];
-        strcpy(sname,m.GetName().GetAsciiString());
-
-        if ( !find(aMatList, m.GetName() ) ) aMatList.Add(m.GetName()); 
-        else continue;
-       
-        //app.LogMessage(L"Shader: " + CString(Parameter(s.GetParameterValue(L"bump")).GetValue()));
-
-        if (vMatID==L"lux_glass") 
-        {
-            shaderType=L"glass";
-            s.GetColorParameterValue(L"kt",red,green,blue,alpha );
-            shaderString += L"  \"color Kd\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]\n";
-            s.GetColorParameterValue(L"kr", red, green, blue, alpha );
-            shaderString += L"  \"color Kr\" [" + CString(red) + L" "  + CString(green) +  L" "  + CString(blue) + L"]\n";
-            shaderString += L"  \"float index\" [" + CString((float)s.GetParameterValue(L"index")) + L"]\n";
-            shaderString += L"  \"float cauchyb\" [" + CString((float)s.GetParameterValue(L"cauchyb")) + L"]\n";
-            shaderString += L"  \"bool architectural\" [\""+ CString((bool)s.GetParameterValue(L"architectural")) + L"\"]\n";
-            //---------          
-            vIsSet=true;
-        }
-        else if (vMatID==L"lux_roughglass") 
-        {
-            shaderType=L"roughglass";
-            s.GetColorParameterValue(L"kt",red,green,blue,alpha );
-            shaderString += L"  \"color Kt\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"] \"float uroughness\" ["+ CString((float)s.GetParameter(L"uroughness").GetValue())+L"] \"float vroughness\" ["+CString((float)s.GetParameter(L"vroughness").GetValue())+L"]\n";
-            s.GetColorParameterValue(L"kr",red,green,blue,alpha );
-            shaderString += L"  \"color Kr\" [" + CString(red) + L" "  + CString(green) +  L" "  + CString(blue) + L"]\n";
-            shaderString += L"  \"float index\" [" + CString((float)s.GetParameterValue(L"index")) + L"]\n";
-            shaderString += L"  \"float cauchyb\" [" + CString((float)s.GetParameterValue(L"cauchyb")) + L"]\n";
-            //---------
-            vIsSet=true;
-        } 
-        else if (vMatID==L"lux_matte") 
-        {
-            shaderType=L"matte";
-            s.GetColorParameterValue(L"kd",red,green,blue,alpha );
-            shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-            shaderString += L"  \"float sigma\" [" + CString((float)s.GetParameterValue(L"sigma")) + L"]\n";
-            //----------
-            vIsSet=true;
-        } 
-        else if (vMatID==L"lux_mirror") 
-        {
-            s.GetColorParameterValue(L"kr",red,green,blue,alpha );
-            shaderType=L"mirror";
-            shaderString += L"  \"color Kr\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-            //----------
-            vIsSet=true;
-        } 
-        else if (vMatID==L"lux_metal") 
-        {
-            const char *ametal [5] = {"amorphous carbon", "silver", "gold", "copper", "aluminium"}; 
-            int nmetal = s.GetParameterValue(L"mname");
-            //--
-            shaderString += L"  \"float uroughness\" ["+ CString(float(s.GetParameterValue(L"roughness"))) + L"]\n";
-            shaderString += L"  \"float vroughness\" ["+ CString(float(s.GetParameterValue(L"roughness"))) + L"]\n";
-            shaderString += L"  \"string name\" [\""+ CString(ametal[nmetal]) + L"\"]\n";
-            shaderString += L"  \"string type\" [\"metal\"] \n";
-            ret=9;
-            vIsSet=true;
-            
-        }
-        else if (vMatID==L"lux_shinymetal") 
-        {
-            shaderType=L"shinymetal";
-            s.GetColorParameterValue(L"ks",red,green,blue,alpha );
-            shaderString += L"  \"color Ks\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]";
-            shaderString += L"  \"float uroughness\" ["+ CString(float(s.GetParameterValue(L"roughness"))) + L"]";
-            shaderString += L"  \"float vroughness\" ["+ CString(float(s.GetParameterValue(L"roughness"))) + L"]\n";
-            s.GetColorParameterValue(L"kr",red,green,blue,alpha );
-            shaderString += L"  \"color Kr\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]\n";
-            vIsSet=true;
-        }
-        else if (vMatID==L"lux_substrate") 
-        {
-            shaderType=L"substrate";
-            s.GetColorParameterValue(L"kd",red,green,blue,alpha );
-            shaderString += L"  \"color Kd\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]";
-            shaderString += L"  \"float uroughness\" ["+ CString(float(s.GetParameterValue(L"uroughness"))) + L"]";
-            shaderString += L"  \"float vroughness\" ["+ CString(float(s.GetParameterValue(L"vroughness"))) + L"]\n";
-            s.GetColorParameterValue(L"ks",red,green,blue,alpha );
-            shaderString += L"  \"color Ks\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]\n";
-            vIsSet=true;
-        }
-        else if (vMatID==L"lux_mattetranslucent") 
-        {
-            shaderType=L"mattetranslucent";
-            s.GetColorParameterValue(L"kr",red,green,blue,alpha );
-            shaderString += L"  \"color Kr\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-            s.GetColorParameterValue(L"kt",red,green,blue,alpha );
-            shaderString += L"  \"color Kt\" [" + CString(red) + L" "  + CString(green) +  L" "  + CString(blue) + L"]\n";
-            shaderString += L"  \"float sigma\" [" + CString((float)s.GetParameterValue(L"sigma")) + L"]\n";
-            vIsSet=true;
-        }
-        // Material Stuff
-        else if (vMatID==L"lux_car_paint") 
-        {
-            //-- car paint
-            const char *A_carpaint [8] = {"2k acrylack", "blue", "blue matte", "bmw339",
-                "ford f8", "opel titan", "polaris silber", "white"};
-            int presets = s.GetParameterValue(L"presets");
-               
-            float spr,spg,spb,spa,spr2,spg2,spb2,spa2,r,g,b,a;
-            s.GetColorParameterValue(L"spec",spr,spg,spb,spa ); //spec primary
-            s.GetColorParameterValue(L"spec_sec",spr2,spg2,spb2,spa2 ); // spec secondary
-            s.GetColorParameterValue(L"kd",r,g,b,a );
-            s.GetColorParameterValue(L"reflectivity",r,g,b,a );
-            //--
-            if ( presets == 0 )
-            {
-                shaderString += L"  \"color Kd\" ["+ CString(r) + L" "+ CString(g) + L" "+ CString(b) + L"] \n";
-	            shaderString += L"  \"color Ks1\" ["+ CString(spr) + L" "+ CString(spg) + L" "+ CString(spb) + L"] \n";
-	            shaderString += L"  \"color Ks2\" ["+ CString(spr2) + L" "+ CString(spg2) + L" "+ CString(spb2) + L"] \n";
-	            shaderString += L"  \"color Ks3\" ["+ CString(spr2) + L" "+ CString(spg2) + L" "+ CString(spb2) + L"] \n";
-	            shaderString += L"  \"float M1\" ["+ CString(float(s.GetParameterValue(L"m1"))) + L"] \n";
-	            shaderString += L"  \"float M2\" ["+ CString(float(s.GetParameterValue(L"m2"))) + L"] \n";
-	            shaderString += L"  \"float M3\" ["+ CString(float(s.GetParameterValue(L"m3"))) + L"] \n";
-	            shaderString += L"  \"float R1\" ["+ CString(float(s.GetParameterValue(L"r1"))) + L"] \n";
-	            shaderString += L"  \"float R2\" ["+ CString(float(s.GetParameterValue(L"r2"))) + L"] \n";
-	            shaderString += L"  \"float R3\" ["+ CString(float(s.GetParameterValue(L"r3"))) + L"] \n";
-            }
-            else
-            {
-                shaderString += L"  \"string name\" [\""+ CString(A_carpaint[presets]) + L"\"]\n"; // presets
-            }
-	        shaderType=L"carpaint";
-            //--
-            vIsSet=true;
-        } 
-        else if (vMatID==L"mia_material_phen") 
-        {
-            // arch vis
-            s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
-            s.GetColorParameterValue(L"refl_color",sp_red,sp_green,sp_blue,sp_alpha );
-            mRough=(float)s.GetParameterValue(L"reflect_glossy");
-            float refl=(float)s.GetParameterValue(L"reflectivity");
-            float brdf=(float)s.GetParameterValue(L"brdf_0_degree_refl");
-            //--
-            if (refl > 0) 
-            {
-                shaderType = L"shinymetal";
-                shaderString += L"  \"color Kr\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"] ";
-                shaderString += L" \"float uroughness\" ["+ CString(1-mRough)+L"] \"float vroughness\" ["+CString(1-mRough)+L"]\n";
-                shaderString += L" \"color Ks\" [" + CString(refl*sp_red*brdf) + L" " + CString(refl*sp_green*brdf) + L" " + CString(refl*sp_blue*brdf) + L"]\n";
-            } 
-            else 
-            {
-                shaderType=L"matte";
-                s.GetColorParameterValue(L"kd",red,green,blue,alpha );
-                shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-                shaderString += L"  \"float sigma\" [" + CString(mRough) + L"]\n";
-            }
-            //--
-            vIsSet=true;
-        }
-        else if (vMatID==L"material-phong") 
-        {
-            shaderType=L"glossy";
-            s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
-            shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]";
-            shaderString += L"  \"float uroughness\" ["+ CString((float)(s.GetParameterValue(L"shiny"))/10)+L"]";
-            shaderString += L"  \"float vroughness\" ["+CString((float)(s.GetParameterValue(L"shiny"))/10)+L"]\n";
-            s.GetColorParameterValue(L"specular",red,green,blue,alpha );
-            shaderString += L"  \"color Ks\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-            //--
-            vIsSet=true;
-        } 
-        else if (vMatID==L"material-lambert")
-        {
-            shaderType=L"matte";
-            s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
-            shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-            shaderString += L"  \"float sigma\" [0]\n";
-            //--
-            vIsSet=true;
-        } 
-        else if (vMatID==L"material-ward")
-        {
-            s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
-            shaderType=L"glossy";
-            shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]";
-            shaderString += L"  \"float uroughness\" ["+ CString((float)(s.GetParameterValue(L"shiny_u"))/10)+ L"]";
-            shaderString += L"  \"float vroughness\" ["+ CString((float)(s.GetParameterValue(L"shiny_v"))/10)+ L"]\n";
-            shaderString += L"  \"color Ks\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-            //--
-            vIsSet=true;
-        } 
-        else if (vMatID==L"material-constant")
-        {
-            s.GetColorParameterValue(L"color",red,green,blue,alpha );
-            shaderType=L"matte";
-            shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-            shaderString += L"  \"float sigma\" [0]\n";
-            //--
-            vIsSet=true;
-        } 
-        else if (vMatID==L"material-strauss")
-        {
-            s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
-            shaderType=L"matte";
-            shaderString += L"  \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-            shaderString += L"  \"float sigma\" [0]\n";
-            //--
-            vIsSet=true;
-        }
-        //-- if yet vMatID is defined......
-        if (!vIsSet) 
-        {
-            if (s.GetParameterValue(L"refract_inuse")=="-1")
-            {
-                //check if material is transparent: phong/lamber/blin/constant/cooktorrance/strauss
-                float ior=0.0f;
-                s.GetColorParameterValue(L"transparency",red,green,blue,alpha );
-                if (red>0 || green>0 || blue>0)
-                {
-                    shaderType=L"glass";
-                    shaderString += L"  \"color Kt\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-                    s.GetColorParameterValue(L"reflectivity",sp_red,sp_green,sp_blue,sp_alpha );
-                    shaderString += L"  \"color Kr\" [" + CString(sp_red) + L" "  + CString(sp_green) +  L" "  + CString(sp_blue) + L"]\n";
-                    shaderString += L"  \"float index\" [" + CString((float)s.GetParameterValue(L"index_of_refraction")) + L"]\n";
-                    shaderString += L"  \"float cauchyb\" [0]\n";
-                    //--
-                    if ((float)s.GetParameterValue(L"trans_glossy")>0 )
-                    {
-                        shaderType=L"roughglass";
-                        shaderString += L"  \"float uroughness\" ["+ CString((float)s.GetParameterValue(L"trans_glossy"))+ L"]";
-                        shaderString += L"  \"float vroughness\" ["+ CString((float)s.GetParameterValue(L"trans_glossy"))+ L"]\n";
-                    }
-                }
-            }
-        }
-        if (!vIsSet)
-        {
-            if ( (float)s.GetParameterValue(L"transparency") > 0.0f )
-            {
-                float ior=0.0f;
-                // glass mia-arch shader
-                s.GetColorParameterValue(L"refr_color",red,green,blue,alpha );
-                s.GetColorParameterValue(L"refl_color",sp_red,sp_green,sp_blue,sp_alpha );
-                shaderString += L"  \"color Kt\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-                shaderString += L"  \"color Kr\" [" + CString(sp_red) + L" "  + CString(sp_green) +  L" "  + CString(sp_blue) + L"]\n";
-                shaderString += L"  \"float index\" [" + CString((float)s.GetParameterValue(L"refr_ior")) + L"]\n";
-                shaderString += L"  \"float cauchyb\" [0]\n";
-                shaderType=L"glass";
-                if ((float)s.GetParameter(L"refr_gloss").GetValue()<1 )
-                {
-                    shaderType=L"roughglass";
-                    shaderString += L"  \"float uroughness\" ["+ CString(1.0f - float(s.GetParameterValue(L"refr_gloss"))) + L"]";
-                    shaderString += L"  \"float vroughness\" ["+ CString(1.0f - float(s.GetParameterValue(L"refr_gloss"))) + L"]\n";
-                }
-            }
-            vIsSet=true;
-        }
-        if (!vIsSet) 
-        {
-            // check if its a reflecting material
-            float a,b,c,d;
-            s.GetColorParameterValue(L"diffuse",a,b,c,d );
-            if (s.GetParameterValue(L"reflect_inuse")== "-1" )
-            {
-                if (vMatID==L"mia_material_phen") 
-                {
-                    s.GetColorParameterValue(L"refl_color",red,green,blue,alpha );
-                    mRough = 1 - float(s.GetParameterValue(L"refl_gloss"));
-                    red = red*a;
-                    green = green*b;
-                    blue = blue*c;
-                }
-                else
-                {
-                    s.GetColorParameterValue(L"reflectivity",red,green,blue,alpha );
-                    mRough = (float)s.GetParameterValue(L"reflect_glossy");
-                }
-                if (red>0 || green>0 || blue>0)
-                {
-                    shaderType=L"shinymetal";
-                    shaderString += L"  \"color Kr\" ["+ CString(a) + L" "+ CString(b) + L" "+ CString(c) + L"] ";
-                    shaderString += L" \"float uroughness\" ["+ CString(mRough/10) + L"] \"float vroughness\" ["+ CString(mRough/10)+ L"]\n";
-                    shaderString += L" \"color Ks\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]\n";
-                    vIsSet=true;
-                }
-            }
-        }
-        if (!vIsSet)
-        {
-            //app.LogMessage(vMatID);
-
-                // Get Textures
-                
-                //JScript Version to find shader in slot:
-
-                //s = Selection(0).Material.Shaders(0);
-                //for (i=0;i<s.parameters.count;i++){
-                //t=s.parameters(i).source;
-                //if (t) logmessage(s.parameters(i).name + "=" + t);
-               
-        }
-        else 
-        {
-            // fall back shader
-            shaderType=L"matte";
-            shaderString += L"  \"color Kd\" [0.7 0.7 0.7]\n";
-            shaderString += L"  \"float sigma\" [0]\n";
-        }
-        
-        //-- search for texture image
-        CRefArray vImags=m.GetShaders();
-        for (int i=0; i < vImags.GetCount(); i++)
-        {
-            CRefArray vImags2=Shader(vImags[i]).GetShaders();
-            for (int j=0;j<vImags2.GetCount();j++)
-            {
-                CString vWhat((Shader(vImags2[j]).GetProgID()).Split(L".")[1]);
-                if (vWhat==L"txt2d-image-explicit" || vWhat==L"Softimage.txt2d-image-explicit.1")
-                {
-                    vTexture=vImags2[j];
-
-                    ImageClip2 vImgClip(vTexture.GetImageClip() );
-                    Source vImgClipSrc(vImgClip.GetSource());
-                    CString vFileName = vImgClipSrc.GetParameterValue( L"path");
-
-                    CString textproj  = vTexture.GetParameterValue(L"tspace_id");
-                    app.LogMessage(CString(textproj.GetAsciiString())); // TODO; search "type" projection
-
-                    if ((bool)vTexture.GetParameterValue(L"bump_inuse")!=false) 
-                    {
-                        vNorm = true; vChanel = L"bumpmap"; vChanType = L"float";
-                        texFact = vTexture.GetParameterValue(L"factor");
-                    }
-                    else
-                    {
-                        vText=true; vChanel = L"Kd"; vChanType = L"color";
-                        s.GetColorParameterValue(L"diffuse",red,green,blue,alpha );
-                        texFact = L" 0.8 0.8 0.8 "; //provisional
-                        //texFact = L" "+ CString(red) + L" " + CString(green) + L" " + CString(blue) + L" "; // not work
-                    }
-                    //----/ rewrite all /-------->
-                    f << "\nTexture \"" << sname << "::"<< vChanel.GetAsciiString() <<"\" \""<< vChanType.GetAsciiString() <<"\" \"imagemap\" \n";
-                    f << "  \"string wrap\" [\"repeat\"] \n";//TODO; create option at spdl shader
-                    //f << "    \"string chanel\" [\"mean\"] \n"; // not work??
-                    f << "  \"string filename\" [\"" << replace(vFileName.GetAsciiString()) << "\"] \n";
-                    f << "  \"float gamma\" ["<< vContrast <<"]\n";
-                    f << "  \"float gain\" [1.000000]\n";
-                    f << "  \"string filtertype\" [\"bilinear\"] \n";// TODO; create option
-                    f << "  \"string mapping\" [\"uv\"] \n";// TODO; create option / search data in XSI
-                    f << "  \"float vscale\" [-1.0]\n";
-                    f << "  \"float uscale\" [1.0] \n";
-                    f << "  \"float udelta\" [0.000000] \n";
-                    f << "  \"float vdelta\" [1.000000] \n";
-                    f << "Texture \""<< sname << "::"<< vChanel.GetAsciiString() <<".scale""\" \""<< vChanType.GetAsciiString() <<"\" \"scale\" ";
-                    f << "\"texture tex1\"  [\""<< sname << "::"<< vChanel.GetAsciiString() <<"\"]  \""<< vChanType.GetAsciiString() <<" tex2\" ["<< texFact.GetAsciiString() <<"] \n";
-                    shaderTexture += L"  \"texture "+ vChanel + L"\" [\""+ m.GetName().GetAsciiString() + L"::"+ vChanel + L".scale\"]\n";
-                    vNorm=false;
-
-                    //vText=true;
-                }
-            }
-        }
-
-        //
-        // write shader block
-        //
-
-        f << "\n MakeNamedMaterial \""<< m.GetName().GetAsciiString() << "\" \n";
-        f << "  \"string type\" [\""<< shaderType.GetAsciiString() <<"\"]\n";
-        f << shaderString.GetAsciiString();
-        if (shaderTexture !=L"")
-        {
-            f << shaderTexture.GetAsciiString();
-        }
-    }
-}
-//--
 int writeLuxsiSurface(X3DObject o, CString vType)
 {
     //--
@@ -2598,7 +2183,7 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     
     vFilePLY += L"_"+ o.GetName() + L".ply";
     //FILE * file=fopen(vFilePLY.GetAsciiString(), "wb"); // from kies project
-   // f.open(vFilePLY.GetAsciiString(), ios::out | ios::binary);
+    f.open(vFilePLY.GetAsciiString(), ios::out | ios::binary);
     f << "ply\n";
     f << "format ascii 1.0\n";
 	f << "comment LuXSI; LuxRender Exporter for Autodesk Softimage\n";
@@ -2633,24 +2218,13 @@ void write_ply_object(X3DObject o, CString vFilePLY)
 //--
 int writeLuxsiCloud(X3DObject obj)
 {
-    //-----------------------------------------------------------------
-    ICEAttribute attr = obj.GetActivePrimitive().GetGeometry().GetICEAttributeFromName( L"PointPosition" );
-
-		CICEAttributeDataArrayVector3f points;
-		attr.GetDataArray( points );
-
-		Application xsi;
-		for( ULONG i=0; i<points.GetCount( ); i++ )
-		{
-			xsi.LogMessage( CString( points[ i ] ) );
-		}
-
-    //-------------------------------------------------------------
+    
+    
        
     //
     // Writes pointclouds
     //
-/*
+
     ICEAttribute attr;
     CICEAttributeDataArrayVector3f aPointPosition; 
     CICEAttributeDataArrayLong aID;
@@ -2659,7 +2233,8 @@ int writeLuxsiCloud(X3DObject obj)
 
     CRefArray attrs = obj.GetActivePrimitive().GetGeometry().GetICEAttributes();
 
-    for( int i = 0; i<attrs.GetCount(); i++ ) {
+    for( int i = 0; i<attrs.GetCount(); i++ ) 
+    {
             ICEAttribute attr = attrs[i];
             
             app.LogMessage( L"*******************************************************************" );
@@ -2672,9 +2247,7 @@ int writeLuxsiCloud(X3DObject obj)
             app.LogMessage( L"AttributeCategory: " + CString(attr.GetAttributeCategory()) );
             app.LogMessage( L"Element count: " + CString(attr.GetElementCount()) );
            //--
-            if (attr.GetName() == L"PointPosition"){
-                attr.GetDataArray(aPointPosition);
-            }
+            if (attr.GetName() == L"PointPosition") attr.GetDataArray(aPointPosition);
             if (attr.GetName() == L"State_ID"){
                 attr.GetDataArray(aID);
             }
@@ -2684,23 +2257,24 @@ int writeLuxsiCloud(X3DObject obj)
             if (attr.GetName() == L"PointVelocity"){
                 attr.GetDataArray(aVel);
             }
-        }
+    }
 
-*/
 
-    //for (unsigned int i=0;i<aPointPosition.GetCount();i++)
-        for (unsigned int i=0;i<points.GetCount();i++)
-    {
-        // get all points
 
-        f << "\nAttributeBegin #\n";//" << obj.GetName().GetAsciiString() << (int)aID[i] << "\" \n";
-        f << "  Translate " << (float)points[i][0] << " " << (float)points[i][1] << " "<< (float)points[i][2] << "\n";
-        f << "  Material \"matte\" \"color Kd\" [0 0.8 0.8 ]\n";
-        f << "  Shape \"sphere\" \"float radius\" [0.5]\n";
-        // f << "  Shape \"sphere\" \"float radius\" [" << (float)aSize[i] << "]\n";
-        f << "AttributeEnd #"<< obj.GetName().GetAsciiString()<<"\n";
-        //--------------f << " Shape  \"sphere\" \n";
-/*           f << "  \"float radius\" [" << vradius << "]\n";
+    for (unsigned int i=0;i<aPointPosition.GetCount();i++)
+      //  for (unsigned int i=0; i < points.GetCount(); i++)
+        {
+            // get all points
+
+            f << "\nAttributeBegin #\n";//" << obj.GetName().GetAsciiString() << (int)aID[i] << "\" \n";
+            f << "  Translate " << (float)aPointPosition[i][0] << " " << (float)aPointPosition[i][1] << " "<< (float)aPointPosition[i][2] << "\n";
+            f << "  Material \"matte\" \"color Kd\" [0 0.8 0.8 ]\n";
+            f << "  Shape \"sphere\" \"float radius\" [0.5]\n";
+            // f << "  Shape \"sphere\" \"float radius\" [" << (float)aSize[i] << "]\n";
+            f << "AttributeEnd #"<< obj.GetName().GetAsciiString()<<"\n";
+            
+            //--------------f << " Shape  \"sphere\" \n";
+/*          f << "  \"float radius\" [" << vradius << "]\n";
             f << "  \"float zmin\" [" << -vzmax /2  << "]\n";
             f << "  \"float zmax\" [" << vzmax /2  << "]\n";
             f << "  \"float phimax\" [" << vphimax * 2 << "]\n";
@@ -2712,7 +2286,8 @@ int writeLuxsiCloud(X3DObject obj)
    
 }
 //--
-int writeLuxsiInstance(X3DObject o){
+int writeLuxsiInstance(X3DObject o)
+{
     // instance
     //write source object [won't be displayed]
     Model vModel = Model(o).GetInstanceMaster();
