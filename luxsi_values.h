@@ -38,6 +38,8 @@ UIToolkit kit = app.GetUIToolkit();
 ProgressBar pb = kit.GetProgressBar();
 //--
 CRefArray params;
+//- for all
+float red = 0.0f, green = 0.0f, blue = 0.0f, alpha = 0.0f;
 
 
 
@@ -135,5 +137,6 @@ char MtAccel [3] [7] = { "qbvh", "bvh", "kdtree" }; // iter vAccel
 //--
 CRefArray aGroups;
 CStringArray aMatList, aInstanceList;
+CString shaderType;
 
 CString vSun=L"", vHDRI=L"", vLuXSIPath=L"", vFileObjects=L"", vLux_console = L"", vFilePLY = L"";
