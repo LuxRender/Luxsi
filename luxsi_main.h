@@ -70,6 +70,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <xsi_siobject.h>
 #include <xsi_base.h>
 
+//- for render integrated
+#include <xsi_renderer.h>
+#include <xsi_renderercontext.h>
+#include <xsi_math.h> // problems ?
+
+//- end
+
 
 #if defined(_WIN32) || defined(_WIN64)
 	#include <windows.h>
