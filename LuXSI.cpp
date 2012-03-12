@@ -1,7 +1,7 @@
 /*
 LuXSI - Softimage XSI Export plug-in for the LuxRender (http://www.luxrender.org) renderer
 
-Copyright (C) 2010 2011  Michael Gangolf and Pedro Alcaide
+Copyright (C) 2010, 2011 and 2012 Michael Gangolf and Pedro Alcaide
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -46,11 +46,12 @@ void luxsi_execute();
 CString readIni();
 string replace(string input);
 //--
-bool find(CStringArray a, CString s);
+bool luxsi_find(CStringArray a, CString s);
 //--
 void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext ctxt);
-
+//--
 void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext ctxt);
+//--
 void dynamic_luxsi_UI(Parameter changed, CString paramName, PPGEventContext ctxt);
 
 //--
@@ -1228,12 +1229,14 @@ XSIPLUGINCALLBACK CStatus OnLuXSI_MenuClicked( XSI::CRef& )
 }
 
 //--
-bool find(CStringArray a, CString s){
+bool luxsi_find(CStringArray a, CString s){
     //
     // Returns true if String s is in Array a
     //
-    for (int i=0;i<a.GetCount();i++){
-        if (a[i]==s) {
+    for (int i = 0; i < a.GetCount(); i++)
+    {
+        if (a[i]==s) 
+        {
             return true;
         }
     }
@@ -1670,9 +1673,9 @@ void writeLuxsiCam(X3DObject o){
     //--
     int camera_proj = c.GetParameterValue(L"proj");
     //--
-    f << "LookAt "<< new_pos.GetX() <<" "<< new_pos.GetY() <<" "<< new_pos.GetZ() <<"\n";
-    f << "       "<< new_pos_ci.GetX() <<" "<< new_pos_ci.GetY() <<" "<< new_pos_ci.GetZ() <<"\n";
-    f << "       0 1 0 \n"; //<< CString(up.GetZ()).GetAsciiString() << "\n"; // not working correct
+    f << "LookAt "<< new_pos[0] <<" "<< -new_pos[2] <<" "<< new_pos[1] <<"\n";
+    f << "       "<< new_pos_ci[0] <<" "<< -new_pos_ci[2] <<" "<< new_pos_ci[1] <<"\n";
+    f << "       0 0 1 \n"; //<< CString(up.GetZ()).GetAsciiString() << "\n"; // not working correct
         
     if ( camera_proj == 1 )
     {
@@ -1738,14 +1741,32 @@ void writeLuxsiLight(X3DObject o)
          //   break;
         }
     }
-    
+
+    //-- first contact to matrix functions
+    //using namespace XSI::MATH;
+	/*	CMatrix3 mat3(1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0);
+		mat3.TransposeInPlace();
+		//Application app;
+		app.LogMessage(CString(L"The transposed matrix is ") +
+					   CValue(mat3.GetValue(0,0)).GetAsText() + CString(L", ")+
+					   CValue(mat3.GetValue(0,1)).GetAsText() + CString(L", ")+
+					   CValue(mat3.GetValue(0,2)).GetAsText() + CString(L", ")+
+					   CValue(mat3.GetValue(1,0)).GetAsText() + CString(L", ")+
+					   CValue(mat3.GetValue(1,1)).GetAsText() + CString(L", ")+
+					   CValue(mat3.GetValue(1,2)).GetAsText() + CString(L", ")+
+					   CValue(mat3.GetValue(2,0)).GetAsText() + CString(L", ")+
+					   CValue(mat3.GetValue(2,1)).GetAsText() + CString(L", ")+
+					   CValue(mat3.GetValue(2,2)).GetAsText());
+        //------------
+    */
+
     CTransformation localTransformation = o.GetKinematics().GetLocal().GetTransform();
     //-- point from
     KinematicState  global_kinex_state = o.GetKinematics().GetGlobal();
     CTransformation global_transf = global_kinex_state.GetTransform();
     CVector3 light_from(global_transf.GetTranslation());
     //
-    float a=0, b=0, c=0, alpha=0;
+    float a = 0.0, b = 0.0, c = 0.0, alpha = 0.0;
 
     //-- point to 
     X3DObject li;
@@ -1780,9 +1801,22 @@ void writeLuxsiLight(X3DObject o)
     int vlight_geo = o.GetParameterValue(L"LightAreaGeom");
     float vLightCone = o.GetParameterValue(L"LightCone"); 
     float vIntensity = s.GetParameterValue(L"intensity");
-    float vSpotblend = s.GetParameterValue(L"spread"); //
+    float vSpotblend = s.GetParameterValue(L"spread");
     //--
     f << "\nLightGroup \""<< group_name.GetAsciiString() <<"\" \n";
+    //--
+    if ( vEnviron && vFile_env != L"")
+    {
+        //f << "\nTransformBegin \n";
+        f << "LightSource \"infinite\"\n";
+        f << "  \"float gain\" [" << vIntensity << "]\n";
+        f << "  \"float importance\" [1.0]\n"; // TODO
+        f << "  \"string mapname\" [\"" << replace(vFile_env.GetAsciiString()) << "\"]\n";
+        f << "  \"string mapping\" [\"latlong\"]\n"; // TODO
+        f << "  \"float gamma\" [1.0]\n";
+        f << "  \"integer nsamples\" [1]\n"; // TODO
+        // f << "\nTransformEnd \n";
+        } 
     
     if (lType == 2) //-- spot
     {
@@ -1794,17 +1828,16 @@ void writeLuxsiLight(X3DObject o)
         {
             f << "  \"string iesname\" [\"" << replace(ies_file.GetAsciiString()) << "\"]\n";
         }
-        f << "  \"point from\" [" << light_from.GetX() << " " << light_from.GetY() << " "  << light_from.GetZ()  << "] \n";
-        f << "  \"point to\" ["<< light_to.GetX() << " " << light_to.GetY() << " "<< light_to.GetZ() << "]\n";
-        f << "  \"float coneangle\" [" << vLightCone << "]\n";
-        f << "  \"float conedeltaangle\" [" << vLightCone - vSpotblend << "]\n";
+        f << "  \"point from\" ["<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1]  <<"] \n";
+        f << "  \"point to\" ["<< light_to[0] << " " << -light_to[2] <<" "<< light_to[1] <<"]\n";
+        f << "  \"float coneangle\" ["<< vLightCone << "]\n";
+        f << "  \"float conedeltaangle\" [" << vLightCone - vSpotblend <<"]\n";
     } 
     else if  (lType == 1) //-- infinite
     {
         if ( vEnviron && vFile_env != L"")
         {
-            f << "\nTransformBegin \n";
-            f << "Scale -1 1 1 \nRotate -90 1 0 0 \n"; // for corrected orientation ??
+            //f << "\nTransformBegin \n";
             f << "LightSource \"infinite\"\n";
             f << "  \"float gain\" [" << vIntensity << "]\n";
             f << "  \"float importance\" [1.0]\n"; // TODO
@@ -1812,24 +1845,26 @@ void writeLuxsiLight(X3DObject o)
             f << "  \"string mapping\" [\"latlong\"]\n"; // TODO
             f << "  \"float gamma\" [1.0]\n";
             f << "  \"integer nsamples\" [1]\n"; // TODO
-            f << "\nTransformEnd \n";
+           // f << "\nTransformEnd \n";
         } 
         else
         {
-            f << "LightSource \"infinite\"\n";
+        /*    f << "LightSource \"infinite\"\n";
             f << "  \"float gain\" [" << vIntensity << "]\n";
             f << "  \"float importance\" [1.0]\n"; // TODO
             f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
         }
-         /*
+         */
             CMatrix4 sunTransMat = o.GetKinematics().GetLocal().GetTransform().GetMatrix4();
             f << "\nLightSource \"sunsky\"\n";
             f << "  \"integer nsamples\" [4]\n";
             f << "  \"vector sundir\" [ "<< sunTransMat.GetValue(2,0) << " " << sunTransMat.GetValue(2,1) << " " << sunTransMat.GetValue(2,2) << " ]\n";
             f << "  \"float gain\" [" << vIntensity << "]\n";
-            */
+            f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
+            //*/
+        }
     } 
-    else 
+    else
     {
         // Pointlight
         //-- in Softimage, light area, only work into 'point' or 'spot' lights
@@ -1864,7 +1899,7 @@ void writeLuxsiLight(X3DObject o)
             aPoints += L" "+ CString( -size_X/2.0 ) + L" "+ CString( -size_Y/2.0 ) + L" "+ CString( 0.0 );
             //--
             f << "\nTransformBegin \n";
-            f << "Translate "<< light_from.GetX() <<" "<< light_from.GetY() <<" "<< light_from.GetZ() <<"\n";
+            f << "Translate "<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1] <<"\n";
             if (A_rotation != L"")
             {
                 f << A_rotation.GetAsciiString() <<"\n";;
@@ -2032,11 +2067,11 @@ int writeLuxsiObj(X3DObject o, CString vType)
                 //-- test
                 CVector3 new_pos(allPoints[j][0], allPoints[j][1], allPoints[j][2]);
                 new_pos.MulByTransformationInPlace(global_trans);
-                vPoints += L" "+ CString(new_pos[0]) + L" "+  CString(new_pos[1]) + L" "+ CString(new_pos[2]) + L"\n";
+                vPoints += L" "+ CString(new_pos[0]) + L" "+  CString(-new_pos[2]) + L" "+ CString(new_pos[1]) + L"\n";
                 //--
                 CVector3 tr_normals(allNormals[j][0], allNormals[j][1], allNormals[j][2]);
                 tr_normals.MulByTransformationInPlace(global_trans);
-                vNormals +=  L" "+ CString(tr_normals[0]) + L" "+  CString(tr_normals[1]) + L" "+ CString(tr_normals[2]) + L"\n";
+                vNormals +=  L" "+ CString(tr_normals[0]) + L" "+  CString(tr_normals[2]) + L" "+ CString(tr_normals[1]) + L"\n";
                 //-- UV need transpose?                
                 vUV +=  L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]) + L"\n";     
             } 
@@ -2293,7 +2328,7 @@ int writeLuxsiInstance(X3DObject o)
     Model vModel = Model(o).GetInstanceMaster();
     CRefArray vGroup = X3DObject(vModel).GetChildren();
 
-    if ( find(aInstanceList, vModel.GetName() ) ) 
+    if ( luxsi_find(aInstanceList, vModel.GetName() ) ) 
     {
         //return 0;
     }
@@ -2373,16 +2408,15 @@ void luxsi_mat_preview()
 {
     //--
     writeLuxsiShader();
-    if ( find(aMatList, L"Preview" ) ){
-       
-    
-    //------------------------------------
+    if ( luxsi_find(aMatList, L"Preview" ) )
+    {
+        //------------------------------------
         f << " Shape  \"sphere\" \n";
         f << "  \"float radius\" [1.0]\n";
         f << "  \"float zmin\" [-0.5]\n";
         f << "  \"float zmax\" [0.5]\n";
         f << "  \"float phimax\" [1.0]\n";
-            //--
+        //--
     }
 }
 void luxsi_write()
