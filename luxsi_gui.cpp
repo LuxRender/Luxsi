@@ -175,7 +175,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.AddRow();
             CValueArray vItem6(12);
                 vItem6[0]  = L"Bidirectional";      vItem6[1] = 0;
-                vItem6[2]  = L"Path";               vItem6[3] = 1;
+                vItem6[2]  = L"Pathtracing";        vItem6[3] = 1;
                 vItem6[4]  = L"Directlighting";     vItem6[5] = 2;
                 vItem6[6]  = L"Distributedpath";    vItem6[7] = 3;
                 vItem6[8]  = L"Inst. Global Illu."; vItem6[9] = 4;
