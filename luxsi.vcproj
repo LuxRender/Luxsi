@@ -248,6 +248,14 @@
 				RelativePath=".\luxsi_gui.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\luxsi_integrated.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\luxsi_material.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Headerdateien"
@@ -256,6 +264,10 @@
 			>
 			<File
 				RelativePath=".\luxsi_main.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\luxsi_material.h"
 				>
 			</File>
 			<File
