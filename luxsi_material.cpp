@@ -58,7 +58,7 @@ void writeLuxsiShader()
                 
         CString MatName(m.GetName());
 
-        if ( !find(aMatList, MatName ) ) aMatList.Add(MatName); 
+        if ( !luxsi_find(aMatList, MatName ) ) aMatList.Add(MatName); 
         else continue;
         //--
         CRefArray shad(m.GetShaders()); // Array of all shaders attached to the material [e.g. phong]
