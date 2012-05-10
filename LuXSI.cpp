@@ -262,19 +262,17 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     // set default filename
     vFileObjects = app.GetInstallationPath(siProjectPath);
     vLuXSIPath = app.GetInstallationPath(siUserAddonPath);
-    vLux_console = vLuXSIPath;
+    //vLux_console = vLuXSIPath;
     //--
     #ifdef __unix__
         vFileObjects += L"/tmp.lxs";
     #else
         vFileObjects += L"/tmp.lxs"; //-- also work in windows systems ?
-        vLuXSIPath += L"/LuXSI/Application/bin/luxrender.exe";
-        vLux_console += L"/LuXSI/Application/bin/luxconsole.exe";
+        vLuXSIPath += L"/LuXSI/Application/bin";
     #endif
-    //-- /Addons/LuXSI/Application/bin
-    //-- vLuXSIPath=readIni(); // get luxrender path out of the ini
-
-    prop.AddParameter( L"fObjects", CValue::siString, sps, L"", L"", vFileObjects, oParam ) ;
+    
+	//-- 
+	prop.AddParameter( L"fObjects", CValue::siString, sps, L"", L"", vFileObjects, oParam ) ;
 
     prop.AddParameter( L"fLuxPath", CValue::siString, sps, L"", L"", vLuXSIPath, oParam ) ;
 
@@ -389,7 +387,7 @@ void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext c
     //-- mesh export /bplymesh
     } else if (paramName == L"smooth_mesh")     { vSmooth_mesh  = changed.GetValue();
     } else if (paramName == L"sharp_bound")     { vSharp_bound  = changed.GetValue();
-     } else if (paramName == L"bplymesh")       { vplymesh  = changed.GetValue();
+    } else if (paramName == L"bplymesh")       { vplymesh  = changed.GetValue();
    
     //-- save images /----/ tga /--->
     } else if (paramName == L"tga_gamut")   { vTga_gamut    = changed.GetValue();
@@ -950,6 +948,7 @@ void dynamic_luxsi_UI( Parameter changed, CString paramName, PPGEventContext ctx
         vsexpert = prop.GetParameterValue(L"bsexpert");
 
         //--------------------------------
+        
         const char *u_intgrator [58] = {/*bidirectional*/"blight_depth", "beye_depth", "beyerrthre", "blightrrthre",
             /*path*/"blight_str", "binc_env", "brrstrategy", "bmaxdepth", "brrcon_prob",
             /*ditributepath*/"bdirectsampleall", "bdirectsamples", "bindirectsampleall", "bindirectsamples", "bdiffusereflectdepth",
@@ -1828,7 +1827,7 @@ void writeLuxsiLight(X3DObject o)
         {
             f << "  \"string iesname\" [\"" << replace(ies_file.GetAsciiString()) << "\"]\n";
         }
-        f << "  \"point from\" ["<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1]  <<"] \n";
+        f << "  \"point from\" ["<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1]  <<"]\n";
         f << "  \"point to\" ["<< light_to[0] << " " << -light_to[2] <<" "<< light_to[1] <<"]\n";
         f << "  \"float coneangle\" ["<< vLightCone << "]\n";
         f << "  \"float conedeltaangle\" [" << vLightCone - vSpotblend <<"]\n";
@@ -1879,7 +1878,7 @@ void writeLuxsiLight(X3DObject o)
             int R_areaY(o.GetParameterValue(L"LightAreaXformRY"));
             int R_areaZ(o.GetParameterValue(L"LightAreaXformRZ"));
             //--
-            CString A_rotation = L"";// for test, replace by Matriz
+            CString A_rotation = L"";// for test, replace by Matrix
             if ( R_areaX != 0 )  A_rotation += "Rotate "+ CString(R_areaX) + L" 1 0 0 \n";
             if ( R_areaY != 0 )  A_rotation += "Rotate "+ CString(R_areaY) + L" 0 1 0 \n";
             if ( R_areaZ != 0 )  A_rotation += "Rotate "+ CString(R_areaZ) + L" 0 0 1 \n";
@@ -1911,7 +1910,8 @@ void writeLuxsiLight(X3DObject o)
 	        f << "  \"float power\" ["<< float(o.GetParameterValue(L"LightEnergyIntens"))/100 <<"]\n"; //-- ;
 	        f << "  \"float efficacy\" [17.0]\n";
 	        f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
-	        f << "  \"integer nsamples\" ["<< (U_samples + V_samples)/2 <<"]\n"; 
+	        f << "  \"integer nsamples\" ["<< (U_samples + V_samples)/2 <<"]\n";
+            //--
 	        if ( vUse_IES )
             {
                 f << "  \"string iesname\" [\"" << replace(ies_file.GetAsciiString()) << "\"]\n";
@@ -1928,12 +1928,13 @@ void writeLuxsiLight(X3DObject o)
             f << "\nLightSource \"point\"\n";
             f << "  \"float gain\" [" << vIntensity << "]\n";
             f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
+            //--
             if ( vUse_IES )
             {
                 f << "  \"string iesname\" [\"" << replace(ies_file.GetAsciiString()) << "\"]\n";
                 f << "  \"bool flipz\" [\"true\"]\n"; // TODO; option into 'special' tab
             }
-            f << "  \"point from\" [" << light_from.GetX() << " " << light_from.GetY() << " " << light_from.GetZ() << "]\n";
+            f << "  \"point from\" [" << light_from.GetX() << " " << -light_from.GetZ() << " " << light_from.GetY() << "]\n";
         }
     }
 }
@@ -2193,10 +2194,10 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     for (LONG j=0; j < allPoints.GetCount(); j++)
     {
         //-- vertex
-        CVector3 point_pos(allPoints[j][0], allPoints[j][1], allPoints[j][2]);
+        CVector3 point_pos(allPoints[j][0], -allPoints[j][2], allPoints[j][1]);
         point_pos.MulByTransformationInPlace(global_trans);
         //-- normals
-        CVector3 norm_idx(allNormals[j][0], allNormals[j][1], allNormals[j][2]);
+        CVector3 norm_idx(allNormals[j][0], -allNormals[j][2], allNormals[j][1]);
         norm_idx.MulByTransformationInPlace(global_trans);
         //-- write all
         sPos += CString(point_pos[0]) + L" "+ CString(point_pos[1]) + L" "+ CString(point_pos[2]);
@@ -2667,7 +2668,7 @@ void luxsi_execute()
     if ( vLuXSIPath == L"" )
     {
         CString def_exe_path = app.GetInstallationPath(siUserAddonPath);
-        def_exe_path += L"/LuXSI/Application/bin/luxrender.exe";
+        def_exe_path += L"/LuXSI/Application/bin";
         app.LogMessage(L"Path empty, used default path: "+ CString(def_exe_path));
         vLuXSIPath = def_exe_path;
     }
@@ -2678,7 +2679,7 @@ void luxsi_execute()
                 pid_t pid = fork();
 				if( 0 == pid ) 
                 {
-                     system ( ( vLuXSIPath +" \""+ vFileObjects).GetAsciiString());
+                     system ( ( vLuXSIPath +" \""+ vFileObjects.GetAsciiString()));
                      exit(0);
                 }
         #else
@@ -2686,11 +2687,16 @@ void luxsi_execute()
             if (vRmode == 1) //-- console
             {
                 //vLux_console += // added parameters
-                vLuXSIPath = vLux_console;
+                vLuXSIPath += L"/luxconsole.exe";
             }
-                CString exec = vLuXSIPath +" \""+ vFileObjects + "\"";
-                app.LogMessage(exec);
-                loader(exec.GetAsciiString()); //-- for execute in Windows systems
+			else
+			{
+				vLuXSIPath += L"/luxrender.exe";
+			}
+			//--
+			CString exec = vLuXSIPath +" \""+ vFileObjects + "\"";
+            app.LogMessage(exec);
+            loader(exec.GetAsciiString()); //-- for execute in Windows systems
         #endif
     }
     else
