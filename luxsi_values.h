@@ -130,13 +130,13 @@ CString ies_file = L"";
 bool vUse_IES = false;
 
 //----/ convention names, prefix; Mt /----->
-char MtBool[2][6] = { "false", "true" };
-char MtBsampler [4] [15] = { "metropolis", "lowdiscrepancy", "random" }; // mode, Asampler [vSampler]
-char MtAccel [3] [7] = { "qbvh", "bvh", "kdtree" }; // iter vAccel
+const char *MtBool[] = { "false", "true" };
+const char *MtBsampler[]= { "metropolis", "lowdiscrepancy", "random" }; // mode, Asampler [vSampler]
+const char *MtAccel[]= { "qbvh", "bvh", "kdtree" }; // iter vAccel
 
 //--
 CRefArray aGroups;
 CStringArray aMatList, aInstanceList;
 CString shaderType;
 
-CString vSun=L"", vHDRI=L"", vLuXSIPath=L"", vFileObjects=L"", vLux_console = L"", vFilePLY = L"";
+CString vSun=L"", vHDRI=L"", vLuXSIPath=L"", vFileObjects=L"", vFilePLY = L"";
