@@ -31,7 +31,7 @@ extern CStringArray aMatList;
 extern ofstream f;
 extern float vContrast;
 //--
-extern bool find(CStringArray a, CString s);
+extern bool luxsi_find(CStringArray a, CString s);
 extern string replace(string input);
 
 //--
