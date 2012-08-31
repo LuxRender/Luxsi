@@ -139,4 +139,6 @@ CRefArray aGroups;
 CStringArray aMatList, aInstanceList;
 CString shaderType;
 
-CString vSun=L"", vHDRI=L"", vLuXSIPath=L"", vFileObjects=L"", vFilePLY = L"";
+
+CString vSun=L"", vHDRI=L"", vFileObjects=L"", vFilePLY = L"", vLuXSIPath = L"";
+
