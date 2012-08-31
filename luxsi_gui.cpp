@@ -53,15 +53,15 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
     lay.EndGroup();
 
     lay.AddGroup(L"Export hidden items...");
-        lay.AddItem(L"use_hidden_obj", L"Objects");
-        lay.AddItem(L"use_hidden_cam", L"Cameras");
-        lay.AddItem(L"use_hidden_light", L"Lights");
-        lay.AddItem(L"use_hidden_surf", L"Surfaces");
+        lay.AddItem(L"use_hidden_obj",		L"Objects");
+        lay.AddItem(L"use_hidden_cam",		L"Cameras");
+        lay.AddItem(L"use_hidden_light",	L"Lights");
+        lay.AddItem(L"use_hidden_surf",		L"Surfaces");
     lay.EndGroup();
-    lay.AddGroup(L"Subdivided mesh options"); // TODO:  to shader spdl file, per individuals flags?
+    lay.AddGroup(L"Mesh options"); // TODO:  to shader spdl file, per individuals flags?
         lay.AddItem(L"smooth_mesh", L"Export smooth meshes");
         lay.AddItem(L"sharp_bound", L"Preserve sharp edges");
-        lay.AddItem(L"bplymesh", L"Export to PLY file");
+        lay.AddItem(L"bplymesh",	L"Export to PLY file");
     lay.EndGroup();
 
     lay.AddGroup(L"Settings output"); //[----
@@ -69,18 +69,18 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.AddGroup(); //-- tga
             lay.AddItem(L"save_tga", L"TGA");
             CValueArray vItrtga(6);
-                vItrtga[0] = L"Y" ;    vItrtga[1] = 0;
-                vItrtga[2] = L"RGB" ;    vItrtga[3] = 1;
-                vItrtga[4] = L"RGBA" ;    vItrtga[5] = 2;
+                vItrtga[0] = L"Y" ;		vItrtga[1] = 0;
+                vItrtga[2] = L"RGB" ;   vItrtga[3] = 1;
+                vItrtga[4] = L"RGBA" ;	vItrtga[5] = 2;
             lay.AddEnumControl(L"mode_rtga",vItrtga,L"Mode",siControlCombo ) ;
             lay.AddItem(L"tga_gamut", L"Gamut Clamp");
         lay.EndGroup(); //-----]
         lay.AddGroup();    //-- Exr
             lay.AddItem(L"save_exr", L"EXR");
             CValueArray vItZb_nor(6);
-                vItZb_nor[0] = L"Camera Start/End clip" ;    vItZb_nor[1] = 0;
-                vItZb_nor[2] = L"Min/Max" ;            vItZb_nor[3] = 1;
-                vItZb_nor[4] = L"None" ;            vItZb_nor[5] = 2;
+                vItZb_nor[0] = L"Camera Start/End clip";	vItZb_nor[1] = 0;
+                vItZb_nor[2] = L"Min/Max" ;					vItZb_nor[3] = 1;
+                vItZb_nor[4] = L"None" ;					vItZb_nor[5] = 2;
             lay.AddEnumControl(L"mode_Znorm",vItZb_nor,L"Mode Zbuffer",siControlCombo ) ;
         lay.EndGroup(); //-----]
     lay.EndRow();//--------------------
@@ -107,6 +107,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddButton(L"exe_luxsi",L"Export to file");
             lay.AddButton(L"render_luxsi",L"Render scene");
         lay.EndRow();
+    /*
     //------------------------------//
         lay.AddTab(L"Lights ");
     //------------------------------//
@@ -122,7 +123,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
 				item.PutAttribute( siControlFilePath , "test" ) ;
         //---
         lay.EndGroup();
-
+    */
     //------------------------------// 
         lay.AddTab(L"Render ");
     //------------------------------//
@@ -155,12 +156,13 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.AddEnumControl( L"bengine", vAengine, L"Engine", siControlCombo ) ;
         lay.EndRow();
         //--
-        lay.AddItem(L"fLuxPath",L"Path to Luxrender",siControlFilePath);
+        lay.AddItem(L"fLuxPath",L"Path to Luxrender", siControlFolder);
         PPGItem lpath = lay.GetItem( L"fLuxPath" );
+            //lpath.PutAttribute( siUIOpenFile, 1 ) ;
+            //lpath.PutAttribute( siUIFileMustExist, 1 ) ;
             lpath.PutAttribute( siUIFileFilter, L"LuxRender executable|*.exe" ) ;
-        //    lpath.PutAttribute( siUIOpenFile, 1 ) ;
-        //    lpath.PutAttribute( siUIFileMustExist, 1 ) ;
-        //    lpath.PutAttribute( siControlFilePath , "test" ) ;
+            //lpath.PutAttribute( siControlFilePath , "lux" ) ;
+        
         //--
 
         lay.AddRow();
