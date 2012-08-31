@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #include "luxsi_values.h"
-#include "plymesh/rply.h"
+//#include "plymesh/rply.h"
 //--
 using namespace XSI;
 using namespace MATH;
@@ -252,8 +252,8 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     prop.AddParameter( L"bmaxprims",           CValue::siInt4, sps,L"",L"",  vmaxprims,           0,10,0,10,  oParam ) ;
     prop.AddParameter( L"bacmaxdepth",         CValue::siInt4, sps,L"",L"",  vacmaxdepth,         0,10,0,10,  oParam ) ;
     prop.AddParameter( L"bemptybonus",         CValue::siFloat, sps,L"",L"", vemptybonus,         0.0f,1.0f,0.0f,1.0f,  oParam);
-    prop.AddParameter( L"bintersectcost",      CValue::siInt4, sps,L"",L"",  vintersectcost,           0,100,0,100,  oParam ) ;
-    prop.AddParameter( L"btraversalcost",      CValue::siInt4, sps,L"",L"",  vtraversalcost,           0,100,0,100,  oParam ) ;
+    prop.AddParameter( L"bintersectcost",      CValue::siInt4, sps,L"",L"",  vintersectcost,		0,100,0,100,  oParam ) ;
+    prop.AddParameter( L"btraversalcost",      CValue::siInt4, sps,L"",L"",  vtraversalcost,        0,100,0,100,  oParam ) ;
     //--
     
 //  prop.AddParameter( L"mlt",      CValue::siBool, sps,L"",L"",  vMLT,     dft,dft,dft,dft,    oParam); // unused?
@@ -263,11 +263,13 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     vFileObjects = app.GetInstallationPath(siProjectPath);
     vLuXSIPath = app.GetInstallationPath(siUserAddonPath);
     //vLux_console = vLuXSIPath;
+    //vLuXSIPath
     //--
     #ifdef __unix__
         vFileObjects += L"/tmp.lxs";
     #else
         vFileObjects += L"/tmp.lxs"; //-- also work in windows systems ?
+		
         vLuXSIPath += L"/LuXSI/Application/bin";
     #endif
     
@@ -1620,7 +1622,7 @@ void writeLuxsiCam(X3DObject o){
     for (int i=0;i<cShaders.GetCount();i++)
     {
         CString vCSID((Shader(cShaders[i]).GetProgID()).Split(L".")[1]);
-        app.LogMessage(L" lens shader: "+ CString(vCSID)); //---------------------
+        app.LogMessage(L" Lens shader in use: "+ CString(vCSID)); //---------------------
         if (vCSID==L"sib_dof") 
         {
             //-- Depth_of_field shader found
@@ -1741,56 +1743,50 @@ void writeLuxsiLight(X3DObject o)
         }
     }
 
-    //-- first contact to matrix functions
-    //using namespace XSI::MATH;
-	/*	CMatrix3 mat3(1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0);
-		mat3.TransposeInPlace();
-		//Application app;
-		app.LogMessage(CString(L"The transposed matrix is ") +
-					   CValue(mat3.GetValue(0,0)).GetAsText() + CString(L", ")+
-					   CValue(mat3.GetValue(0,1)).GetAsText() + CString(L", ")+
-					   CValue(mat3.GetValue(0,2)).GetAsText() + CString(L", ")+
-					   CValue(mat3.GetValue(1,0)).GetAsText() + CString(L", ")+
-					   CValue(mat3.GetValue(1,1)).GetAsText() + CString(L", ")+
-					   CValue(mat3.GetValue(1,2)).GetAsText() + CString(L", ")+
-					   CValue(mat3.GetValue(2,0)).GetAsText() + CString(L", ")+
-					   CValue(mat3.GetValue(2,1)).GetAsText() + CString(L", ")+
-					   CValue(mat3.GetValue(2,2)).GetAsText());
-        //------------
-    */
-
-    CTransformation localTransformation = o.GetKinematics().GetLocal().GetTransform();
-    //-- point from
-    KinematicState  global_kinex_state = o.GetKinematics().GetGlobal();
-    CTransformation global_transf = global_kinex_state.GetTransform();
-    CVector3 light_from(global_transf.GetTranslation());
-    //
-    float a = 0.0, b = 0.0, c = 0.0, alpha = 0.0;
-
-    //-- point to 
-    X3DObject li;
-    li= X3DObject(o.GetParent()).GetChildren()[1];
-    CTransformation lt = li.GetKinematics().GetLocal().GetTransform();
-    CVector3 light_to(lt.GetTranslation());
+    //- light object
+    KinematicState  from_global_kinex_state;
+    CTransformation light_from_global_transf;
+    //- set state for 'point from'
+    from_global_kinex_state = o.GetKinematics().GetGlobal();
+    light_from_global_transf = from_global_kinex_state.GetTransform();
+    
+    //- point from
+    CVector3 light_from; 
+    light_from.MulByTransformationInPlace(light_from_global_transf);
+    
+    //- light object interest 
+    X3DObject light_interest;
+    light_interest = X3DObject(o.GetParent()).GetChildren()[1];
+    //- set state for 'point to'
+    KinematicState  to_global_kinex_state;
+    CTransformation light_to_global_transf;
+    //-
+    to_global_kinex_state = light_interest.GetKinematics().GetGlobal();
+    light_to_global_transf = to_global_kinex_state.GetTransform();
+    
+    //- point to
+    CVector3 light_to; 
+    light_to.MulByTransformationInPlace(light_to_global_transf);
     
     //--
     KinematicState  local_state = o.GetKinematics().GetLocal(); 
     CTransformation local_transf = local_state.GetTransform();
    
     //--
+    //
+    float a = 0.0, b = 0.0, c = 0.0, alpha = 0.0;
     Shader s((Light(o).GetShaders())[0]);
-    s.GetColorParameterValue(L"color",a,b,c,alpha );
-    //--
-    CString lName = findInGroup(o.GetName());
-    CString group_name; 
-    if (lName != L"") 
+    s.GetColorParameterValue(L"color", a, b, c, alpha );
+
+    //-- finding for light group name
+    CString light_Name = findInGroup(o.GetName());
+    //-
+    CString group_name = o.GetName().GetAsciiString();
+    //-
+    if (light_Name != L"") 
     {
-        group_name = lName.GetAsciiString(); 
+        group_name = light_Name.GetAsciiString(); 
     } 
-    else 
-    {
-        group_name = o.GetName().GetAsciiString();
-    }
     //--
     int lType = Light(o).GetParameterValue(L"Type");
     app.LogMessage(L" light type: "+ CString(lType) );
@@ -1802,11 +1798,14 @@ void writeLuxsiLight(X3DObject o)
     float vIntensity = s.GetParameterValue(L"intensity");
     float vSpotblend = s.GetParameterValue(L"spread");
     //--
+	CString vShaderID((s.GetProgID()).Split(L".")[1]);
+	app.LogMessage(L"Light shader is: "+ vShaderID);
+	//-
     f << "\nLightGroup \""<< group_name.GetAsciiString() <<"\" \n";
-    //--
+    
+	//- for use only image environment light
     if ( vEnviron && vFile_env != L"")
     {
-        //f << "\nTransformBegin \n";
         f << "LightSource \"infinite\"\n";
         f << "  \"float gain\" [" << vIntensity << "]\n";
         f << "  \"float importance\" [1.0]\n"; // TODO
@@ -1814,9 +1813,8 @@ void writeLuxsiLight(X3DObject o)
         f << "  \"string mapping\" [\"latlong\"]\n"; // TODO
         f << "  \"float gamma\" [1.0]\n";
         f << "  \"integer nsamples\" [1]\n"; // TODO
-        // f << "\nTransformEnd \n";
-        } 
-    
+    } 
+    //-
     if (lType == 2) //-- spot
     {
         //-- values
@@ -1836,7 +1834,6 @@ void writeLuxsiLight(X3DObject o)
     {
         if ( vEnviron && vFile_env != L"")
         {
-            //f << "\nTransformBegin \n";
             f << "LightSource \"infinite\"\n";
             f << "  \"float gain\" [" << vIntensity << "]\n";
             f << "  \"float importance\" [1.0]\n"; // TODO
@@ -1844,31 +1841,23 @@ void writeLuxsiLight(X3DObject o)
             f << "  \"string mapping\" [\"latlong\"]\n"; // TODO
             f << "  \"float gamma\" [1.0]\n";
             f << "  \"integer nsamples\" [1]\n"; // TODO
-           // f << "\nTransformEnd \n";
         } 
         else
         {
-        /*    f << "LightSource \"infinite\"\n";
-            f << "  \"float gain\" [" << vIntensity << "]\n";
-            f << "  \"float importance\" [1.0]\n"; // TODO
-            f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
-        }
-         */
             CMatrix4 sunTransMat = o.GetKinematics().GetLocal().GetTransform().GetMatrix4();
             f << "\nLightSource \"sunsky\"\n";
             f << "  \"integer nsamples\" [4]\n";
             f << "  \"vector sundir\" [ "<< sunTransMat.GetValue(2,0) << " " << sunTransMat.GetValue(2,1) << " " << sunTransMat.GetValue(2,2) << " ]\n";
             f << "  \"float gain\" [" << vIntensity << "]\n";
             f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
-            //*/
         }
     } 
     else
     {
-        // Pointlight
+        // Point light
         //-- in Softimage, light area, only work into 'point' or 'spot' lights
         if ( vSiArealight )
-        {
+        { 
             //--
             float size_X(o.GetParameterValue(L"LightAreaXformSX"));
             float size_Y(o.GetParameterValue(L"LightAreaXformSY"));
@@ -1877,37 +1866,59 @@ void writeLuxsiLight(X3DObject o)
             int R_areaX(o.GetParameterValue(L"LightAreaXformRX"));
             int R_areaY(o.GetParameterValue(L"LightAreaXformRY"));
             int R_areaZ(o.GetParameterValue(L"LightAreaXformRZ"));
-            //--
-            CString A_rotation = L"";// for test, replace by Matrix
-            if ( R_areaX != 0 )  A_rotation += "Rotate "+ CString(R_areaX) + L" 1 0 0 \n";
-            if ( R_areaY != 0 )  A_rotation += "Rotate "+ CString(R_areaY) + L" 0 1 0 \n";
-            if ( R_areaZ != 0 )  A_rotation += "Rotate "+ CString(R_areaZ) + L" 0 0 1 \n";
-            //--
-            //CVector3 axis;
-            //double rot = global_transf.GetRotationAxisAngle(axis);
-                        
             //-- samples U + V / 2
             int U_samples = o.GetParameterValue(L"LightAreaSampU");
             int V_samples = o.GetParameterValue(L"LightAreaSampV");
             
             //--
-            CString aPoints = L""; // like luxblend
-            aPoints += L""+ CString( -size_X/2.0 ) + L" "+ CString( size_Y/2.0 ) + L" "+ CString( 0.0 );
-            aPoints += L" "+ CString( size_X/2.0 ) + L" "+ CString( size_Y/2.0 ) + L" "+ CString( 0.0 ); 
-            aPoints += L" "+ CString( size_X/2.0 ) + L" "+ CString( -size_Y/2.0 ) + L" "+ CString( 0.0 );
-            aPoints += L" "+ CString( -size_X/2.0 ) + L" "+ CString( -size_Y/2.0 ) + L" "+ CString( 0.0 );
+            /*            
+            //-- Esta es la mejor forma para trabajar con los controles de rotacion y escalado
+            //- en el menu del objeto 'light' y despues, usar 'translate' y 'rotate' de LuxRender
+            //- para situarlo en la posicion correcta.
+            //- Esta forma, nos limita la rotacion a un maximo de 90 grados en cada eje.
+
+            CString A_rotation = L"";
+            A_rotation += "Rotate "+ CString(R_areaX)  + L" 1 0 0 \n";
+            A_rotation += "Rotate "+ CString(-R_areaZ) + L" 0 1 0 \n";
+            A_rotation += "Rotate "+ CString(R_areaY)  + L" 0 0 1 \n";
             //--
-            f << "\nTransformBegin \n";
-            f << "Translate "<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1] <<"\n";
-            if (A_rotation != L"")
-            {
-                f << A_rotation.GetAsciiString() <<"\n";;
-            }
+                
+            aPoints += L" "+ CString(-size_X/2) + L" 0.0" + L" "+ CString(size_Y/2)  ; 
+            aPoints += L" "+ CString(-size_X/2) + L" 0.0" + L" "+ CString(-size_Y/2) ; 
+            aPoints += L" "+ CString(size_X/2)  + L" 0.0" + L" "+ CString(-size_Y/2) ; 
+            aPoints += L" "+ CString(size_X/2)  + L" 0.0" + L" "+ CString(size_Y/2)  ;
+            */
+            //
+            //- De esta otra forma, controlamos el objeto 'area', con los controles de la interfaz general
+            //- excepto 'scale' que aunque funciona, no  muestra en el visor los cambios en el objeto 'area', 
+            //- si no en la 'luz' ( spehere). Sin embargo, si usamos la opcion 'scale' del menu de 'light'
+            //- los cambios son exportados y visualizados de forma correcta
+          
+            CVector3 p1, p2, p3, p4;
+            //-
+            p1.Set(-size_X/2, size_Y/2, 0.0);   p1.MulByTransformationInPlace(light_from_global_transf);
+            p2.Set(-size_X/2, -size_Y/2, 0.0);  p2.MulByTransformationInPlace(light_from_global_transf);
+            p3.Set(size_X/2, -size_Y/2, 0.0);   p3.MulByTransformationInPlace(light_from_global_transf);
+            p4.Set(size_X/2, size_Y/2, 0.0);    p4.MulByTransformationInPlace(light_from_global_transf);
+            //-         
+            CString aPoints = L"";
+            aPoints += CString( p1[0] ) + L" "+ CString( -p1[2] ) + L" "+ CString( p1[1] ) + L" "; 
+            aPoints += CString( p2[0] ) + L" "+ CString( -p2[2] ) + L" "+ CString( p2[1] ) + L" ";  
+            aPoints += CString( p3[0] ) + L" "+ CString( -p3[2] ) + L" "+ CString( p3[1] ) + L" ";  
+            aPoints += CString( p4[0] ) + L" "+ CString( -p4[2] ) + L" "+ CString( p4[1] ); 
+                       
+            //--
+            //f << "\nTransformBegin \n";
+            //f << "Translate "<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1] <<"\n";
+            //if (A_rotation != L"")
+            //{
+            //    f << A_rotation.GetAsciiString() <<"\n";;
+            //}
             //--
             f << "\nAreaLightSource \"area\"\n";
 	        f << "  \"float gain\" [" << vIntensity << "]\n";
             f << "  \"float importance\" [1.0]\n"; // TODO
-	        f << "  \"float power\" ["<< float(o.GetParameterValue(L"LightEnergyIntens"))/100 <<"]\n"; //-- ;
+	        f << "  \"float power\" ["<< float(o.GetParameterValue(L"LightEnergyIntens"))/100 <<"]\n";
 	        f << "  \"float efficacy\" [17.0]\n";
 	        f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
 	        f << "  \"integer nsamples\" ["<< (U_samples + V_samples)/2 <<"]\n";
@@ -1917,13 +1928,25 @@ void writeLuxsiLight(X3DObject o)
                 f << "  \"string iesname\" [\"" << replace(ies_file.GetAsciiString()) << "\"]\n";
             }           
             //--
-            f << "\nShape \"trianglemesh\"\n";
-	        f << "  \"integer indices\" [0 1 2 0 2 3]\n";
-	        f << "  \"point P\" ["<< aPoints.GetAsciiString() <<"]\n";
-            //--
-            f << "\nTransformEnd \n";         
+            if ( vlight_geo == 1 ) //-- square/rectangle
+            {
+                f << "\nShape \"trianglemesh\"\n";
+	            f << "  \"integer indices\" [0 1 2 0 2 3]\n";
+	            f << "  \"point P\" ["<< aPoints.GetAsciiString() <<"]\n";
+            }
+            else // sphere
+            {
+                f << "\nTransformBegin \n";
+                f << "Translate "<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1] <<"\n";
+            
+                f << "\nShape \"sphere\"\n";
+                f << "  \"float radius\" ["<< size_X <<"]\n";
+                //-
+                f << "\nTransformEnd \n"; 
+            }
+            
         }
-        else
+        else // no area
         {
             f << "\nLightSource \"point\"\n";
             f << "  \"float gain\" [" << vIntensity << "]\n";
@@ -1950,32 +1973,63 @@ int writeLuxsiSurface(X3DObject o, CString vType)
     //--
     KinematicState  gs = o.GetKinematics().GetLocal(); 
     CTransformation gt = gs.GetTransform();
-    //--
+    
+	//--
+    float vradius = o.GetParameterValue(L"radius");
+	//-	 
+    float start_u = o.GetParameterValue(L"startuangle");
+    float end_u = o.GetParameterValue(L"enduangle");
+	//
+	CVector3 axis(0.0f, 0.0f, 0.0f);
+	float vphimax = 360;
+	float rotar = 0.0;
+	//-
+	// el objeto a dibujar es la diferencia entre el mayor y el menor valor
+	if (start_u > end_u)
+	{
+		if (start_u == 180)
+		{
+			vphimax = start_u + end_u;
+		}
+		else //if (start_u != 180)
+		{
+			vphimax = (360 - start_u) + end_u;
+			rotar = end_u - start_u; // result negative
+			axis.Set(0,0,1);
+		}
+	}
+	else
+	{
+		vphimax = end_u - start_u;
+		rotar = -vphimax;
+		axis.Set(0,0,1);
+	}
     f << "\nAttributeBegin\n";
-    CVector3 axis;
-        double rot = gt.GetRotationAxisAngle(axis);
+    //CVector3 axis;
+        //double rot = gt.GetRotationAxisAngle(axis);
         //-- TODO; changed for matrix
         f << "\nTransformBegin\n";
         f << "\nTranslate "<< gt.GetPosX() <<" "<< gt.GetPosY() <<" "<< gt.GetPosZ() <<"\n";
-        if (rot!= 0)
+        if (rotar != 0)
         {
-            f << "Rotate " << (rot*180/PI) << " "<< axis[0] << " " << axis[1] << " "<< axis[2] << "\n";
+            f << "Rotate "<< rotar /*(rot*180/PI)*/ <<" "<< axis[0] <<" "<< axis[1] <<" "<< axis[2] <<"\n";
         }
         if (gt.GetSclX()!=1 || gt.GetSclY()!=1 || gt.GetSclZ()!=1) 
         {
             f << "Scale " << gt.GetSclX() << " " << gt.GetSclY() << " "<< gt.GetSclZ() << "\n";
         }
-        //--
-        float vradius = o.GetParameterValue(L"radius");// 
-        float vzmin = o.GetParameterValue(L"startuangle");
-        float vzmax = o.GetParameterValue(L"enduangle");
-        float vphimax = o.GetParameterValue(L"endvangle");
+        
+		//-
+        float end_v = o.GetParameterValue(L"endvangle");
+		float start_v = o.GetParameterValue(L"startvangle");
+		
+		
         //--
         f << " Shape  \"sphere\" \n";
             f << "  \"float radius\" [" << vradius << "]\n";
-            f << "  \"float zmin\" [" << -vzmax /2  << "]\n";
-            f << "  \"float zmax\" [" << vzmax /2  << "]\n";
-            f << "  \"float phimax\" [" << vphimax * 2 << "]\n";
+			f << "  \"float zmin\" [ -90 ]\n";
+            f << "  \"float zmax\" [ 90 ]\n";
+            f << "  \"float phimax\" ["<< vphimax <<"]\n";
             //--
         f << "TransformEnd\n";
     f << "\nAttributeEnd\n";
@@ -2065,11 +2119,16 @@ int writeLuxsiObj(X3DObject o, CString vType)
         {
             for (LONG j=0; j < allPoints.GetCount(); j++)
             {
-                //-- test
+                //-- create vector..
                 CVector3 new_pos(allPoints[j][0], allPoints[j][1], allPoints[j][2]);
+				
+				//- set transform..
                 new_pos.MulByTransformationInPlace(global_trans);
+				
+				//- and write string array, in correct Lux format ( x, -z, y )
                 vPoints += L" "+ CString(new_pos[0]) + L" "+  CString(-new_pos[2]) + L" "+ CString(new_pos[1]) + L"\n";
-                //--
+                
+				//--
                 CVector3 tr_normals(allNormals[j][0], allNormals[j][1], allNormals[j][2]);
                 tr_normals.MulByTransformationInPlace(global_trans);
                 vNormals +=  L" "+ CString(tr_normals[0]) + L" "+  CString(tr_normals[2]) + L" "+ CString(tr_normals[1]) + L"\n";
@@ -2194,15 +2253,20 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     for (LONG j=0; j < allPoints.GetCount(); j++)
     {
         //-- vertex
-        CVector3 point_pos(allPoints[j][0], -allPoints[j][2], allPoints[j][1]);
+        CVector3 point_pos(allPoints[j][0], allPoints[j][1], allPoints[j][2]);
         point_pos.MulByTransformationInPlace(global_trans);
         //-- normals
-        CVector3 norm_idx(allNormals[j][0], -allNormals[j][2], allNormals[j][1]);
+        CVector3 norm_idx(allNormals[j][0], allNormals[j][1], allNormals[j][2]);
         norm_idx.MulByTransformationInPlace(global_trans);
-        //-- write all
-        sPos += CString(point_pos[0]) + L" "+ CString(point_pos[1]) + L" "+ CString(point_pos[2]);
-        if ( vSmooth_mesh ){
-        sPos += L" "+ CString(norm_idx[0]) + L" "+ CString(norm_idx[1]) + L" "+ CString(norm_idx[2]);
+        
+		//-- write points..
+        sPos += CString(point_pos[0]) + L" "+ CString(-point_pos[2]) + L" "+ CString(point_pos[1]);
+		
+		//- and normals if 'smooth_mesh' is ON
+		//- !!WARNING!!, POSSIBLE ERROR IN NORMALS
+        if ( vSmooth_mesh )
+		{
+			sPos += L" "+ CString(norm_idx[0]) + L" "+ CString(norm_idx[1]) + L" "+ CString(norm_idx[2]);
         }
         sPos += L"\n";
     }
@@ -2250,7 +2314,6 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     //--
 
 }
-        
 //--
 int writeLuxsiCloud(X3DObject obj)
 {
@@ -2411,15 +2474,24 @@ void luxsi_mat_preview()
     writeLuxsiShader();
     if ( luxsi_find(aMatList, L"Preview" ) )
     {
+		CString vFile_mat = L"";
+		int Loc = (int)vFileObjects.ReverseFindString(".");
+        vFile_mat = vFileObjects.GetSubString(0,Loc) + (L"_mat_preview.lxm");
+		std::ofstream fmat;
+		fmat.open(vFile_mat.GetAsciiString());
+
+		fmat << "\nNamedMaterial \"Preview\" \n"; //<< m.GetName().GetAsciiString() <<"\"\n";
         //------------------------------------
-        f << " Shape  \"sphere\" \n";
-        f << "  \"float radius\" [1.0]\n";
-        f << "  \"float zmin\" [-0.5]\n";
-        f << "  \"float zmax\" [0.5]\n";
-        f << "  \"float phimax\" [1.0]\n";
+        fmat << " Shape  \"sphere\" \n";
+        fmat << "  \"float radius\" [1.0]\n";
+        fmat << "  \"float zmin\" [-0.5]\n";
+        fmat << "  \"float zmax\" [0.5]\n";
+        fmat << "  \"float phimax\" [1.0]\n";
+		fmat.close();
         //--
     }
 }
+//--
 void luxsi_write()
 {
     // write objects, materials, lights, cameras
@@ -2541,24 +2613,24 @@ void luxsi_write()
 
             //-- write files
             CString vFileLXM = L"", vFileLXO = L"";
-            CString vInput_FileName = vFileObjects.GetAsciiString();
-            int Loc = (int)vInput_FileName.ReverseFindString(".");
-            vFileLXM = vInput_FileName.GetSubString(0,Loc) + (L"_mat.lxm");
-            vFileLXO = vInput_FileName.GetSubString(0,Loc) + (L"_geo.lxo");
+            //CString vInput_FileName = vFileObjects.GetAsciiString();
+            int Loc = (int)vFileObjects.ReverseFindString(".");
+            vFileLXM = vFileObjects.GetSubString(0,Loc) + (L"_mat.lxm");
+            vFileLXO = vFileObjects.GetSubString(0,Loc) + (L"_geo.lxo");
             // vFileVOL = vInput_FileName.GetSubString(0,Loc) + (L"_vol.lxm");
-            vFilePLY = vInput_FileName.GetSubString(0,Loc);
+            vFilePLY = vFileObjects.GetSubString(0,Loc);
 
 
             //-- init progress bar
             pb.PutValue(0);
-            pb.PutMaximum( aObj.GetCount()+aInstance.GetCount() );
+            pb.PutMaximum( aObj.GetCount()+ aInstance.GetCount() );
             pb.PutStep(1);
             pb.PutVisible( true );
             pb.PutCaption( L"Processing data for exporter.." );
             pb.PutCancelEnabled(true);
 
             //-- open lxs file
-            f.open (vFileObjects.GetAsciiString()); //--
+            f.open(vFileObjects.GetAsciiString()); //--
 
             // insert header for files
             write_header_files();
@@ -2684,23 +2756,23 @@ void luxsi_execute()
                 }
         #else
             // windows
+            CString Lux_Binarie = L"";
             if (vRmode == 1) //-- console
             {
-                //vLux_console += // added parameters
-                vLuXSIPath += L"/luxconsole.exe";
+                Lux_Binarie = vLuXSIPath + L"/luxconsole.exe";
             }
 			else
 			{
-				vLuXSIPath += L"/luxrender.exe";
+				Lux_Binarie = vLuXSIPath + L"/luxrender.exe";
 			}
 			//--
-			CString exec = vLuXSIPath +" \""+ vFileObjects + "\"";
+			CString exec = Lux_Binarie +" \""+ vFileObjects + "\"";
             app.LogMessage(exec);
             loader(exec.GetAsciiString()); //-- for execute in Windows systems
         #endif
     }
     else
     {
-        app.LogMessage(L" Not data file exported, retry exporting scene, before render ",siErrorMsg );
+        app.LogMessage(L" Not data file exported, retry exporting scene, before render ", siErrorMsg );
     }
 }
