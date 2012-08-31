@@ -2,7 +2,8 @@
 LuXSI - Autodesk(c) Softimage(c) XSI Export addon for the LuxRender  Renderer
 (http://www.luxrender.org)
 
-Copyright (C) 2010 2011 2012  Michael Gangolf and Pedro Alcaide
+Copyright (C) 2010 2011 2012  Michael Gangolf 
+Code contributor: Pedro Alcaide
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -360,21 +361,28 @@ void writeLuxsiShader()
     }// test
 }
 //--
+CValue mat_value(Shader s, CString compo)
+{
+    //-
+    s.GetColorParameterValue(compo, red, green, blue, alpha );
+    compo = s.GetParameterValue(compo);
+    return compo;
+}
+//
 CString write_lux_glass(Shader s, CString shStr)
 {
     //--
     s.GetColorParameterValue(L"kr", red, green, blue, alpha );
-    //--
     shStr += L" \"color Kr\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]\n";
-
+    //-
     s.GetColorParameterValue(L"kt", red, green, blue, alpha );
-    //--
-    shStr += L" \"color Kt\" ["+ CString(red) + L" "  + CString(green) +  L" "  + CString(blue) + L"]\n";
-    shStr += L" \"float film\" ["+ CString(float(s.GetParameterValue(L"film"))) + L"]\n";
-    shStr += L" \"float filmindex\" ["+ CString(float(s.GetParameterValue(L"filmindex"))) + L"]\n";
-    shStr += L" \"float index\" ["+ CString(float(s.GetParameterValue(L"index"))) + L"]\n";
-    shStr += L" \"float cauchyb\" ["+ CString(float(s.GetParameterValue(L"cauchyb"))) + L"]\n";
-    shStr += L" \"bool architectural\" [\""+ CString(bool(s.GetParameterValue(L"architectural"))) + L"\"]\n";
+    shStr += L" \"color Kt\" ["+ CString(red) + L" "+ CString(green) +  L" "+ CString(blue) + L"]\n";
+    //-
+    shStr += L" \"float film\" ["+ CString(s.GetParameterValue(L"film")) + L"]\n";
+    shStr += L" \"float filmindex\" ["+ CString(s.GetParameterValue(L"filmindex")) + L"]\n";
+    shStr += L" \"float index\" ["+ CString(s.GetParameterValue(L"index")) + L"]\n";
+    shStr += L" \"float cauchyb\" ["+ CString(s.GetParameterValue(L"cauchyb")) + L"]\n";
+    shStr += L" \"bool architectural\" [\""+ CString(s.GetParameterValue(L"architectural")) + L"\"]\n";
     //--
     return shStr;
 }
