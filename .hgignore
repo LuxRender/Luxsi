@@ -1,0 +1,25 @@
+syntax: glob
+Release/luxsi_integrated.obj
+UpgradeLog.XML
+Release/xsi2012.lnk
+Release/vc90.pdb
+Release/vc90.idb
+Release/mt.dep
+Release/luxsi_material.obj
+luxsi.vcproj.SOBREMESA.Pedro.user
+luxsi9.ncb
+luxsi.sln
+luxsi9.sln
+luxsi9.suo
+Release/luxsi_light.obj
+Release/luxsi_gui.obj
+Release/LuXSI.obj
+Release/MOD TOOL.lnk
+Debug/BuildLog.htm
+Debug/vc90.idb
+Debug/vc90.pdb
+Release/7.5.lnk
+Release/BuildLog.htm
+Release/luxsi.exp
+Release/luxsi.pdb
+snipped.h
