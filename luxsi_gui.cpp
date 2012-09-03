@@ -22,9 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace std;
 using namespace XSI;
-//using namespace MATH;
-
-
+//--
 XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
 {
     PPGLayout lay = Context(in_ctxt).GetSource() ;

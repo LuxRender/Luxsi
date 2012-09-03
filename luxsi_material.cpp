@@ -19,6 +19,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
+
 #include "include\luxsi_material.h"
 
 using namespace std;
@@ -145,7 +146,7 @@ void writeLuxsiShader()
             {
                 shaderType=L"matte";
                 s.GetColorParameterValue(L"diffuse", red, green, blue, alpha );
-                shaderStr += L" \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+                shaderStr += L" \"color Kd\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]\n";
                 shaderStr += L" \"float sigma\" [0]\n";
                 //--
                 vIsSet=true;
@@ -154,10 +155,10 @@ void writeLuxsiShader()
             else if (vMatID == L"material-ward")
             {
                 s.GetColorParameterValue(L"diffuse", red, green, blue, alpha );
-                shaderStr += L" \"color Kd\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+                shaderStr += L" \"color Kd\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]\n";
                 shaderStr += L" \"float uroughness\" ["+ CString((float)(s.GetParameterValue(L"shiny_u"))/10) + L"]\n";
                 shaderStr += L" \"float vroughness\" ["+ CString((float)(s.GetParameterValue(L"shiny_v"))/10) + L"]\n";
-                shaderStr += L" \"color Ks\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
+                shaderStr += L" \"color Ks\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]\n";
                 //--
                 shaderType = L"glossy";
                 vIsSet = true;

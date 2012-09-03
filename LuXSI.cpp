@@ -1247,6 +1247,7 @@ bool luxsi_find(CStringArray a, CString s){
 //--
 CString findInGroup(CString s)
 {
+    //--
     CRefArray grps = root.GetGroups();
     //--
     for (int i=0;i<grps.GetCount();i++)
@@ -1261,7 +1262,6 @@ CString findInGroup(CString s)
             }
         }
     }
-
     return L"";
 }
 //--
@@ -1525,65 +1525,6 @@ void writeLuxsiBasics(){
     }
 }
 //--
-void write_environment()
-{
-/*    // Look if there is an background image for Image Based Lighting (e.g. HDRI)
-    CRefArray aEnv = app.GetActiveProject().GetActiveScene().GetActivePass().GetNestedObjects();
-    for (int i=0;i<aEnv.GetCount();i++)
-    {
-        if (SIObject(aEnv[i]).GetName()==L"Environment Shader Stack")
-        {
-            CRefArray aImages = SIObject(aEnv[i]).GetNestedObjects();
-            for (int j=0;j<aImages.GetCount();j++)
-            {
-                if (SIObject(aImages[j]).GetType()==L"Shader")
-                {
-                    Shader s(aImages[j]);
-                    CRefArray aEnvImg=s.GetImageClips();
-                    for (int k=0;k<aEnvImg.GetCount();k++)
-                    {
-                        ImageClip2 vImgClip(aEnvImg[k]);
-                        Source vImgClipSrc(vImgClip.GetSource());
-                        CString vFileName = vImgClipSrc.GetParameterValue( L"path");
-                        if (vFileName !=L"")
-                        {
-                            string::size_type hdr = string(CString(vFileName).GetAsciiString()).find( ".hdr", 0 );
-                            string::size_type exr = string(CString(vFileName).GetAsciiString()).find( ".exr", 0 );
-	                        if ( hdr != string::npos || exr != string::npos ) vHDRI = vFileName; vEnviron = true;
-
-                          //  break;
-                        }
-                    }
-                }
-            }
-         //   break;
-        }
-    }
-
-
-
-    else if (vAmbBack) {
-            //
-            // TODO: check if there is a C++ way to read AmbientLighting color
-            //
-        CScriptErrorDescriptor status ;
-        CValueArray fooArgs(1) ;
-        fooArgs[0] = L"" ;
-        CValue retVal=false ;
-        status = app.ExecuteScriptProcedure(L"function getS(){return GetValue(activesceneroot+\".AmbientLighting.ambience.red\")}",L"JScript",L"getS",fooArgs, retVal  ) ;
-        CValue red=retVal;
-        status = app.ExecuteScriptProcedure(L"function getS(){return GetValue(activesceneroot+\".AmbientLighting.ambience.green\")}",L"JScript",L"getS",fooArgs, retVal  ) ;
-        CValue green=retVal;
-        status = app.ExecuteScriptProcedure(L"function getS(){return GetValue(activesceneroot+\".AmbientLighting.ambience.blue\")}",L"JScript",L"getS",fooArgs, retVal  ) ;
-        CValue blue=retVal;
-
-        f << "AttributeBegin\n";
-        f << "LightSource \"infinite\" \"color L\" [" <<CString(red).GetAsciiString()<<" " <<CString(green).GetAsciiString()<<" " <<CString(blue).GetAsciiString()<< "] \"integer nsamples\" [1]\n";
-        f << "AttributeEnd \n";
-    } // end enviroment
-    */
-}
-//--
 void writeLuxsiCam(X3DObject o){
     //
     // write camera
@@ -1642,8 +1583,7 @@ void writeLuxsiCam(X3DObject o){
                 vFdist = Shader(cShaders[i]).GetParameterValue(L"len_focal_distance");
             }
             //-- commons
-            vLensr = Shader(cShaders[i]).GetParameterValue(L"strenght");
-            
+            vLensr = Shader(cShaders[i]).GetParameterValue(L"strenght");        
         }
     }
 
@@ -1699,272 +1639,12 @@ void writeLuxsiCam(X3DObject o){
     }
 }
 
-//--
-void writeLuxsiLight(X3DObject o)
-{
-    //-- search image based lighting
-    CString vFile_env = L"";
-    bool vEnviron = false;
-    int env_mode;
-   
-    CRefArray aEnv = app.GetActiveProject().GetActiveScene().GetActivePass().GetNestedObjects();
-    for (int i=0;i<aEnv.GetCount();i++)
-    {
-        // app.LogMessage(L"object render pass: "+ CString(SIObject(aEnv[i]).GetName()));
-        if (SIObject(aEnv[i]).GetName()==L"Environment Shader Stack")
-        {
-            CRefArray aImages = SIObject(aEnv[i]).GetNestedObjects();
-            for (int j=0;j<aImages.GetCount();j++)
-            {
-                //app.LogMessage(L"Nested object render pass: "+ CString(SIObject(aImages[j]).GetType()));
-                if (SIObject(aImages[j]).GetType()==L"Shader")
-                {
-                    Shader s(aImages[j]);
-                    CRefArray aEnvImg = s.GetImageClips();
-                    for (int k=0; k < aEnvImg.GetCount(); k++)
-                    {
-                        ImageClip2 vImgClip(aEnvImg[k]);
-                        Source vImgClipSrc(vImgClip.GetSource());
-                        //--
-                        env_mode = s.GetParameterValue(L"mode");
-                        app.LogMessage(L"mod env: "+ CString(env_mode));
-                        //--
-                        vFile_env = vImgClipSrc.GetParameterValue( L"path");
-                        if (vFile_env !=L"")
-                        {
-                            string::size_type hdr = string(CString(vFile_env).GetAsciiString()).find( ".hdr", 0 );
-                            string::size_type exr = string(CString(vFile_env).GetAsciiString()).find( ".exr", 0 );
-	                        if ( hdr != string::npos || exr != string::npos ) vEnviron = true;
-                        }
-                    }
-                }
-            }
-         //   break;
-        }
-    }
-
-    //- light object
-    KinematicState  from_global_kinex_state;
-    CTransformation light_from_global_transf;
-    //- set state for 'point from'
-    from_global_kinex_state = o.GetKinematics().GetGlobal();
-    light_from_global_transf = from_global_kinex_state.GetTransform();
-    
-    //- point from
-    CVector3 light_from; 
-    light_from.MulByTransformationInPlace(light_from_global_transf);
-    
-    //- light object interest 
-    X3DObject light_interest;
-    light_interest = X3DObject(o.GetParent()).GetChildren()[1];
-    //- set state for 'point to'
-    KinematicState  to_global_kinex_state;
-    CTransformation light_to_global_transf;
-    //-
-    to_global_kinex_state = light_interest.GetKinematics().GetGlobal();
-    light_to_global_transf = to_global_kinex_state.GetTransform();
-    
-    //- point to
-    CVector3 light_to; 
-    light_to.MulByTransformationInPlace(light_to_global_transf);
-    
-    //--
-    KinematicState  local_state = o.GetKinematics().GetLocal(); 
-    CTransformation local_transf = local_state.GetTransform();
-   
-    //--
-    //
-    float a = 0.0, b = 0.0, c = 0.0, alpha = 0.0;
-    Shader s((Light(o).GetShaders())[0]);
-    s.GetColorParameterValue(L"color", a, b, c, alpha );
-
-    //-- finding for light group name
-    CString light_Name = findInGroup(o.GetName());
-    //-
-    CString group_name = o.GetName().GetAsciiString();
-    //-
-    if (light_Name != L"") 
-    {
-        group_name = light_Name.GetAsciiString(); 
-    } 
-    //--
-    int lType = Light(o).GetParameterValue(L"Type");
-    app.LogMessage(L" light type: "+ CString(lType) );
-    //--
-    bool vSiArealight = o.GetParameterValue(L"LightArea");
-    bool vSiArea_vis = o.GetParameterValue(L"LightAreaVisible");
-    int vlight_geo = o.GetParameterValue(L"LightAreaGeom");
-    float vLightCone = o.GetParameterValue(L"LightCone"); 
-    float vIntensity = s.GetParameterValue(L"intensity");
-    float vSpotblend = s.GetParameterValue(L"spread");
-    //--
-	CString vShaderID((s.GetProgID()).Split(L".")[1]);
-	app.LogMessage(L"Light shader is: "+ vShaderID);
-	//-
-    f << "\nLightGroup \""<< group_name.GetAsciiString() <<"\" \n";
-    
-	//- for use only image environment light
-    if ( vEnviron && vFile_env != L"")
-    {
-        f << "LightSource \"infinite\"\n";
-        f << "  \"float gain\" [" << vIntensity << "]\n";
-        f << "  \"float importance\" [1.0]\n"; // TODO
-        f << "  \"string mapname\" [\"" << replace(vFile_env.GetAsciiString()) << "\"]\n";
-        f << "  \"string mapping\" [\"latlong\"]\n"; // TODO
-        f << "  \"float gamma\" [1.0]\n";
-        f << "  \"integer nsamples\" [1]\n"; // TODO
-    } 
-    //-
-    if (lType == 2) //-- spot
-    {
-        //-- values
-        f << "\nLightSource \"spot\"\n";
-        f << "  \"float gain\" [" << vIntensity << "]\n";
-        f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
-        if ( vUse_IES )
-        {
-            f << "  \"string iesname\" [\"" << replace(ies_file.GetAsciiString()) << "\"]\n";
-        }
-        f << "  \"point from\" ["<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1]  <<"]\n";
-        f << "  \"point to\" ["<< light_to[0] << " " << -light_to[2] <<" "<< light_to[1] <<"]\n";
-        f << "  \"float coneangle\" ["<< vLightCone << "]\n";
-        f << "  \"float conedeltaangle\" [" << vLightCone - vSpotblend <<"]\n";
-    } 
-    else if  (lType == 1) //-- infinite
-    {
-        if ( vEnviron && vFile_env != L"")
-        {
-            f << "LightSource \"infinite\"\n";
-            f << "  \"float gain\" [" << vIntensity << "]\n";
-            f << "  \"float importance\" [1.0]\n"; // TODO
-            f << "  \"string mapname\" [\"" << replace(vFile_env.GetAsciiString()) << "\"]\n";
-            f << "  \"string mapping\" [\"latlong\"]\n"; // TODO
-            f << "  \"float gamma\" [1.0]\n";
-            f << "  \"integer nsamples\" [1]\n"; // TODO
-        } 
-        else
-        {
-            CMatrix4 sunTransMat = o.GetKinematics().GetLocal().GetTransform().GetMatrix4();
-            f << "\nLightSource \"sunsky\"\n";
-            f << "  \"integer nsamples\" [4]\n";
-            f << "  \"vector sundir\" [ "<< sunTransMat.GetValue(2,0) << " " << sunTransMat.GetValue(2,1) << " " << sunTransMat.GetValue(2,2) << " ]\n";
-            f << "  \"float gain\" [" << vIntensity << "]\n";
-            f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
-        }
-    } 
-    else
-    {
-        // Point light
-        //-- in Softimage, light area, only work into 'point' or 'spot' lights
-        if ( vSiArealight )
-        { 
-            //--
-            float size_X(o.GetParameterValue(L"LightAreaXformSX"));
-            float size_Y(o.GetParameterValue(L"LightAreaXformSY"));
-            float size_Z(o.GetParameterValue(L"LightAreaXformSZ"));
-            //-- rotate; use int, float crash
-            int R_areaX(o.GetParameterValue(L"LightAreaXformRX"));
-            int R_areaY(o.GetParameterValue(L"LightAreaXformRY"));
-            int R_areaZ(o.GetParameterValue(L"LightAreaXformRZ"));
-            //-- samples U + V / 2
-            int U_samples = o.GetParameterValue(L"LightAreaSampU");
-            int V_samples = o.GetParameterValue(L"LightAreaSampV");
-            
-            //--
-            /*            
-            //-- Esta es la mejor forma para trabajar con los controles de rotacion y escalado
-            //- en el menu del objeto 'light' y despues, usar 'translate' y 'rotate' de LuxRender
-            //- para situarlo en la posicion correcta.
-            //- Esta forma, nos limita la rotacion a un maximo de 90 grados en cada eje.
-
-            CString A_rotation = L"";
-            A_rotation += "Rotate "+ CString(R_areaX)  + L" 1 0 0 \n";
-            A_rotation += "Rotate "+ CString(-R_areaZ) + L" 0 1 0 \n";
-            A_rotation += "Rotate "+ CString(R_areaY)  + L" 0 0 1 \n";
-            //--
-                
-            aPoints += L" "+ CString(-size_X/2) + L" 0.0" + L" "+ CString(size_Y/2)  ; 
-            aPoints += L" "+ CString(-size_X/2) + L" 0.0" + L" "+ CString(-size_Y/2) ; 
-            aPoints += L" "+ CString(size_X/2)  + L" 0.0" + L" "+ CString(-size_Y/2) ; 
-            aPoints += L" "+ CString(size_X/2)  + L" 0.0" + L" "+ CString(size_Y/2)  ;
-            */
-            //
-            //- De esta otra forma, controlamos el objeto 'area', con los controles de la interfaz general
-            //- excepto 'scale' que aunque funciona, no  muestra en el visor los cambios en el objeto 'area', 
-            //- si no en la 'luz' ( spehere). Sin embargo, si usamos la opcion 'scale' del menu de 'light'
-            //- los cambios son exportados y visualizados de forma correcta
-          
-            CVector3 p1, p2, p3, p4;
-            //-
-            p1.Set(-size_X/2, size_Y/2, 0.0);   p1.MulByTransformationInPlace(light_from_global_transf);
-            p2.Set(-size_X/2, -size_Y/2, 0.0);  p2.MulByTransformationInPlace(light_from_global_transf);
-            p3.Set(size_X/2, -size_Y/2, 0.0);   p3.MulByTransformationInPlace(light_from_global_transf);
-            p4.Set(size_X/2, size_Y/2, 0.0);    p4.MulByTransformationInPlace(light_from_global_transf);
-            //-         
-            CString aPoints = L"";
-            aPoints += CString( p1[0] ) + L" "+ CString( -p1[2] ) + L" "+ CString( p1[1] ) + L" "; 
-            aPoints += CString( p2[0] ) + L" "+ CString( -p2[2] ) + L" "+ CString( p2[1] ) + L" ";  
-            aPoints += CString( p3[0] ) + L" "+ CString( -p3[2] ) + L" "+ CString( p3[1] ) + L" ";  
-            aPoints += CString( p4[0] ) + L" "+ CString( -p4[2] ) + L" "+ CString( p4[1] ); 
-                       
-            //--
-            //f << "\nTransformBegin \n";
-            //f << "Translate "<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1] <<"\n";
-            //if (A_rotation != L"")
-            //{
-            //    f << A_rotation.GetAsciiString() <<"\n";;
-            //}
-            //--
-            f << "\nAreaLightSource \"area\"\n";
-	        f << "  \"float gain\" [" << vIntensity << "]\n";
-            f << "  \"float importance\" [1.0]\n"; // TODO
-	        f << "  \"float power\" ["<< float(o.GetParameterValue(L"LightEnergyIntens"))/100 <<"]\n";
-	        f << "  \"float efficacy\" [17.0]\n";
-	        f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
-	        f << "  \"integer nsamples\" ["<< (U_samples + V_samples)/2 <<"]\n";
-            //--
-	        if ( vUse_IES )
-            {
-                f << "  \"string iesname\" [\"" << replace(ies_file.GetAsciiString()) << "\"]\n";
-            }           
-            //--
-            if ( vlight_geo == 1 ) //-- square/rectangle
-            {
-                f << "\nShape \"trianglemesh\"\n";
-	            f << "  \"integer indices\" [0 1 2 0 2 3]\n";
-	            f << "  \"point P\" ["<< aPoints.GetAsciiString() <<"]\n";
-            }
-            else // sphere
-            {
-                f << "\nTransformBegin \n";
-                f << "Translate "<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1] <<"\n";
-            
-                f << "\nShape \"sphere\"\n";
-                f << "  \"float radius\" ["<< size_X <<"]\n";
-                //-
-                f << "\nTransformEnd \n"; 
-            }
-            
-        }
-        else // no area
-        {
-            f << "\nLightSource \"point\"\n";
-            f << "  \"float gain\" [" << vIntensity << "]\n";
-            f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
-            //--
-            if ( vUse_IES )
-            {
-                f << "  \"string iesname\" [\"" << replace(ies_file.GetAsciiString()) << "\"]\n";
-                f << "  \"bool flipz\" [\"true\"]\n"; // TODO; option into 'special' tab
-            }
-            f << "  \"point from\" [" << light_from.GetX() << " " << -light_from.GetZ() << " " << light_from.GetY() << "]\n";
-        }
-    }
-}
-//--
+//-- work in progress
 int writeLuxsiSurface(X3DObject o, CString vType)
 {
-    //--
+    //-- WIP: lack a lots of updates..
+    //- or use other methode (like Yafxsi :)
+
     Geometry g(o.GetActivePrimitive().GetGeometry()) ;
     CRefArray mats(o.GetMaterials()); // Array of all materials of the object
     Material m = mats[0];
@@ -2006,32 +1686,32 @@ int writeLuxsiSurface(X3DObject o, CString vType)
 	}
     f << "\nAttributeBegin\n";
     //CVector3 axis;
-        //double rot = gt.GetRotationAxisAngle(axis);
-        //-- TODO; changed for matrix
-        f << "\nTransformBegin\n";
-        f << "\nTranslate "<< gt.GetPosX() <<" "<< gt.GetPosY() <<" "<< gt.GetPosZ() <<"\n";
-        if (rotar != 0)
-        {
-            f << "Rotate "<< rotar /*(rot*180/PI)*/ <<" "<< axis[0] <<" "<< axis[1] <<" "<< axis[2] <<"\n";
-        }
-        if (gt.GetSclX()!=1 || gt.GetSclY()!=1 || gt.GetSclZ()!=1) 
-        {
-            f << "Scale " << gt.GetSclX() << " " << gt.GetSclY() << " "<< gt.GetSclZ() << "\n";
-        }
+    //double rot = gt.GetRotationAxisAngle(axis);
+    //-- TODO; changed for matrix
+    f << "\nTransformBegin\n";
+    f << "\nTranslate "<< gt.GetPosX() <<" "<< gt.GetPosY() <<" "<< gt.GetPosZ() <<"\n";
+    //-
+    if (rotar != 0)
+    {
+        f << "Rotate "<< rotar /*(rot*180/PI)*/ <<" "<< axis[0] <<" "<< axis[1] <<" "<< axis[2] <<"\n";
+    }
+    if (gt.GetSclX()!=1 || gt.GetSclY()!=1 || gt.GetSclZ()!=1) 
+    {
+        f << "Scale " << gt.GetSclX() << " " << gt.GetSclY() << " "<< gt.GetSclZ() << "\n";
+    }
         
-		//-
-        float end_v = o.GetParameterValue(L"endvangle");
-		float start_v = o.GetParameterValue(L"startvangle");
+	//-
+    float end_v = o.GetParameterValue(L"endvangle");
+	float start_v = o.GetParameterValue(L"startvangle");
 		
-		
-        //--
-        f << " Shape  \"sphere\" \n";
-            f << "  \"float radius\" [" << vradius << "]\n";
-			f << "  \"float zmin\" [ -90 ]\n";
-            f << "  \"float zmax\" [ 90 ]\n";
-            f << "  \"float phimax\" ["<< vphimax <<"]\n";
-            //--
-        f << "TransformEnd\n";
+    //--
+    f << " Shape  \"sphere\" \n";
+    f << "  \"float radius\" [" << vradius << "]\n";
+	f << "  \"float zmin\" [ -90 ]\n";
+    f << "  \"float zmax\" [ 90 ]\n";
+    f << "  \"float phimax\" ["<< vphimax <<"]\n";
+    //--
+    f << "TransformEnd\n";
     f << "\nAttributeEnd\n";
     return 0;
 }
@@ -2314,84 +1994,139 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     //--
 
 }
-//--
+//-- work  in progress
 int writeLuxsiCloud(X3DObject obj)
-{
-    
-    
-       
+{     
     //
-    // Writes pointclouds
-    //
+    // Write pointclouds
+    //-
+    /*
+    All types are associated to specific ICEAttribute types. Therefore, you need to declare the right
+	array object type that matches the ICEAttribute data type you want to access. Otherwise a runtime
+	error will occur and the returned array will be empty.
+
+	\sa ICEAttribute::GetDataArray, ICEAttribute::GetDataArrayChunk,
+		\ref CICEAttributeDataArrayTypedefs "Type Definitions for CICEAttributeDataArray"
+	\since 7.0
+
+	\eg This example demonstrates how to iterate over the PointPosition attribute data on a grid primitive.
+	
+    //-code
+		//using namespace XSI;
+		//CValue CreatePrim( const CString& in_presetobj, const CString& in_geometrytype, const CString& in_name, const CString& in_parent );
+
+		//X3DObject grid = CreatePrim( L"Grid", L"MeshSurface", L"", L"");
+
+		ICEAttribute myattr = obj.GetActivePrimitive().GetGeometry().GetICEAttributeFromName( L"PointPosition" );
+
+		CICEAttributeDataArrayVector3f points;
+		myattr.GetDataArray( points );
+
+		Application xsi;
+		for( ULONG i=0; i<points.GetCount( ); i++ )
+		{
+            xsi.LogMessage(L"My prueba para MT 7.5: "+ CString( points[ i ] ) );
+		}
+
+		// Helper
+		CValue CreatePrim( const CString& in_presetobj, const CString& in_geometrytype, const CString& in_name, const CString& in_parent )
+		{
+			CValueArray args(4);
+			CValue retval;
+			args[0]= in_presetobj;
+			args[1]= in_geometrytype;
+			args[2]= in_name;
+			args[3]= in_parent;
+
+			Application app;
+			app.ExecuteCommand( L"CreatePrim", args, retval );
+			return retval;
+		}
+        */
+    //test for material
+    CRefArray cloud_mats(obj.GetMaterials()); // Array of all materials
+    //- for one mat.. atm
+    Material m = cloud_mats[0];
+    //CRefArray shad(m.GetShaders()); // Array of all shaders
+    //Shader s(shad[0]);
 
     ICEAttribute attr;
     CICEAttributeDataArrayVector3f aPointPosition; 
     CICEAttributeDataArrayLong aID;
+    //- si se usa el siguiente comando, se produce un 'ERROR Runtime library c++'
+    //- TODO; revise
     CICEAttributeDataArrayFloat aSize;
+    //--
     CICEAttributeDataArrayVector3f aVel;
-
+    //- its work on xsi 2012
     CRefArray attrs = obj.GetActivePrimitive().GetGeometry().GetICEAttributes();
+    //- asi esta en la demo de doc 7.5
+    //ICEAttribute myattr = obj.GetActivePrimitive().GetGeometry().GetICEAttributeFromName( L"PointPosition" );
+    //- more
+    /* 
+    case siICENodeDataFloat:
+			{
+				CICEAttributeDataArrayFloat dataArray;
+				attr.GetDataArray(dataArray);
+				return dataArray.GetCount() > 0;
+			}
+			break;
+    */
 
     for( int i = 0; i<attrs.GetCount(); i++ ) 
     {
-            ICEAttribute attr = attrs[i];
-            
-            app.LogMessage( L"*******************************************************************" );
-            app.LogMessage( L"Name: " + attr.GetName() );
-            app.LogMessage( L"DataType: " + CString(attr.GetDataType()) );
-            app.LogMessage( L"StructType: " + CString(attr.GetStructureType()) );
-            app.LogMessage( L"ContextType: " + CString(attr.GetContextType()) );
-            app.LogMessage( L"IsConstant: " + CString(attr.IsConstant()) );
-            app.LogMessage( L"Readonly: " + CString(attr.IsReadonly()) );
-            app.LogMessage( L"AttributeCategory: " + CString(attr.GetAttributeCategory()) );
-            app.LogMessage( L"Element count: " + CString(attr.GetElementCount()) );
-           //--
-            if (attr.GetName() == L"PointPosition") attr.GetDataArray(aPointPosition);
-            if (attr.GetName() == L"State_ID"){
-                attr.GetDataArray(aID);
-            }
-            if (attr.GetName() == L"Size"){
-                attr.GetDataArray(aSize);
-            }
-            if (attr.GetName() == L"PointVelocity"){
-                attr.GetDataArray(aVel);
-            }
+        //ICEAttribute attr = attrs[i];
+        attr = attrs[i];
+        //--
+        if (attr.GetName() == L"PointPosition"){
+            attr.GetDataArray(aPointPosition);
+        }
+        if (attr.GetName() == L"State_ID"){
+            attr.GetDataArray(aID);
+        }
+        // error in 7.5
+        if (attr.GetName() == L"Size"){
+            attr.GetDataArray(aSize);
+        }
+        //- error in 7.5
+        if (attr.GetName() == L"PointVelocity"){
+            attr.GetDataArray(aVel);
+        }
     }
-
-
-
+    //- set transformations
+    KinematicState start_state = obj.GetKinematics().GetGlobal();
+    CTransformation cloud_transform = start_state.GetTransform();
+    CVector3 cloud_pos;
+    //-
     for (unsigned int i=0;i<aPointPosition.GetCount();i++)
-      //  for (unsigned int i=0; i < points.GetCount(); i++)
-        {
-            // get all points
+    {
+        //- 
+        cloud_pos.Set(double(aPointPosition[i][0]), double(aPointPosition[i][1]), double(aPointPosition[i][2]));
+        cloud_pos.MulByTransformationInPlace(cloud_transform);
 
-            f << "\nAttributeBegin #\n";//" << obj.GetName().GetAsciiString() << (int)aID[i] << "\" \n";
-            f << "  Translate " << (float)aPointPosition[i][0] << " " << (float)aPointPosition[i][1] << " "<< (float)aPointPosition[i][2] << "\n";
-            f << "  Material \"matte\" \"color Kd\" [0 0.8 0.8 ]\n";
-            f << "  Shape \"sphere\" \"float radius\" [0.5]\n";
-            // f << "  Shape \"sphere\" \"float radius\" [" << (float)aSize[i] << "]\n";
-            f << "AttributeEnd #"<< obj.GetName().GetAsciiString()<<"\n";
-            
-            //--------------f << " Shape  \"sphere\" \n";
-/*          f << "  \"float radius\" [" << vradius << "]\n";
-            f << "  \"float zmin\" [" << -vzmax /2  << "]\n";
-            f << "  \"float zmax\" [" << vzmax /2  << "]\n";
-            f << "  \"float phimax\" [" << vphimax * 2 << "]\n";
-            //--
-*/
+        //- get all points
+        f << "\nAttributeBegin \n";
+        f << "\nNamedMaterial \""<< m.GetName().GetAsciiString() <<"\"\n";
+        f << "Translate "<< cloud_pos[0] <<" "<< -cloud_pos[2] <<" "<< cloud_pos[1] <<"\n";
+        //-
+        f << "Shape \"sphere\"\n"; //-TODO; use other shapes from GUI options?
+        f << "  \"float radius\" [0.5]\n";
+        //f << "  \"float zmin\" [ 0 ]\n"; //- test; semi-sphere up =  -90
+        //f << "  \"float zmax\" [ 90 ]\n";//- test; semi-sphere down = 90
+        f << "  \"float phimax\" [360]\n";
+        f << "AttributeEnd #"<< obj.GetName().GetAsciiString() <<"\n"; // CString(i)...   
     }
-
     return 0;
    
 }
 //--
 int writeLuxsiInstance(X3DObject o)
 {
-    // instance
-    //write source object [won't be displayed]
+    //-- instance
+    //- write source object [won't be displayed]
     Model vModel = Model(o).GetInstanceMaster();
     CRefArray vGroup = X3DObject(vModel).GetChildren();
-
+    //-
     if ( luxsi_find(aInstanceList, vModel.GetName() ) ) 
     {
         //return 0;
@@ -2406,58 +2141,34 @@ int writeLuxsiInstance(X3DObject o)
         f << "\nObjectEnd #"<< o.GetName().GetAsciiString()<<"\n";
         aInstanceList.Add(vModel.GetName());
     }
-
+    //-
     f << "\nAttributeBegin #" << o.GetName().GetAsciiString();
-    KinematicState  gs = o.GetKinematics().GetGlobal();
-    CTransformation gt = gs.GetTransform();
-    CMatrix4 mat4(gt.GetMatrix4()); 
-
+    //--
+    KinematicState global_state = o.GetKinematics().GetGlobal();
+    //-
+    CTransformation global_transf = global_state.GetTransform();
+    
     CVector3 axis;
-    double rot = gt.GetRotationAxisAngle(axis);
-    //
-    f << "\nTranslate "<< gt.GetPosX() <<" "<< gt.GetPosY() <<" "<< gt.GetPosZ() <<"\n";
-        //--
+    double rot = global_transf.GetRotationAxisAngle(axis); 
+    
+    //-
+    f << "\nTranslate "<< global_transf.GetPosX() <<" "<< -global_transf.GetPosZ() <<" "<< global_transf.GetPosY() <<"\n";
+    //--
     if (rot!= 0)
-        {
-            f << "Rotate " << (rot*180/PI) << " "<< axis[0] << " " << axis[1] << " "<< axis[2] << "\n";
-        }
-    if (gt.GetSclX()!=1 || gt.GetSclY()!=1 || gt.GetSclZ()!=1) //-- changed && to ||, add support for not uniform scale
-        {
-            f << "Scale " << gt.GetSclX() << " " << gt.GetSclY() << " "<< gt.GetSclZ() << "\n";
-        }
-        
+    {
+        f << "Rotate "<< (rot*180/PI) <<" "<< axis[0] <<" "<< -axis[2] <<" "<< axis[1] <<"\n";
+    }
+    if (global_transf.GetSclX()!=1 || global_transf.GetSclY()!=1 || global_transf.GetSclZ()!=1) //-- changed && to ||, add support for not uniform scale
+    {
+        //- !WARNING! change 'Y' for 'Z', but not poner negative ( -z). Comportamiento extraño
+        f << "Scale "<< global_transf.GetSclX() <<" "<< global_transf.GetSclZ() <<" "<< global_transf.GetSclY() <<"\n";
+    }
+
     f << "ObjectInstance \"" << Model(o).GetInstanceMaster().GetName().GetAsciiString() <<"\"\n";
     f << "AttributeEnd #" << o.GetName().GetAsciiString() << "\n\n";
+    //-
     return 0;
 }
-//--
-/*
-CString readIni(){
-
-    char x;
-    CString data;
-    ifstream load;
-
-    CString iniPath;
-
-    iniPath = app.GetInstallationPath(siUserPath);
-    //app.LogMessage(L"userdir:"+ iniPath);
-    #ifdef __unix__
-        iniPath += L"/LuXSI.ini";
-    #else
-        iniPath += L"\\LuXSI.ini";
-    #endif
-    //app.LogMessage(L""+iniPath);
-    load.open( iniPath.GetAsciiString() );
-
-    while(load.get(x)) {
-      data += x;
-   }
-   //app.LogMessage(L""+CString(data));
-   load.close();
-   return data;
-}
-*/
 //--
 void write_header_files()
 {
@@ -2465,7 +2176,7 @@ void write_header_files()
     f <<"\n# File created by Luxrender Exporter for Softimage; Luxsi. \n";
     f <<"# Copyright (C) 2010  Michael Gangolf \n";
     f <<"# Developed by Michael Gangolf, aka Miga, \n";
-    f <<"# continued by P. Alcaide, aka povmaniaco. \n \n";
+    f <<"# code contributor; P. Alcaide, aka povmaniaco. \n \n";
 }
 //--
 void luxsi_mat_preview()

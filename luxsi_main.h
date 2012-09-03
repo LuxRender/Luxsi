@@ -17,8 +17,19 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-#define __forceinline inline
+
+#ifndef LUXSI_MAIN_H
+#define LUXSI_MAIN_H
+
+//#define __forceinline inline
 #pragma once
+//--
+#include <math.h>
+#include <string.h>
+#include <sstream>
+#include <fstream>
+
+
 //--
 #include <xsi_segment.h>
 #include <xsi_materiallibrary.h>
@@ -27,11 +38,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <xsi_application.h>
 #include <xsi_pluginregistrar.h>
 #include <xsi_geometryaccessor.h>
+//- for ICE ?
 #include <xsi_iceattribute.h>
 #include <xsi_iceattributedataarray.h>
+
 #include <xsi_menu.h>
-#include <sstream>
-#include <fstream>
+//#include <sstream>
+//#include <fstream>
 #include <xsi_model.h>
 #include <xsi_source.h>
 #include <xsi_triangle.h>
@@ -60,8 +73,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <xsi_vertex.h>
 #include <xsi_polygonnode.h>
 #include <xsi_utils.h>
-#include <math.h>
-#include <string.h>
+//
+//#include <math.h>
+//#include <string.h>
+
 #include <xsi_scene.h>
 #include <xsi_library.h>
 #include <xsi_source.h>
@@ -84,3 +99,5 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #define WIN32_LEAN_AND_MEAN
+
+#endif // LUXSI_MAIN_H

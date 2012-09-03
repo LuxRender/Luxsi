@@ -18,6 +18,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
+#ifndef LUXSI_VALUES_H
+#define LUXSI_VALUES_H
 //--
 #pragma warning (disable : 4244) 
 #pragma warning (disable : 4996) 
@@ -142,3 +144,4 @@ CString shaderType;
 
 CString vSun=L"", vHDRI=L"", vFileObjects=L"", vFilePLY = L"", vLuXSIPath = L"";
 
+#endif //LUXSI_VALUES_H
