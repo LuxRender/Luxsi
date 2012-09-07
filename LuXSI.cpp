@@ -34,16 +34,27 @@ using namespace std;
 #define PI 3.14159265
 
 void writeLuxsiBasics();
+
 void writeLuxsiCam(X3DObject o);
+
 void writeLuxsiLight(X3DObject o);
+
 int writeLuxsiCloud(X3DObject o);
+
 int writeLuxsiInstance(X3DObject o);
+
 int writeLuxsiObj(X3DObject o);
 
+void luxsi_texture();
+
 void writeLuxsiShader();
-void luxsi_write();
-void luxsi_execute();
-CString readIni();
+
+void luxsi_write(double ftime);
+
+void luxsi_execute(double ftime);
+
+//CString readIni();
+
 string replace(string input);
 //--
 bool luxsi_find(CStringArray a, CString s);
@@ -53,6 +64,8 @@ void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext c
 void luxsi_render_presets( CString paramName, Parameter changed, PPGEventContext ctxt);
 //--
 void dynamic_luxsi_UI(Parameter changed, CString paramName, PPGEventContext ctxt);
+//-
+CString findInGroup(CString s);
 
 //--
 XSIPLUGINCALLBACK CStatus XSILoadPlugin( PluginRegistrar& in_reg )
@@ -308,12 +321,13 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
         CValue buttonPressed = ctxt.GetAttribute( L"Button" ) ;
         if (buttonPressed.GetAsText()==L"exe_luxsi")
         {
-            luxsi_write();
+            luxsi_write(ftime);
         }
         if (buttonPressed.GetAsText()==L"render_luxsi")
         {
-            luxsi_write();
-            luxsi_execute();
+            luxsi_write(ftime);
+            //-
+            luxsi_execute(ftime);
         }
         ctxt.PutAttribute(L"Refresh",true);
     }
@@ -335,19 +349,6 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
     }
 
     return CStatus::OK ;
-}
-
-//--
-string replace(string input) {
-    int len = input.length();
-
-    for (int i=0;i<len;i++){
-        if (input[i]=='\\') {
-            input.replace(i, 1, "\\\\");
-            i++;
-        }
-    }
-    return input;
 }
 
 //--
@@ -1228,42 +1229,6 @@ XSIPLUGINCALLBACK CStatus OnLuXSI_MenuClicked( XSI::CRef& )
 
     return st ;
 }
-
-//--
-bool luxsi_find(CStringArray a, CString s){
-    //
-    // Returns true if String s is in Array a
-    //
-    for (int i = 0; i < a.GetCount(); i++)
-    {
-        if (a[i]==s) 
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-//--
-CString findInGroup(CString s)
-{
-    //--
-    CRefArray grps = root.GetGroups();
-    //--
-    for (int i=0;i<grps.GetCount();i++)
-    {
-        CRefArray a=Group(grps[i]).GetMembers();
-        for (int j=0;j<a.GetCount();j++)
-        {
-            if (X3DObject(a[j]).GetName()==s) 
-            {
-                //app.LogMessage(L"Group: " + Group(grps[i]).GetName() + L"Childname: "+X3DObject(a[j]).GetName());
-                return Group(grps[i]).GetName();
-            }
-        }
-    }
-    return L"";
-}
 //--
 void writeLuxsiBasics(){
     //
@@ -1994,132 +1959,7 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     //--
 
 }
-//-- work  in progress
-int writeLuxsiCloud(X3DObject obj)
-{     
-    //
-    // Write pointclouds
-    //-
-    /*
-    All types are associated to specific ICEAttribute types. Therefore, you need to declare the right
-	array object type that matches the ICEAttribute data type you want to access. Otherwise a runtime
-	error will occur and the returned array will be empty.
-
-	\sa ICEAttribute::GetDataArray, ICEAttribute::GetDataArrayChunk,
-		\ref CICEAttributeDataArrayTypedefs "Type Definitions for CICEAttributeDataArray"
-	\since 7.0
-
-	\eg This example demonstrates how to iterate over the PointPosition attribute data on a grid primitive.
-	
-    //-code
-		//using namespace XSI;
-		//CValue CreatePrim( const CString& in_presetobj, const CString& in_geometrytype, const CString& in_name, const CString& in_parent );
-
-		//X3DObject grid = CreatePrim( L"Grid", L"MeshSurface", L"", L"");
-
-		ICEAttribute myattr = obj.GetActivePrimitive().GetGeometry().GetICEAttributeFromName( L"PointPosition" );
-
-		CICEAttributeDataArrayVector3f points;
-		myattr.GetDataArray( points );
-
-		Application xsi;
-		for( ULONG i=0; i<points.GetCount( ); i++ )
-		{
-            xsi.LogMessage(L"My prueba para MT 7.5: "+ CString( points[ i ] ) );
-		}
-
-		// Helper
-		CValue CreatePrim( const CString& in_presetobj, const CString& in_geometrytype, const CString& in_name, const CString& in_parent )
-		{
-			CValueArray args(4);
-			CValue retval;
-			args[0]= in_presetobj;
-			args[1]= in_geometrytype;
-			args[2]= in_name;
-			args[3]= in_parent;
-
-			Application app;
-			app.ExecuteCommand( L"CreatePrim", args, retval );
-			return retval;
-		}
-        */
-    //test for material
-    CRefArray cloud_mats(obj.GetMaterials()); // Array of all materials
-    //- for one mat.. atm
-    Material m = cloud_mats[0];
-    //CRefArray shad(m.GetShaders()); // Array of all shaders
-    //Shader s(shad[0]);
-
-    ICEAttribute attr;
-    CICEAttributeDataArrayVector3f aPointPosition; 
-    CICEAttributeDataArrayLong aID;
-    //- si se usa el siguiente comando, se produce un 'ERROR Runtime library c++'
-    //- TODO; revise
-    CICEAttributeDataArrayFloat aSize;
-    //--
-    CICEAttributeDataArrayVector3f aVel;
-    //- its work on xsi 2012
-    CRefArray attrs = obj.GetActivePrimitive().GetGeometry().GetICEAttributes();
-    //- asi esta en la demo de doc 7.5
-    //ICEAttribute myattr = obj.GetActivePrimitive().GetGeometry().GetICEAttributeFromName( L"PointPosition" );
-    //- more
-    /* 
-    case siICENodeDataFloat:
-			{
-				CICEAttributeDataArrayFloat dataArray;
-				attr.GetDataArray(dataArray);
-				return dataArray.GetCount() > 0;
-			}
-			break;
-    */
-
-    for( int i = 0; i<attrs.GetCount(); i++ ) 
-    {
-        //ICEAttribute attr = attrs[i];
-        attr = attrs[i];
-        //--
-        if (attr.GetName() == L"PointPosition"){
-            attr.GetDataArray(aPointPosition);
-        }
-        if (attr.GetName() == L"State_ID"){
-            attr.GetDataArray(aID);
-        }
-        // error in 7.5
-        if (attr.GetName() == L"Size"){
-            attr.GetDataArray(aSize);
-        }
-        //- error in 7.5
-        if (attr.GetName() == L"PointVelocity"){
-            attr.GetDataArray(aVel);
-        }
-    }
-    //- set transformations
-    KinematicState start_state = obj.GetKinematics().GetGlobal();
-    CTransformation cloud_transform = start_state.GetTransform();
-    CVector3 cloud_pos;
-    //-
-    for (unsigned int i=0;i<aPointPosition.GetCount();i++)
-    {
-        //- 
-        cloud_pos.Set(double(aPointPosition[i][0]), double(aPointPosition[i][1]), double(aPointPosition[i][2]));
-        cloud_pos.MulByTransformationInPlace(cloud_transform);
-
-        //- get all points
-        f << "\nAttributeBegin \n";
-        f << "\nNamedMaterial \""<< m.GetName().GetAsciiString() <<"\"\n";
-        f << "Translate "<< cloud_pos[0] <<" "<< -cloud_pos[2] <<" "<< cloud_pos[1] <<"\n";
-        //-
-        f << "Shape \"sphere\"\n"; //-TODO; use other shapes from GUI options?
-        f << "  \"float radius\" [0.5]\n";
-        //f << "  \"float zmin\" [ 0 ]\n"; //- test; semi-sphere up =  -90
-        //f << "  \"float zmax\" [ 90 ]\n";//- test; semi-sphere down = 90
-        f << "  \"float phimax\" [360]\n";
-        f << "AttributeEnd #"<< obj.GetName().GetAsciiString() <<"\n"; // CString(i)...   
-    }
-    return 0;
-   
-}
-//--
+//-
 int writeLuxsiInstance(X3DObject o)
 {
     //-- instance
@@ -2160,7 +2000,7 @@ int writeLuxsiInstance(X3DObject o)
     }
     if (global_transf.GetSclX()!=1 || global_transf.GetSclY()!=1 || global_transf.GetSclZ()!=1) //-- changed && to ||, add support for not uniform scale
     {
-        //- !WARNING! change 'Y' for 'Z', but not poner negative ( -z). Comportamiento extraño
+        //- !WARNING! change 'Y' for 'Z', but not poner negative ( -z).
         f << "Scale "<< global_transf.GetSclX() <<" "<< global_transf.GetSclZ() <<" "<< global_transf.GetSclY() <<"\n";
     }
 
@@ -2173,10 +2013,9 @@ int writeLuxsiInstance(X3DObject o)
 void write_header_files()
 {
     //-- commons header for files .lxm and .lxo
-    f <<"\n# File created by Luxrender Exporter for Softimage; Luxsi. \n";
-    f <<"# Copyright (C) 2010  Michael Gangolf \n";
-    f <<"# Developed by Michael Gangolf, aka Miga, \n";
-    f <<"# code contributor; P. Alcaide, aka povmaniaco. \n \n";
+    f <<"\n# Created by LuXSI; Luxrender Exporter for Autodesk Softimage \n";
+    f <<"# Copyright (C) 2010 - 2012 by Michael Gangolf aka Miga \n";
+    f <<"# Code contributor;    P. Alcaide, aka povmaniaco. \n \n";
 }
 //--
 void luxsi_mat_preview()
@@ -2203,7 +2042,7 @@ void luxsi_mat_preview()
     }
 }
 //--
-void luxsi_write()
+void luxsi_write(double ftime)
 {
     // write objects, materials, lights, cameras
     root= app.GetActiveSceneRoot();
@@ -2224,14 +2063,20 @@ void luxsi_write()
 
     if (vFileObjects != L""){
 
-        CRefArray array,aObj,aLight,aCam,aSurfaces,aClouds,aInstance;
+        CRefArray _array,
+            aObj,
+            aLight,
+            aCam,
+            aSurfaces,
+            aClouds,
+            aInstance;
         //--
         CRefArray aPlymesh;
         aPlymesh.Clear();
         //--
         CStringArray emptyArray;
         emptyArray.Clear();
-        array.Clear();
+        _array.Clear();
         aMatList.Clear();
         aInstanceList.Clear();
 
@@ -2242,10 +2087,10 @@ void luxsi_write()
         aClouds.Clear();
         aInstance.Clear();
 
-        array += root.FindChildren( L"", L"", emptyArray, true );
-        for ( int i=0; i<array.GetCount();i++ )
+        _array += root.FindChildren( L"", L"", emptyArray, true );
+        for ( int i=0; i<_array.GetCount();i++ )
         {
-            X3DObject o(array[i]);
+            X3DObject o(_array[i]);
             app.LogMessage( L"\tObject name: " + o.GetName() + L":" + o.GetType() + L" parent:"+ X3DObject(o.GetParent()).GetType());
             //--
             Property visi = o.GetProperties().GetItem(L"Visibility");
@@ -2324,7 +2169,7 @@ void luxsi_write()
 
             //-- write files
             CString vFileLXM = L"", vFileLXO = L"";
-            //CString vInput_FileName = vFileObjects.GetAsciiString();
+            //-
             int Loc = (int)vFileObjects.ReverseFindString(".");
             vFileLXM = vFileObjects.GetSubString(0,Loc) + (L"_mat.lxm");
             vFileLXO = vFileObjects.GetSubString(0,Loc) + (L"_geo.lxo");
@@ -2374,6 +2219,9 @@ void luxsi_write()
 
             //-- insert header
                 write_header_files();
+
+            // test 7/11/12 for texture
+                luxsi_texture();
 
             //-- write materials
                 writeLuxsiShader();
@@ -2445,7 +2293,7 @@ void loader(const char szArgs[]){
     }
 #endif
 //--
-void luxsi_execute()
+void luxsi_execute(double ftime)
 {
     //-- make default path
     if ( vLuXSIPath == L"" )
