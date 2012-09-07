@@ -1,7 +1,8 @@
 /*
 LuXSI - Softimage XSI Export plug-in for the LuxRender (http://www.luxrender.org) renderer
 
-Copyright (C) 2010 2011 Michael Gangolf and Pedro Alcaide
+Copyright (C) 2010 - 2012 by Michael Gangolf 
+Code contributor ; Pedro Alcaide aka povmaniaco
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -29,7 +30,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sstream>
 #include <fstream>
 
-
 //--
 #include <xsi_segment.h>
 #include <xsi_materiallibrary.h>
@@ -43,8 +43,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <xsi_iceattributedataarray.h>
 
 #include <xsi_menu.h>
-//#include <sstream>
-//#include <fstream>
 #include <xsi_model.h>
 #include <xsi_source.h>
 #include <xsi_triangle.h>
@@ -73,10 +71,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <xsi_vertex.h>
 #include <xsi_polygonnode.h>
 #include <xsi_utils.h>
-//
-//#include <math.h>
-//#include <string.h>
 
+//
 #include <xsi_scene.h>
 #include <xsi_library.h>
 #include <xsi_source.h>
