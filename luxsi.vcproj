@@ -260,12 +260,28 @@
 				RelativePath=".\luxsi_material.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\luxsi_pointclouds.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\luxsi_texture.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\luxsi_utils.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Headerdateien"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\include\luxsi_lights.h"
+				>
+			</File>
 			<File
 				RelativePath=".\luxsi_main.h"
 				>
@@ -275,7 +291,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\luxsi_values.h"
+				RelativePath=".\include\luxsi_values.h"
 				>
 			</File>
 		</Filter>
@@ -284,10 +300,6 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
-			<File
-				RelativePath=".\snipped.h"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

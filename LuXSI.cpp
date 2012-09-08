@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #pragma warning (disable : 4996) // strcpy/unsigned mismatch
 
 
-#include "luxsi_values.h"
+#include "include\luxsi_values.h"
 //#include "plymesh/rply.h"
 //--
 using namespace XSI;

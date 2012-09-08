@@ -2,7 +2,7 @@
 LuXSI - Autodesk(c) Softimage(c) XSI Export addon for the LuxRender  Renderer
 (http://www.luxrender.org)
 
-Copyright (C) 2010 2012  Michael Gangolf 
+Copyright (C) 2010 - 2012  Michael Gangolf 
 Code contributor; Pedro Alcaide (aka povmaniaco)
 
 This program is free software: you can redistribute it and/or modify
@@ -20,25 +20,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-#include "luxsi_main.h"
+//#include "luxsi_main.h"
+#include "include\luxsi_lights.h"
 
 using namespace std;
 using namespace XSI;
 using namespace MATH;
-
-// extern
-extern ofstream f;
-extern bool vUse_IES;
-extern CString ies_file;
-extern Application app;
-
-//-
-extern string replace(string input);
-extern CString findInGroup(CString name);
-//- locals.
-CString luxsi_area_transf(X3DObject o, float size_X, float size_Y);
-//-
-CString find_XSI_env(CString env_file);
 
 //--
 void writeLuxsiLight(X3DObject o)
@@ -54,7 +41,7 @@ void writeLuxsiLight(X3DObject o)
     CVector3 light_from; 
     light_from.MulByTransformationInPlace(light_from_global_transf);
     
-    //- light object interest 
+    //- light object interest. Target object for 'infinite' or 'spot' lights 
     X3DObject light_interest;
     light_interest = X3DObject(o.GetParent()).GetChildren()[1];
     //- set state for 'point to'
@@ -81,7 +68,7 @@ void writeLuxsiLight(X3DObject o)
     //-- finding for light group name
     CString light_Name = findInGroup(o.GetName());
     //-
-    CString group_name = o.GetName().GetAsciiString();
+    CString group_name = o.GetName(); //.GetAsciiString();
     //-
     if (light_Name != L"") 
     {
@@ -89,24 +76,22 @@ void writeLuxsiLight(X3DObject o)
     } 
     //--
     int lType = Light(o).GetParameterValue(L"Type");
-    app.LogMessage(L" light type: "+ CString(lType) );
-    
-    //-- test
-    //bool vSiArealight = o.GetParameterValue(L"LightArea");
-    //- end
-    //bool vSiArea_vis = o.GetParameterValue(L"LightAreaVisible");
-    //int vlight_geo = o.GetParameterValue(L"LightAreaGeom");
 
+    //app.LogMessage(L" light type: "+ CString(lType) );
+    
+    //--
     float vLightCone = o.GetParameterValue(L"LightCone"); 
     float vIntensity = s.GetParameterValue(L"intensity");
     float vSpotblend = s.GetParameterValue(L"spread");
-    //--
+    
+    //-- search 'Programmatic Identification (ID)' for Light Shader Nodes
 	CString Light_Shader_ID((s.GetProgID()).Split(L".")[1]);
-	app.LogMessage(L"Light shader used: "+ Light_Shader_ID);
+	//--
+    app.LogMessage(L"Light shader used: "+ Light_Shader_ID);
 	//-
     f << "\nLightGroup \""<< group_name.GetAsciiString() <<"\" \n";
     
-	//- for use only image environment light
+	//- for use Image Based Light ( IBL )
     CString xsi_env = find_XSI_env(L"");
     //-
     if ( xsi_env != L"")
@@ -122,7 +107,7 @@ void writeLuxsiLight(X3DObject o)
     //-
     if (lType == 2) //-- spot
     {
-        //lux_Spot_Light();
+        //- lux_Spot_Light();
         //-- values
         f << "\nLightSource \"spot\"\n";
         f << "  \"float gain\" ["<< vIntensity <<"]\n";
@@ -152,6 +137,7 @@ void writeLuxsiLight(X3DObject o)
         else
         {
             CMatrix4 sunTransMat = o.GetKinematics().GetLocal().GetTransform().GetMatrix4();
+            //-
             f << "\nLightSource \"sunsky\"\n";
             f << "  \"integer nsamples\" [4]\n";
             f << "  \"vector sundir\" [ "<< sunTransMat.GetValue(2,0) <<" "<< sunTransMat.GetValue(2,1) <<" "<< sunTransMat.GetValue(2,2) << " ]\n";
@@ -177,7 +163,7 @@ void writeLuxsiLight(X3DObject o)
 	        f << "  \"float gain\" [" << vIntensity << "]\n";
             f << "  \"float importance\" [1.0]\n"; // TODO
 	        f << "  \"float power\" ["<< float(o.GetParameterValue(L"LightEnergyIntens"))/100 <<"]\n";
-	        f << "  \"float efficacy\" [17.0]\n";
+	        f << "  \"float efficacy\" [17.0]\n"; //TODO
 	        f << "  \"color L\" [" << a << "  " << b << "  " << c << "]\n";
 	        f << "  \"integer nsamples\" ["<< (U_samples + V_samples)/2 <<"]\n";
             //--
@@ -271,6 +257,7 @@ void writeLuxsiLight(X3DObject o)
         }
     }
 }
+
 //--
 CString luxsi_area_transf(X3DObject o, float size_X, float size_Y)
 {
