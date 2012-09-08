@@ -29,7 +29,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace XSI;
 using namespace MATH;
 using namespace std;
+
+bool luxdebug = true;
 //--
+double ftime = DBL_MAX;
+//-
 Application app;
 Model root( app.GetActiveSceneRoot() );
 ofstream f;
@@ -42,8 +46,6 @@ ProgressBar pb = kit.GetProgressBar();
 CRefArray params;
 //- for all
 float red = 0.0f, green = 0.0f, blue = 0.0f, alpha = 0.0f;
-
-
 
 //-- distributepath
 bool vdirectdiffuse = true, vdirectglossy = true, vindirectsampleall = false, vindirectdiffuse = true, vindirectglossy = true;
@@ -139,8 +141,6 @@ const char *MtAccel[]= { "qbvh", "bvh", "kdtree" }; // iter vAccel
 //--
 CRefArray aGroups;
 CStringArray aMatList, aInstanceList;
-CString shaderType;
-
 
 CString vSun=L"", vHDRI=L"", vFileObjects=L"", vFilePLY = L"", vLuXSIPath = L"";
 
