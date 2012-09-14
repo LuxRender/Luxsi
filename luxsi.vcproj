@@ -112,7 +112,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="H:\XSISDK\include\Core;H:\XSISDK\include"
+				AdditionalIncludeDirectories="H:\XSISDK75\include\Core;H:\XSISDK75\include"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				TreatWChar_tAsBuiltInType="false"
@@ -130,7 +130,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="H:\XSISDK\lib\nt-x86\sicppsdk.lib H:\XSISDK\lib\nt-x86\sicoresdk.lib"
+				AdditionalDependencies="H:\XSISDK75\lib\nt-x86\sicppsdk.lib H:\XSISDK75\lib\nt-x86\sicoresdk.lib"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -245,6 +245,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\luxsi_geometry.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\luxsi_gui.cpp"
 				>
 			</File>
@@ -283,7 +287,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\luxsi_main.h"
+				RelativePath=".\include\luxsi_main.h"
 				>
 			</File>
 			<File
