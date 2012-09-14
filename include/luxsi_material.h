@@ -21,7 +21,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-
 #ifndef LUXSI_MATERIAL_H
 #define LUXSI_MATERIAL_H
 
