@@ -2,7 +2,8 @@
 LuXSI - Autodesk(c) Softimage(c) XSI Export addon for the LuxRender  Renderer
 (http://www.luxrender.org)
 
-Copyright (C) 2010 2011  Michael Gangolf and Pedro Alcaide
+Copyright (C) 2010 - 2012  Michael Gangolf 
+Code contributor ; Pedro Alcaide, aka povmaniaco
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,20 +19,23 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
+
 #ifndef LUXSI_VALUES_H
 #define LUXSI_VALUES_H
 //--
 #pragma warning (disable : 4244) 
 #pragma warning (disable : 4996) 
 
-#include "luxsi_main.h"
+#include "include\luxsi_main.h"
 
 using namespace XSI;
 using namespace MATH;
 using namespace std;
 
+//--------------------//
 bool luxdebug = true;
-//--
+//--------------------//
+
 double ftime = DBL_MAX;
 //-
 Application app;
@@ -69,17 +73,25 @@ float vmaxphotondist = 0.10f, vgatherangle = 10.0f, vdistancethreshold = 0.75f;
 bool vfinalgather = false, vdbg_direct = false, vdbg_radiancemap = false, vdbg_indircaustic = false;
 bool vdbg_indirdiffuse = false, vdbg_indirspecular = false;
 CString bphotonmaps = L"";
-//-- bphotonmaps
+
+//-- sppm 
+int vbmaxeyedepht = 48, vbmaxphoton = 48, vbpointxpass = 0, vbphotonsxpass = 1000000;
+float vbstartradius= 2.0f, vbalpha = 0.70f;
+bool vbdlsampling = false, vbincenvironment = false;
+
 
 //-- surface integrator
 int vSurfaceInt = 0, vRRstrategy = 0, vEye_depth=16, vLight_depth=16, vLight_str = 2, vmaxdepth = 10;
 float vEyeRRthre = 0.0f, vLightRRthre = 0.0f, vrrcon_prob = 0.65f;
-bool vInc_env = false, vsexpert = false; 
+bool vInc_env = false, vsexpert = false;
+
 //-- volume integrator
 int vvolumeint = 0;
+
 // Accelerator	
 int vmaxprimsperleaf = 4, vfullsweepthr = 16, vskipfactor = 1, vtreetype = 2; // combo
 int vcostsamples = 0, vmaxprims = 1, vacmaxdepth = -1;
+
 //-- per kd-tree, floats ?
 int vintersectcost = 80, vtraversalcost = 1; 
 float vemptybonus = 0.2f;
@@ -113,7 +125,7 @@ bool vIsHiddenCam=true, vIsHiddenLight=true, vIsHiddenObj=true, vIsHiddenSurface
 //--
 bool vMLT=true, vIsLinux=true;
 bool vProg=true; // not used ??
-bool vExportDone=false,vResume=false,vUseJitter=true,vExpOne=true;
+bool vExportDone = false, vResume = false, vUseJitter = true, vExpOne = true;
 bool vAmbBack=false;
 
 //-- export
@@ -131,11 +143,11 @@ bool vfexpert = false;
 //-- specials lights
 int vlights = 0;
 CString ies_file = L"";
-bool vUse_IES = false;
+//bool vUse_IES = false;
 
 //----/ convention names, prefix; Mt /----->
 const char *MtBool[] = { "false", "true" };
-const char *MtBsampler[]= { "metropolis", "lowdiscrepancy", "random" }; // mode, Asampler [vSampler]
+const char *MtBsampler[]= { "lowdiscrepancy", "random" }; // mode, Asampler [vSampler]
 const char *MtAccel[]= { "qbvh", "bvh", "kdtree" }; // iter vAccel
 
 //--

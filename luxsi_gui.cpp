@@ -2,7 +2,8 @@
 LuXSI - Autodesk(c) Softimage(c) XSI Export addon for the LuxRender  Renderer
 (http://www.luxrender.org)
 
-Copyright (C) 2010 2011  Michael Gangolf and Pedro Alcaide
+Copyright (C) 2010 - 2012  Michael Gangolf 
+Code contributor ; Pedro Alcaide, aka povmaniaco
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,10 +19,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-#include "luxsi_main.h"
+
+#include "include\luxsi_main.h"
 
 using namespace std;
 using namespace XSI;
+
 //--
 XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
 {
@@ -39,50 +42,30 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.EndRow();
             lay.AddItem(L"gamma",L"Gamma");
         lay.EndRow();
-        lay.AddRow();
-            lay.AddItem(L"disint",L"Display Int.");
-            lay.AddItem(L"savint",L"Save Int.");
-        lay.EndRow();
-        lay.AddRow();
-            lay.AddItem(L"hSpp",L"Halt at S/px");
-            lay.AddItem(L"hTime",L"Halt at time");
-        lay.EndRow();
-            lay.AddItem(L"resume", L"Resume render");
-    lay.EndGroup();
+        
+        //-
+        lay.AddRow(); // new form; row with two groups
+            lay.AddGroup(); //-- tga
+                lay.AddItem(L"save_tga", L"TGA");
+                CValueArray vItrtga(6);
+                    vItrtga[0] = L"Y" ;		vItrtga[1] = 0;
+                    vItrtga[2] = L"RGB" ;   vItrtga[3] = 1;
+                    vItrtga[4] = L"RGBA" ;	vItrtga[5] = 2;
+                lay.AddEnumControl(L"mode_rtga",vItrtga,L"Mode",siControlCombo ) ;
+                lay.AddItem(L"tga_gamut", L"Gamut Clamp");
+            lay.EndGroup(); //- end tga
 
-    lay.AddGroup(L"Export hidden items...");
-        lay.AddItem(L"use_hidden_obj",		L"Objects");
-        lay.AddItem(L"use_hidden_cam",		L"Cameras");
-        lay.AddItem(L"use_hidden_light",	L"Lights");
-        lay.AddItem(L"use_hidden_surf",		L"Surfaces");
-    lay.EndGroup();
-    lay.AddGroup(L"Mesh options"); // TODO:  to shader spdl file, per individuals flags?
-        lay.AddItem(L"smooth_mesh", L"Export smooth meshes");
-        lay.AddItem(L"sharp_bound", L"Preserve sharp edges");
-        lay.AddItem(L"bplymesh",	L"Export to PLY file");
-    lay.EndGroup();
+            lay.AddGroup(); //-- Exr
+                lay.AddItem(L"save_exr", L"EXR");
+                CValueArray vItZb_nor(6);
+                    vItZb_nor[0] = L"Camera Start/End clip";	vItZb_nor[1] = 0;
+                    vItZb_nor[2] = L"Min/Max" ;					vItZb_nor[3] = 1;
+                    vItZb_nor[4] = L"None" ;					vItZb_nor[5] = 2;
+                lay.AddEnumControl(L"mode_Znorm",vItZb_nor,L"Mode Zbuffer",siControlCombo ) ;
+            lay.EndGroup(); //- end Exr
+    lay.EndRow();//- end row double group
 
-    lay.AddGroup(L"Settings output"); //[----
-    lay.AddRow(); // new form;row with two groups
-        lay.AddGroup(); //-- tga
-            lay.AddItem(L"save_tga", L"TGA");
-            CValueArray vItrtga(6);
-                vItrtga[0] = L"Y" ;		vItrtga[1] = 0;
-                vItrtga[2] = L"RGB" ;   vItrtga[3] = 1;
-                vItrtga[4] = L"RGBA" ;	vItrtga[5] = 2;
-            lay.AddEnumControl(L"mode_rtga",vItrtga,L"Mode",siControlCombo ) ;
-            lay.AddItem(L"tga_gamut", L"Gamut Clamp");
-        lay.EndGroup(); //-----]
-        lay.AddGroup();    //-- Exr
-            lay.AddItem(L"save_exr", L"EXR");
-            CValueArray vItZb_nor(6);
-                vItZb_nor[0] = L"Camera Start/End clip";	vItZb_nor[1] = 0;
-                vItZb_nor[2] = L"Min/Max" ;					vItZb_nor[3] = 1;
-                vItZb_nor[4] = L"None" ;					vItZb_nor[5] = 2;
-            lay.AddEnumControl(L"mode_Znorm",vItZb_nor,L"Mode Zbuffer",siControlCombo ) ;
-        lay.EndGroup(); //-----]
-    lay.EndRow();//--------------------
-    lay.AddGroup(); //-- 
+    lay.AddGroup(); //- png
         lay.AddRow(); //----
             lay.AddItem(L"save_png_16", L"16 Bits");
             CValueArray vItrpng(8);
@@ -96,32 +79,90 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddItem(L"png_gamut", L"Gamut Clamp");
             lay.AddItem(L"save_png", L"PNG");
         lay.EndRow(); //----
-    lay.EndGroup(); //-----]
-        lay.AddItem(L"fObjects",L"Filename",siControlFilePath);
+    lay.EndGroup(); //- end png
+
+        lay.AddItem(L"fObjects",L"Out File", siControlFilePath);
         PPGItem it = lay.GetItem( L"fObjects" );
         it.PutAttribute( siUIFileFilter, L"LuXSI Scenes|*.lxs" ) ;
-    lay.EndGroup(); //-- save image
+    
+    lay.EndGroup(); //- Image
+
+    lay.AddGroup(L"Export hidden items...");
+        lay.AddRow();
+            lay.AddItem(L"use_hidden_obj",		L"Objects");
+            lay.AddItem(L"use_hidden_cam",		L"Cameras");
+        lay.EndRow();
+        lay.AddRow();
+            lay.AddItem(L"use_hidden_light",	L"Lights");
+            lay.AddItem(L"use_hidden_surf",		L"Surfaces");
+        lay.EndRow();
+    lay.EndGroup(); //- export hidden..
+
+    lay.AddGroup(L"Mesh options"); // TODO:  to shader spdl file, per individuals flags?
+        lay.AddItem(L"smooth_mesh", L"Export smooth meshes");
+        lay.AddItem(L"sharp_bound", L"Preserve sharp edges");
+        lay.AddItem(L"bplymesh",	L"Export to PLY file");
+    lay.EndGroup();
+
+    
         lay.AddRow();
             lay.AddButton(L"exe_luxsi",L"Export to file");
             lay.AddButton(L"render_luxsi",L"Render scene");
         lay.EndRow();
-    /*
+    
+    //------------------------------// 
+        lay.AddTab(L"General ");
     //------------------------------//
-        lay.AddTab(L"Lights ");
-    //------------------------------//
-        lay.AddGroup(L"Special options for lights");
-            lay.AddItem( L"bUse_IES", L"Use IES file"); // bool
-            lay.AddItem( L"bimportance", L"Importance"); // float
-            //-----
-            lay.AddItem(L"bIES_file",L"IES file path",siControlFilePath);
-            PPGItem	item = lay.GetItem( L"bIES_file" ); 
-				item.PutAttribute( siUIOpenFile, 1 ) ;
-				item.PutAttribute( siUIFileMustExist, 1 ) ;
-				item.PutAttribute( siUIFileFilter, L"IES files|*.ies" ) ; // probas
-				item.PutAttribute( siControlFilePath , "test" ) ;
-        //---
-        lay.EndGroup();
-    */
+    //-- Render mode, internal:console / external:gui
+    lay.AddGroup(L"LuxRender Engine");
+        lay.AddRow();
+        CValueArray Acombo(4);
+            Acombo[0] = L"GUI";     Acombo[1] = 0; //-- TODO;
+            Acombo[2] = L"Console"; Acombo[3] = 1;
+        lay.AddEnumControl( L"brmode", Acombo, L"Render", siControlCombo ) ;
+
+        CValueArray vAengine(4);
+            vAengine[0] = L"Classic" ;   vAengine[1] = 0;
+            vAengine[2] = L"Hybrid" ;    vAengine[3] = 1;
+        lay.AddEnumControl( L"bengine", vAengine, L"Engine", siControlCombo ) ;
+        lay.EndRow();
+        
+        //--
+        lay.AddRow();
+            lay.AddItem( L"bthreads", L"Threads" );
+            lay.AddItem( L"bautode", L"Auto-Threads" );
+        lay.EndRow();
+        /* new place */
+        lay.AddRow();
+            lay.AddItem(L"disint",L"Display Int.");
+            lay.AddItem(L"savint",L"Save Int.");
+        lay.EndRow();
+
+        /* spacer */
+        lay.AddSpacer(2,0);
+        ///////////////////////////////////////////
+        lay.AddGroup(L"Animation / Particles");  //
+            lay.AddRow();
+                lay.AddItem(L"hSpp",L"Halt at S/px");
+                lay.AddItem(L"hTime",L"Halt at time");
+            lay.EndRow();
+            lay.AddRow();
+                lay.AddItem(L"hSpp",L"Start Frame");
+                lay.AddButton(L"render_ani",L"Render animation");
+            lay.EndRow();
+        /////////////////
+        lay.EndGroup();//
+        /////////////////
+
+        lay.AddItem(L"resume", L"Resume render");
+        lay.AddItem(L"fLuxPath",L"Path to Luxrender", siControlFolder);
+        PPGItem lpath = lay.GetItem( L"fLuxPath" );
+        
+        
+    lay.EndGroup();
+//--
+    
+    //--
     //------------------------------// 
         lay.AddTab(L"Render ");
     //------------------------------//
@@ -140,46 +181,16 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
 
 //    lay.AddItem(L"AmbBack",L"Use Ambience as background");
 
-//-- Render mode, internal:console / external:gui
-    lay.AddGroup(L"LuxRender Engine");
-        lay.AddRow();
-        CValueArray Acombo(4);
-            Acombo[0] = L"GUI";     Acombo[1] = 0; //-- TODO;
-            Acombo[2] = L"Console"; Acombo[3] = 1;
-        lay.AddEnumControl( L"brmode", Acombo, L"Render", siControlCombo ) ;
-
-        CValueArray vAengine(4);
-            vAengine[0] = L"Classic" ;   vAengine[1] = 0;
-            vAengine[2] = L"Hybrid" ;    vAengine[3] = 1;
-        lay.AddEnumControl( L"bengine", vAengine, L"Engine", siControlCombo ) ;
-        lay.EndRow();
-        //--
-        lay.AddItem(L"fLuxPath",L"Path to Luxrender", siControlFolder);
-        PPGItem lpath = lay.GetItem( L"fLuxPath" );
-            //lpath.PutAttribute( siUIOpenFile, 1 ) ;
-            //lpath.PutAttribute( siUIFileMustExist, 1 ) ;
-            lpath.PutAttribute( siUIFileFilter, L"LuxRender executable|*.exe" ) ;
-            //lpath.PutAttribute( siControlFilePath , "lux" ) ;
-        
-        //--
-
-        lay.AddRow();
-            lay.AddItem( L"bthreads", L"Threads" );
-            lay.AddItem( L"bautode", L"Auto-Threads" );
-        lay.EndRow();
-    lay.EndGroup();
-//--
-    
-    //--
     lay.AddGroup(L"Surface Integrator"); //-- surface
         lay.AddRow();
-            CValueArray vItem6(12);
+            CValueArray vItem6(14);
                 vItem6[0]  = L"Bidirectional";      vItem6[1] = 0;
                 vItem6[2]  = L"Pathtracing";        vItem6[3] = 1;
                 vItem6[4]  = L"Directlighting";     vItem6[5] = 2;
                 vItem6[6]  = L"Distributedpath";    vItem6[7] = 3;
                 vItem6[8]  = L"Inst. Global Illu."; vItem6[9] = 4;
                 vItem6[10] = L"Ex-Photonmap";       vItem6[11] = 5;
+                vItem6[12] = L"SPPM";               vItem6[13] = 6;
             lay.AddEnumControl( L"bsurfaceint", vItem6, L"Integrator", siControlCombo ) ;
             lay.AddItem(L"bsexpert", L"Advanced").PutWidthPercentage(6);
         lay.EndRow();
@@ -268,16 +279,16 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             //-- exphotonmap
             lay.AddItem( L"bstrategy", L"");
             //lay.AddItem( L"bshadowraycount", L"Shadow Ray Count").PutLabelPercentage(70);
-            lay.AddItem( L"bmaxeyedepth", L"Max. eye depth").PutLabelPercentage(70);
-            lay.AddItem( L"bmaxphotondepth", L"Max. photon depth").PutLabelPercentage(70);
-            lay.AddItem( L"bdirectphotons",  L"Direct photons").PutLabelPercentage(70);
-            lay.AddItem( L"bcausticphotons", L"Caustic photons").PutLabelPercentage(70);
-            lay.AddItem( L"bindirectphotons",L"Indirect photons").PutLabelPercentage(70);
-            lay.AddItem( L"bradiancephotons",L"Radiance photons").PutLabelPercentage(70);
-            lay.AddItem( L"bnphotonsused",   L"Num. photons used").PutLabelPercentage(70);
-            lay.AddItem( L"bmaxphotondist",  L"Max. photons dist").PutLabelPercentage(70);
-            lay.AddItem( L"bfinalgather", L"Final Gahter");
-            lay.AddItem( L"bfinalgathersamples", L"F. Gather samples").PutLabelPercentage(70);
+            lay.AddItem( L"bmaxeyedepth",       L"Max. eye depth").PutLabelPercentage(70);
+            lay.AddItem( L"bmaxphotondepth",    L"Max. photon depth").PutLabelPercentage(70);
+            lay.AddItem( L"bdirectphotons",     L"Direct photons").PutLabelPercentage(70);
+            lay.AddItem( L"bcausticphotons",    L"Caustic photons").PutLabelPercentage(70);
+            lay.AddItem( L"bindirectphotons",   L"Indirect photons").PutLabelPercentage(70);
+            lay.AddItem( L"bradiancephotons",   L"Radiance photons").PutLabelPercentage(70);
+            lay.AddItem( L"bnphotonsused",      L"Num. photons used").PutLabelPercentage(70);
+            lay.AddItem( L"bmaxphotondist",     L"Max. photons dist").PutLabelPercentage(70);
+            lay.AddItem( L"bfinalgather",       L"Final Gahter");
+            lay.AddItem( L"bfinalgathersamples",L"F. Gather samples").PutLabelPercentage(70);
             lay.AddItem( L"bgatherangle", L"Gather angle").PutLabelPercentage(70);
             //--
             CValueArray vItRend(4);
@@ -293,6 +304,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddItem( L"brrcon_prob", "RR cont. probability").PutLabelPercentage(70);
             lay.AddItem( L"bdistancethreshold", "Distance threshold").PutLabelPercentage(70);
             //-- by path mode, place there for correct show in menu
+
             lay.AddItem( L"binc_env", L"Include Environment").PutWidthPercentage(30);
             //-- end
             lay.AddItem(L"bphotonmaps",L"Photonmaps Files",siControlFilePath);
@@ -310,7 +322,27 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
                 lay.EndRow();
                 lay.AddItem( L"bdbg_enableindirspecular", L"Enable indirect specular");
             lay.EndGroup();
+        //-- temporary SPPM menu
+        
+        lay.AddRow();            
+            lay.AddItem(L"bmaxeyedepht", L"Max Eye D.").PutLabelPercentage(80);
+            lay.AddItem(L"bmaxphoton", L"Max Photon D.").PutLabelPercentage(80);
+        lay.EndRow();
+        lay.AddRow();
+            lay.AddItem( L"bpointxpass", L"Hit point x pass").PutLabelPercentage(80);
+            lay.AddItem( L"bphotonsxpass", L"Photons x pass").PutLabelPercentage(80);
+        lay.EndRow();
+        lay.AddRow();
+            lay.AddItem( L"bstartradius", L"Start radius").PutLabelPercentage(80);
+            lay.AddItem( L"balpha", L"Alpha").PutLabelPercentage(80);
+        lay.EndRow();
+        lay.AddRow();
+            lay.AddItem( L"bdlsampling", L"Direct Light Sampling").PutLabelPercentage(80);
+            lay.AddItem( L"bincenvironment", L"Include env.").PutLabelPercentage(80);
+        lay.EndRow();
+        
         lay.EndGroup(); //-- no label
+        /********************************/
     lay.EndGroup(); //-- surface
      //---------
     lay.AddGroup(L"Sampler"); //***
@@ -324,19 +356,17 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddItem(L"bexpert", L"Advanced").PutWidthPercentage(6);
         lay.EndRow();
             lay.AddItem( L"bchainlength", L"Chainlength").PutLabelPercentage(60);
-            CValueArray vItbase(6);
-                vItbase[0] = L"metropolis" ;     vItbase[1] = 0;
-                vItbase[2] = L"lowdiscrepancy" ; vItbase[3] = 1;
-                vItbase[4] = L"random" ;         vItbase[5] = 2;
+            CValueArray vItbase(4);
+                vItbase[0] = L"lowdiscrepancy" ; vItbase[1] = 0;
+                vItbase[2] = L"random" ;         vItbase[3] = 1;
             lay.AddEnumControl( L"bbasampler", vItbase, L"Base sampler", siControlCombo ).PutLabelPercentage(60);
         //--
-            CValueArray vItem5(12);
+            CValueArray vItem5(10);
                 vItem5[0] = L"linear" ;         vItem5[1] = 0;
                 vItem5[2] = L"vegas" ;          vItem5[3] = 1;
-                vItem5[4] = L"random" ;         vItem5[5] = 2;
-                vItem5[6] = L"lowdiscrepancy" ; vItem5[7] = 3;
-                vItem5[8] = L"tile" ;           vItem5[9] = 4;
-                vItem5[10] = L"hilbert" ;       vItem5[11] = 5;
+                vItem5[4] = L"lowdiscrepancy" ; vItem5[5] = 2;
+                vItem5[6] = L"tile" ;           vItem5[7] = 3;
+                vItem5[8] = L"hilbert" ;        vItem5[9] = 4;
             lay.AddEnumControl( L"bpixsampler", vItem5, L"Pixelsampler", siControlCombo ) ;
             lay.AddItem( L"pixelsamples", L"Pixelsamples");
         //--
@@ -419,6 +449,20 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.AddButton( L"exe_luxsi", L"Export to file");
         lay.AddButton( L"render_luxsi", L"Render scene");
     lay.EndRow();
+    
+    //* About....
+    lay.AddTab(L"About");
+    lay.AddStaticText(L" LuXSI; LuxRender Exporter for Softimage");
+    lay.AddStaticText(L" Copyright 2010-2012 Michael Gangolf aka \"miga\"");
+    lay.AddStaticText(L" e-mail; migaweb@de");
+    //-
+    lay.AddStaticText(L" Code contributor; Pedro Alcaide \"povmaniaco\"");
+    lay.AddStaticText(L" e-mail; p.alcaide@hotmail.com");
+    //-
+    lay.AddStaticText(L" LuxRender is a GPL physically based ");
+    lay.AddStaticText(L" and unbiased rendering engine.");
+    lay.AddStaticText(L" http://www.luxrender.net");
+    
 
     return CStatus::OK;
 }
