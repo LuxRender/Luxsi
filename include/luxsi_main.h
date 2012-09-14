@@ -1,7 +1,7 @@
 /*
 LuXSI - Softimage XSI Export plug-in for the LuxRender (http://www.luxrender.org) renderer
 
-Copyright (C) 2010 - 2012 by Michael Gangolf 
+Copyright (C) 2010 - 2012 by Michael Gangolf aka miga
 Code contributor ; Pedro Alcaide aka povmaniaco
 
 This program is free software: you can redistribute it and/or modify
@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define LUXSI_MAIN_H
 
 //#define __forceinline inline
-#pragma once
+#pragma once // it is need?
 //--
 #include <math.h>
 #include <string.h>
