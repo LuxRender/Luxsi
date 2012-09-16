@@ -27,6 +27,12 @@ using namespace XSI;
 using namespace MATH;
 
 // extern
+extern Model root;
+// test MsgBox
+extern UIToolkit kit;
+//--
+extern bool vIsHiddenLight;
+
 extern ofstream f;
 
 /* convert  0 and 1 value bool to string */
