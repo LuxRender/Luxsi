@@ -19,6 +19,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
+
 #include "include\luxsi_main.h"
 
 using namespace std;
@@ -26,13 +27,13 @@ using namespace XSI;
 using namespace MATH;
 
 //-
+extern double ftime;
 extern ofstream f;
 
 extern Application app;
 
 extern bool luxdebug;
 
-//-- work  in progress
 int writeLuxsiCloud(X3DObject obj)
 {     
     //
@@ -54,8 +55,13 @@ int writeLuxsiCloud(X3DObject obj)
     CICEAttributeDataArrayFloat aSize;
     //--
     CICEAttributeDataArrayVector3f aVel;
-    //- 
-    CRefArray attrs = obj.GetActivePrimitive().GetGeometry().GetICEAttributes();
+    //-
+    CICEAttributeDataArrayShape ashape;
+    //-
+    int particle_shape = 0;
+    
+    //-
+    CRefArray attrs = obj.GetActivePrimitive().GetGeometry(ftime).GetICEAttributes();
     
     //-
     for( int i = 0; i<attrs.GetCount(); i++ ) 
@@ -76,27 +82,28 @@ int writeLuxsiCloud(X3DObject obj)
             attr.GetDataArray(aSize);
         }
         //-
-        if (attr.GetName() == L"PointVelocity"){
+        if (attr.GetName() == L"PointVelocity")
+        {
             attr.GetDataArray(aVel);
         }
         //- test shape
         if (attr.GetName() == L"Shape")
         {
-            //attr.GetDataArray();
+            attr.GetDataArray(ashape);
+           // particle_shape = ashape[0];
         }
     }
     //- set transform
     KinematicState start_state = obj.GetKinematics().GetGlobal();
-    CTransformation cloud_transform = start_state.GetTransform();
+    CTransformation cloud_transform = start_state.GetTransform(ftime); //-- time
     CVector3 cloud_pos;
 
     //--- more  test´s for particle support
     //-- only for test; not better way
     //- float not work, use a 'trick'
     //-
-    CString _size = L"0.2";
+    CString _size = L"0.2"; 
     //- TODO; shape options into 'emmiter' UI
-    CString particle_shape = L"sphere";
     //->
     if (aSize.GetCount() > 0)
     {
@@ -123,7 +130,7 @@ int writeLuxsiCloud(X3DObject obj)
         f << "\nNamedMaterial \""<< m.GetName().GetAsciiString() <<"\"\n";
         f << "Translate "<< cloud_pos[0] <<" "<< -cloud_pos[2] <<" "<< cloud_pos[1] <<"\n";
         //-
-        f << "Shape \""<< particle_shape.GetAsciiString() <<"\"\n";             //- TODO; use other shapes from GUI options?
+        f << "Shape \"sphere\"\n";          //- TODO; use other shapes from GUI options?
         f << "  \"float radius\" ["<< CString(_size).GetAsciiString() <<"]\n";  //- if use float 'aSize', make a error; revised
         f << "  \"float zmin\" [ -90 ]\n";  //- test; semi-sphere up =  -90
         f << "  \"float zmax\" [ 90 ]\n";   //- test; semi-sphere down = 90
