@@ -26,10 +26,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "luxsi_main.h"
 
-
-//using namespace MATH;
 using namespace std;
 using namespace XSI;
+
+/* for preview materials */
+/**/
+extern bool is_preview;
 
 extern float red, green, blue, alpha;
 extern Application app;
@@ -55,7 +57,11 @@ float mRough;
 //ImageClip2 vBumpFile;
 bool vIsSet=false;
 
+/* instance of Material class */
+/**/
 Material mat;
+
+/* instance of Texture class */
 Texture vTexture;
 
 //- generic string containers for shader definitions
