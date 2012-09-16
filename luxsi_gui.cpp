@@ -148,13 +148,13 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.EndRow();
             lay.AddRow();
                 lay.AddItem(L"hSpp",L"Start Frame");
-                lay.AddButton(L"render_ani",L"Render animation");
+                lay.AddButton(L"render_ani",L"Export animation");
             lay.EndRow();
+            lay.AddItem(L"resume", L"Resume render");
         /////////////////
         lay.EndGroup();//
         /////////////////
 
-        lay.AddItem(L"resume", L"Resume render");
         lay.AddItem(L"fLuxPath",L"Path to Luxrender", siControlFolder);
         PPGItem lpath = lay.GetItem( L"fLuxPath" );
         
@@ -449,6 +449,59 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.AddButton( L"exe_luxsi", L"Export to file");
         lay.AddButton( L"render_luxsi", L"Render scene");
     lay.EndRow();
+    
+    //---------------------------------------------------/
+    lay.AddTab(L"Materials"); 
+    //-----------------------/
+		lay.AddGroup(); // no label
+            lay.AddSpacer(10,2);
+            lay.AddRow();
+                //lay.AddItem(L"Width").PutAttribute(siUINoSlider,true);
+			    //lay.AddItem(L"Height").PutAttribute(siUINoSlider,true);
+            lay.EndRow();
+			lay.AddSpacer(10,2);
+                CValueArray pshape(8);
+				    pshape[0] = L"Sphere"	; pshape[1] = 0;
+				    pshape[2] = L"Cube"	    ; pshape[3] = 1;
+				    pshape[4] = L"Plane"	; pshape[5] = 2;
+                    pshape[6] = L"Cylinder"	; pshape[7] = 3;
+                lay.AddEnumControl(L"btype_geo", pshape, L"Shape", siControlCombo).PutLabelPercentage(60);
+            //lay.AddRow();
+                lay.AddButton(L"blpreview",L"Preview Materials");
+                //lay.AddButton(L"bwritexml",L"Export LXM parameters");
+            //lay.EndRow();
+        lay.EndGroup();
+        //----
+        /*
+        lay.AddGroup(L"Load YafaRay XML file format...");
+			lay.AddItem(L"bselect_file", L"Find file..",siControlFilePath);
+            PPGItem sel_item = lay.GetItem(L"bselect_file");
+			sel_item.PutAttribute( siUIOpenFile, 1 ) ;
+			sel_item.PutAttribute( siUIFileMustExist, 1 ) ;
+			sel_item.PutAttribute( siControlFilePath , "test" ) ;
+            sel_item.PutAttribute( siUIFileFilter, L"YafaRay XML files|*.xml" ) ;
+            */
+        lay.AddSpacer(10,2);
+        lay.AddGroup(L"Load LuxRender .LXS scene file");
+            lay.AddSpacer(5,2);
+			lay.AddItem(L"blxs_file", L"Find file..",siControlFilePath);
+            PPGItem sel_item = lay.GetItem(L"blxs_file");
+			sel_item.PutAttribute( siUIOpenFile, 1 ) ;
+			sel_item.PutAttribute( siUIFileMustExist, 1 ) ;
+			sel_item.PutAttribute( siControlFilePath , "test" ) ;
+            sel_item.PutAttribute( siUIFileFilter, L"LuxRender Scene files|*.lxs" ) ;
+        lay.AddButton(L"bre_render",L"Render loaded file");
+            //--
+            CValueArray prevItem(12);
+		        prevItem[0] = L" TIFF"; prevItem[1] = 0;
+			    prevItem[2] = L" TGA";  prevItem[3] = 1;
+			    prevItem[4] = L" PNG";  prevItem[5] = 2;
+			    prevItem[6] = L" JPG";  prevItem[7] = 3;
+			    prevItem[8] = L" HDR";  prevItem[9] = 4;
+			    prevItem[10] = L" EXR"; prevItem[11] = 5;
+			lay.AddEnumControl(L"bsavefile", prevItem, L"Image Format", siControlCombo).PutLabelPercentage(60);
+            //lay.AddButton(L"bopen_image",L"View last render");
+		lay.EndGroup();
     
     //* About....
     lay.AddTab(L"About");
