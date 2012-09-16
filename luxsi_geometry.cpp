@@ -27,6 +27,8 @@ using namespace MATH;
 using namespace std;
 
 //-
+extern double ftime;
+
 extern ofstream f;
 
 extern bool vplymesh;
@@ -57,7 +59,7 @@ int writeLuxsiObj(X3DObject o)
     bool vText = false, vIsSubD = false;
     bool vIsMod=false;
 
-    Geometry g(o.GetActivePrimitive().GetGeometry()) ;
+    Geometry g(o.GetActivePrimitive().GetGeometry(ftime)) ;
     CRefArray mats(o.GetMaterials()); // Array of all materials of the object
     Material m = mats[0];
     CRefArray shad(m.GetShaders()); // Array of all shaders attached to the material [e.g. phong]
@@ -89,7 +91,7 @@ int writeLuxsiObj(X3DObject o)
     //--
     //CTransformation localTransformation = ga.GetTransform();
     KinematicState  global_kinec_state = o.GetKinematics().GetGlobal();
-    CTransformation global_trans = global_kinec_state.GetTransform();
+    CTransformation global_trans = global_kinec_state.GetTransform(ftime); // add time
     //CMatrix4 mat4(gt.GetMatrix4());
     //--
     if (int(g.GetTriangles().GetCount()) > 0 )
@@ -185,9 +187,9 @@ int writeLuxsiObj(X3DObject o)
             //-------------
         {
             //--
-            CString vInput_FileName = vFileObjects.GetAsciiString();
-            int Loc = (int)vInput_FileName.ReverseFindString(".");
-            vFilePLY = vInput_FileName.GetSubString(0,Loc) + L"_"+ o.GetName() + L".ply";
+            //CString vInput_FileName = vFileObjects.GetAsciiString();
+            int Loc = (int)vFileObjects.ReverseFindString(".");
+            vFilePLY = vFileObjects.GetSubString(0,Loc) + L"_"+ o.GetName() + L".ply";
             f << "  \"string filename\" [\"" << replace(vFilePLY.GetAsciiString()) << "\"] \n";
         }
         //-- share
@@ -209,7 +211,7 @@ int writeLuxsiObj(X3DObject o)
                 f << " \"normal N\" [\n" << vNormals.GetAsciiString() << "\n ]";
             }
             //--
-            if ( vText && vUV != L"" )
+            if ( vUV != L"") //vText && vUV != L"" )
             {
                 f << " \"float uv\" [\n" << vUV.GetAsciiString() << "\n ]";
             }
