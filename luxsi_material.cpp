@@ -27,7 +27,8 @@ using namespace XSI;
 using namespace MATH;
 
 
-void writeLuxsiShader()
+//void
+CString writeLuxsiShader(CString in_shader)
 {
     //- begin values..
     aMatList.Clear();
@@ -36,10 +37,10 @@ void writeLuxsiShader()
     Scene scene = app.GetActiveProject().GetActiveScene();
     Library matlib = scene.GetActiveMaterialLibrary();
     CRefArray materials = matlib.GetItems();
-    scene.GetMaterialLibraries();
+    //scene.GetMaterialLibraries();
 
     //- write default bumpmap texture
-    f <<"Texture \"mate_bump+normal_generated\" \"float\" \"multimix\" \n";
+    f <<"\nTexture \"mate_bump+normal_generated\" \"float\" \"multimix\" \n";
     f <<"	\"texture tex1\" [\"\"] # bumpmap\n";
     f <<"	\"texture tex2\" [\"\"] # normalmap\n";
     f <<"	\"float weights\" [1.000000000000000 1.000000000000000]\n";
@@ -69,10 +70,9 @@ void writeLuxsiShader()
             Shader s(shad[j]);
             //- name
             CString shader_name = s.GetName();
-            app.LogMessage(L"Nombre del shader: "+ shader_name);
+            app.LogMessage(L"Name of shader: "+ shader_name);
 
             //- shader node ID
-            //CString vMatID((s.GetProgID()).Split(L".")[1]);
             CString vMatID((s.GetProgID()).Split(L".")[1]);
             app.LogMessage(L" Shader ID: "+ vMatID);
 
@@ -290,11 +290,23 @@ void writeLuxsiShader()
                 shaderStr += L"  \"float sigma\" [0.1]\n";
             }
         }
-        //-  write shader block
-        f << "\n MakeNamedMaterial \""<< MatName.GetAsciiString() <<"\" \n";
-        f << "	\"string type\" [\""<< shaderType.GetAsciiString() <<"\"]\n";
-        f << "	"<< shaderStr.GetAsciiString();
+        if ( MatName == L"Preview" && is_preview )// and is_preview is True...
+        {
+            in_shader.Clear();
+            in_shader = L"  \"string type\" [\""+ shaderType + L"\"]\n";
+            in_shader += L" "+ shaderStr + L"\n";
+                        
+            return in_shader; // in_shader, in_type;
+        }
+        else
+        {
+            //-  write shader block
+            f << "\n MakeNamedMaterial \""<< MatName.GetAsciiString() <<"\" \n";
+            f << "	\"string type\" [\""<< shaderType.GetAsciiString() <<"\"]\n";
+            f << "	"<< shaderStr.GetAsciiString();
+        }
     }
+    return L"";
 }
 
 //-- procces_mat
@@ -317,7 +329,7 @@ CString mat_value(Shader s, CString _K)
     //--
     Texture tex_shader = find_tex_used(s, texName);
     //-
-    CString t_name = tex_shader.GetName();
+    CString t_name = tex_shader.GetName(); 
     //-
     app.LogMessage(L"Connect..: "+ _K + L" to texture: " + tex_shader.GetName());
 
@@ -350,10 +362,6 @@ CString write_lux_glass(Shader s, CString shStr, CString vMatID)
     //-- transmitivity component
     shStr += CString(mat_value(s, L"Kt"));
     //-
-    //CValue sr = _process(s, L"index");
-    //--
-    //shStr += L" \"float index\" ["+ CString(sr) + L"]\n";
-    shStr += L" \"float index\" ["+ CString(_process(s, L"index")) + L"]\n";
     shStr += L" \"float index\" ["+ CString(s.GetParameterValue(L"index")) + L"]\n";
     shStr += L" \"float cauchyb\" ["+ CString(s.GetParameterValue(L"cauchyb")) + L"]\n";
     //-
@@ -394,7 +402,7 @@ CString write_lux_metal(Shader s, CString shStr)
     {
         shStr += L"  \"string name\" [\""+ CString(ametal[nmetal]) + L"\"]\n";
     }
-    shStr += L"  \"string type\" [\"metal\"] \n";
+    //shStr += L"  \"string type\" [\"metal\"] \n"; // write double 
     //--
     return shStr;
 }
