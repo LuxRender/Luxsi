@@ -35,13 +35,16 @@ using namespace std;
 //--------------------//
 bool luxdebug = true;
 //--------------------//
+//- for write number of frame into filename image
+CString vFileLxs;
 
 double ftime = DBL_MAX;
-//-
+//- for material preview
+bool is_preview;
+
 Application app;
 Model root( app.GetActiveSceneRoot() );
 ofstream f;
-stringstream sLight, sObj, sMat;
 Null null;
 CustomProperty prop ;
 UIToolkit kit = app.GetUIToolkit();
@@ -140,9 +143,9 @@ float vXwidth = 2.0f, vYwidth = 2.0f, vFalpha = 2.0f, vF_B = 0.3f, vF_C = 0.3f, 
 int vfilter = 2;
 bool vfexpert = false;
 
-//-- specials lights
+//-- material preview
 int vlights = 0;
-CString ies_file = L"";
+CString vblxs_file = L"";
 //bool vUse_IES = false;
 
 //----/ convention names, prefix; Mt /----->
