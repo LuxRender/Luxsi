@@ -2,7 +2,7 @@
 LuXSI - Autodesk(c) Softimage(c) XSI Export addon for the LuxRender  Renderer
 (http://www.luxrender.org)
 
-Copyright (C) 2010 - 2012  Michael Gangolf 
+Copyright (C) 2010 - 2012  Michael Gangolf
 Code contributor ; Pedro Alcaide, aka povmaniaco
 
 This program is free software: you can redistribute it and/or modify
@@ -34,9 +34,13 @@ using namespace XSI;
 extern bool is_preview;
 
 extern float red, green, blue, alpha;
+
 extern Application app;
+
 extern  CStringArray aMatList;
+
 extern ofstream f;
+
 extern float vContrast;
 //--
 extern bool luxsi_find(CStringArray in_array, CString in_string);
@@ -44,6 +48,8 @@ extern bool luxsi_find(CStringArray in_array, CString in_string);
 extern string replace(string input);
 //-
 extern bool luxdebug;
+
+extern CString luxsi_texture( Material in_mat, Shader in_shader, CString in_string);
 
 //- declare local variables
 float b_red, b_green, b_blue, b_alpha;
@@ -65,10 +71,12 @@ Material mat;
 Texture vTexture;
 
 //- generic string containers for shader definitions
-CString 
-	shaderStr,		//- general definitions
-	vChanel,		//- chanel texture type
-	shaderType;		//- shader type
+CString
+    shaderStr,		//- container string for Shader
+    shaderData,     //- container for global material data.
+    texStr,         //- container string for Texture data
+    vChanel,		//- chanel texture type
+    shaderType;		//- shader type
 
 
 /* Find texture connect to shader port */
@@ -106,5 +114,11 @@ CString write_lux_substrate(Shader in_shader, CString in_string);
 /**/
 CString write_lux_matte(Shader in_shader, CString in_string);
 
+/**/
+CString(mat_value(
+            Shader in_shader,       //- specific Shader Class
+            CString in_texture,     //- Lux texture component ( Kd, Ks, Kr...)
+            CString in_shader_port  //- Nodeport name ( diffuse, specular, Kd,,)
+        ));
 
 #endif //LUXSI_MATERIAL_H

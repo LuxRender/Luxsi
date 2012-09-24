@@ -51,7 +51,7 @@ int writeLuxsiObj(X3DObject o);
 
 void luxsi_texture();
 
-CString writeLuxsiShader(CString in_shaderString);
+CString writeLuxsiShader(); // testCString in_shaderString);
 
 void luxsi_write(double ftime);
 
@@ -60,7 +60,7 @@ void luxsi_preview(CString in_mat);
 //-
 void luxsi_execute();
 
-void luxsi_mat_preview(bool is_preview);
+void luxsi_mat_preview(); //bool is_preview);
 
 string replace(string input);
 //--
@@ -75,6 +75,8 @@ void dynamic_luxsi_UI(Parameter changed, CString paramName, PPGEventContext ctxt
 void dynamic_sampler_UI( Parameter changed, CString paramName, PPGEventContext ctxt);
 //-
 CString findInGroup(CString s);
+//-
+void write_ply_object(X3DObject o, CString vFilePLY);
 
 //--
 XSIPLUGINCALLBACK CStatus XSILoadPlugin( PluginRegistrar& in_reg )
@@ -250,9 +252,13 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     prop.AddParameter( L"savint",   CValue::siInt4, sps,L"",L"", vSave,     0l,200l,0l,200l,    oParam);
     prop.AddParameter( L"disint",   CValue::siInt4, sps,L"",L"", vDis,      0l,200l,0l,200l,    oParam);
     prop.AddParameter( L"hSpp",     CValue::siInt4, sps,L"",L"", vhaltspp,  0l,200l,0l,200l,    oParam);
-    prop.AddParameter( L"hTime",    CValue::siInt4, sps,L"",L"", vhalttime, 0l,200l,0l,200l,    oParam);
-    prop.AddParameter( L"AmbBack",  CValue::siBool, sps,L"",L"", vAmbBack,  dft,dft,dft,dft,    oParam);
-    //--- save image options
+    prop.AddParameter( L"hTime",    CValue::siInt4, sps,L"",L"", vhalttime, 0l,2000l,0l,2000l,  oParam);
+    // unused--prop.AddParameter( L"AmbBack",  CValue::siBool, sps,L"",L"", vAmbBack,  dft,dft,dft,dft,    oParam);
+
+    //- animation
+    prop.AddParameter( L"bframestep",   CValue::siInt4, sps,L"",L"", vframestep,    0,100,0,100,  oParam );
+    
+    //--- save image options // 
     prop.AddParameter( L"save_png_16", CValue::siBool, sps,L"",L"", vWpng_16,   dft,dft,dft,dft, oParam);
     prop.AddParameter( L"png_gamut",   CValue::siBool, sps,L"",L"", vPng_gamut, dft,dft,dft,dft, oParam);
     prop.AddParameter( L"save_png",    CValue::siBool, sps,L"",L"", vPng,       dft,dft,dft,dft, oParam);
@@ -318,18 +324,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 //-- 
 XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
 {
-    //-- test
-    CRefArray projectProps = Application().GetActiveProject().GetProperties();
-    Property playControl = projectProps.GetItem( L"Play Control" );
-    int time = playControl.GetParameterValue( L"Current" );
-    int time_start = playControl.GetParameterValue( L"In" );
-    int time_end = playControl.GetParameterValue( L"Out" );
-
-    app.LogMessage(L"TIME START IS: "+ CString(time_start));
-    app.LogMessage(L"CURRENT TIME IS: "+ CString(time));
-    app.LogMessage(L"TIME END IS: "+ CString(time_end));
-
-     //--
+    //--
     PPGEventContext ctxt( in_ctxt ) ;
     PPGLayout lay = Context(in_ctxt).GetSource() ; // UNUSED
 
@@ -361,7 +356,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
         {
             //--
             is_preview = true;
-            luxsi_mat_preview(is_preview);
+            luxsi_mat_preview(); //is_preview);
         }
         if (buttonPressed.GetAsText()==L"bre_render")
         {
@@ -374,29 +369,41 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
         }
         if (buttonPressed.GetAsText()==L"render_ani")
         {
+            //-- test
+            CRefArray projectProps = Application().GetActiveProject().GetProperties();
+            Property playControl = projectProps.GetItem( L"Play Control" );
+            int time = playControl.GetParameterValue( L"Current" );
+            int time_start = playControl.GetParameterValue( L"In" );
+            int time_end = playControl.GetParameterValue( L"Out" );
+
+            app.LogMessage(L"Frame Start is: "+ CString(time_start)
+                + L" End frame is: "+ CString(time_end));
+
             //-- test for render animation
-            for ( int i = time_start; i < time_end; i++)
+            for ( int i = time_start; i < time_end; i += vframestep)
             {
                 //-
                 app.LogMessage(L" PLAY FRAME: "+ CString(i)); 
-                // asignamos el frame
-                ftime = time;
+                //- frame
+                ftime = i;
                 luxsi_write(ftime);
                 //--
                 //luxsi_execute();
                 //-
-                time++;
+                // time++;
                 //- test MsgBox
-                long st = 3;
-                kit.MsgBox(L"Wait, render frame: "+ CString(time)+ L"in curse", siMsgOk, L"Warning!!", st);
+                //long st = 3;
+                //kit.MsgBox(L"Wait, render frame: "+ CString(time)+ L"in curse", siMsgOk, L"Warning!!", st);
             }
-            return 1;
+            return 1; // para que??
         }
         if (buttonPressed.GetAsText()==L"render_luxsi")
         {
             //-
+            app.LogMessage(L"[DEBUG]: Write data to file LuxRender files");
             luxsi_write(ftime);
             //-
+            app.LogMessage(L"[DEBUG]: Execute LuxRender..");
             luxsi_execute();
         }
         ctxt.PutAttribute(L"Refresh",true);
@@ -447,6 +454,8 @@ void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext c
     } else if (paramName == L"hTime")   { vhalttime = changed.GetValue();
     } else if (paramName == L"savint")  { vSave     = changed.GetValue();
     } else if (paramName == L"resume")  { vResume   = changed.GetValue();
+    //- animation //
+    } else if (paramName == L"bframestep")  { vframestep   = changed.GetValue();
 
     //-- material preview
     } else if (paramName == L"blxs_file")   { vblxs_file    = changed.GetValue();
@@ -1850,109 +1859,6 @@ int writeLuxsiSurface(X3DObject o, CString vType)
     f << "\nAttributeEnd\n";
     return 0;
 }
-//--
-void write_ply_object(X3DObject o, CString vFilePLY)
-{
-    Geometry g(o.GetActivePrimitive().GetGeometry(ftime)); // add time
-    KinematicState  global_kinec_state = o.GetKinematics().GetGlobal(); 
-    CTransformation global_trans = global_kinec_state.GetTransform(ftime); // add time value
-    
-    //--
-    CTriangleRefArray triangles(g.GetTriangles());
-    CLongArray indices(triangles.GetIndexArray());
-
-    CVector3Array allPoints(triangles.GetCount()*3);
-    CVector3Array allUV(triangles.GetCount()*3);
-    CVector3Array allNormals(triangles.GetCount()*3);
-
-    long index=0; 
-    for (int i=0; i<triangles.GetCount();i++)
-    {
-        Triangle triangle(triangles.GetItem(i));
-        for (int j=0;j<triangle.GetPoints().GetCount();j++)
-        {
-             TriangleVertex vertex0(triangle.GetPoints().GetItem(j));
-             CVector3 pos(vertex0.GetPosition());
-             CVector3 normal(vertex0.GetNormal());
-             CUV uvs(vertex0.GetUV());
-             //--
-             long arrayPos = index++;
-             allPoints[arrayPos] = pos;
-             allNormals[arrayPos] = normal;
-             allUV[arrayPos] = CVector3(uvs.u, uvs.v,0);
-        }
-    }
-    //----------------------------------------------------------
-    //-- vertex
-    long vCount(triangles.GetCount()*3);
-    long pCount(g.GetTriangles().GetCount());
-       
-    //-- vertex
-    CString sPos;
-    for (LONG j=0; j < allPoints.GetCount(); j++)
-    {
-        //-- vertex
-        CVector3 point_pos(allPoints[j][0], allPoints[j][1], allPoints[j][2]);
-        point_pos.MulByTransformationInPlace(global_trans);
-        //-- normals
-        CVector3 norm_idx(allNormals[j][0], allNormals[j][1], allNormals[j][2]);
-        norm_idx.MulByTransformationInPlace(global_trans);
-        
-		//-- write points..
-        sPos += CString(point_pos[0]) + L" "+ CString(-point_pos[2]) + L" "+ CString(point_pos[1]);
-		
-		//- and normals if 'smooth_mesh' is ON
-		//- !!WARNING!!, POSSIBLE ERROR IN NORMALS
-        if ( vSmooth_mesh )
-		{
-			sPos += L" "+ CString(norm_idx[0]) + L" "+ CString(norm_idx[1]) + L" "+ CString(norm_idx[2]);
-        }
-        sPos += L"\n";
-    }
-    //-- triangles
-    CString vFaces;
-    LONG nIndices = indices.GetCount();
-    for ( LONG k=0; k < nIndices; k += 3 )
-    {
-        //--
-        vFaces += L"3 "+ CString(int(k)) + L" "+ CString(int(k+1)) + L" "+ CString(int(k+2));
-        vFaces += L"\n";   
-    }
-    //--
-    
-    vFilePLY += L"_"+ o.GetName() + L".ply";
-    //FILE * file=fopen(vFilePLY.GetAsciiString(), "wb"); // from kies project
-    f.open(vFilePLY.GetAsciiString(), ios::out | ios::binary);
-    f << "ply\n";
-    f << "format ascii 1.0\n";
-	f << "comment LuXSI; LuxRender Exporter for Autodesk Softimage\n";
-	f << "element vertex "<< CString(vCount).GetAsciiString() <<"\n";
-	f << "property float x\n";
-	f << "property float y\n";
-	f << "property float z\n";
-   /*
-    f << "property uchar red\n";
-	f << "property uchar green\n";
-	f << "property uchar blue\n";
-    */
-    if ( vSmooth_mesh ) {
-        f << "property float nx\n";
-	    f << "property float ny\n";
-	    f << "property float nz\n";
-    }
-	f << "element face "<< CString(pCount).GetAsciiString() <<"\n";
-	f << "property list uchar uint vertex_indices\n";
-	f << "end_header\n";
-   
-    //-- vertex
-    f << sPos.GetAsciiString();
-    //-- faces
-    f << vFaces.GetAsciiString();
-	
-	f.close();
-    //--
-
-}
 //-
 int writeLuxsiInstance(X3DObject o)
 {
@@ -1967,13 +1873,13 @@ int writeLuxsiInstance(X3DObject o)
     }
     else
     {
-        f << "\nObjectBegin \""<< vModel.GetName().GetAsciiString()<<"\"";
+        f << "\nObjectBegin \""<< vModel.GetName().GetAsciiString() <<"\"";
         for (int i=0; i < vGroup.GetCount(); i++)
         {
             //writeLuxsiObj(X3DObject(vGroup[i]),L"instance");
             writeLuxsiObj(X3DObject(vGroup[i]));
         }
-        f << "\nObjectEnd #"<< o.GetName().GetAsciiString()<<"\n";
+        f << "\nObjectEnd #"<< o.GetName().GetAsciiString() <<"\n";
         aInstanceList.Add(vModel.GetName());// is correct?
     }
     //-
@@ -2013,30 +1919,36 @@ void write_header_files()
     f <<"# Code contributor;    P. Alcaide, aka povmaniaco. \n \n";
 }
 //--
-void luxsi_mat_preview(bool is_preview)
+void luxsi_mat_preview() //bool is_preview)
 {
     //--
     CString 
         vFile_scene_folder = L"",   //- this file is create a '/resources' folder
         vfile_mat_preview = L"",    //- file name for exporter material data 
-        mat_data_preview = L"";     //- container for material data
+        mat_data_preview = L"";     //- container string for material data
     
     //--  base folder
     vFile_scene_folder = app.GetInstallationPath(siUserAddonPath);
     //--
     vfile_mat_preview = vFile_scene_folder + L"/LuXSI/resources/scene_preview_mat.lxm";
+    //--
+    app.LogMessage(L"File for material preview: "+ vfile_mat_preview);
    
     
-    mat_data_preview = writeLuxsiShader(mat_data_preview);
+    mat_data_preview = writeLuxsiShader();
+    //-
+    app.LogMessage(L"Data for Preview mat: "+ mat_data_preview);
     //--
     if ( luxsi_find(aMatList, L"Preview" ) )
     {
         //-
+        app.LogMessage(L"Inside mat preview");
 		std::ofstream fmat;
 		fmat.open(vfile_mat_preview.GetAsciiString());
 
-		fmat << "\nMakeNamedMaterial \"sphere_mat\" \n";
-        fmat << " "<< mat_data_preview.GetAsciiString();
+		//fmat << "\nMakeNamedMaterial \"sphere_mat\" \n";
+        fmat << "# Material preview for LuXSI";
+        fmat << mat_data_preview.GetAsciiString();
         fmat.close();
 
         //-- scene file
@@ -2051,7 +1963,7 @@ void luxsi_mat_preview(bool is_preview)
 void luxsi_write(double ftime)
 {
     // write objects, materials, lights, cameras
-    root= app.GetActiveSceneRoot();
+    //root= app.GetActiveSceneRoot();
     vIsLinux = CUtils::IsLinuxOS(); // linux check
     CScriptErrorDescriptor status ;
     CValueArray fooArgs(1) ;
@@ -2067,6 +1979,8 @@ void luxsi_write(double ftime)
         vFileObjects = def_lxs_file; 
     }
     //else
+    app.LogMessage(L"[DEBUG]: Write data to: "+ vFileObjects);
+    //-
     if (vFileObjects != L"")
     {
 
@@ -2084,7 +1998,7 @@ void luxsi_write(double ftime)
         CStringArray emptyArray;
         emptyArray.Clear();
         _array.Clear();
-        aMatList.Clear();
+        //unused aMatList.Clear();
         aInstanceList.Clear();
 
         aObj.Clear();
@@ -2094,11 +2008,18 @@ void luxsi_write(double ftime)
         aClouds.Clear();
         aInstance.Clear();
 
+        ///////////////////////////////////////////////////////////
+        app.LogMessage(L"[DEBUG]: Created and cleaned arrays..");//
+        ///////////////////////////////////////////////////////////
+
+        root = app.GetActiveSceneRoot();
+        //--
         _array += root.FindChildren( L"", L"", emptyArray, true );
-        for ( int i=0; i<_array.GetCount();i++ )
+        for ( int i=0; i < _array.GetCount(); i++ )
         {
             X3DObject o(_array[i]);
-            app.LogMessage( L"\tObject Name: " + o.GetName() + L" Type: " + o.GetType() + L" parent: "+ X3DObject(o.GetParent()).GetType());
+            //app.LogMessage( L"\tObject Name: " + o.GetName() + L" Type: " + o.GetType() 
+            //    + L" parent: "+ X3DObject(o.GetParent()).GetType());
             //--
             Property visi = o.GetProperties().GetItem(L"Visibility");
             bool view_visbl = (bool)visi.GetParameterValue(L"viewvis");
@@ -2177,9 +2098,8 @@ void luxsi_write(double ftime)
                 vtime = CString(ftime);
                 int Loc = (int)vFileObjects.ReverseFindString(".");
                 vFileLxs = vFileObjects.GetSubString(0,Loc) + (L"_"+ vtime + L".lxs");
-                //-- vFileObjects = vtime + vFileObjects;
-                //vtime = L"";
-                app.LogMessage(L"OUT Filename: "+ vFileObjects );
+                //--
+                app.LogMessage(L"OUT Filename: "+ vFileLxs );
             }
 
             //-- write files
@@ -2200,13 +2120,19 @@ void luxsi_write(double ftime)
             pb.PutCaption( L"Processing data for exporter.." );
             pb.PutCancelEnabled(true);
 
-            //-- open lxs file --------------------------------------------------------->
-            f.open(vFileLxs.GetAsciiString()); //--
+            //////////////////////////////////////////////////////////////////
+            app.LogMessage(L"[DEBUG]: Open files for write data"+ vFileLxs);//
+            //////////////////////////////////////////////////////////////////
+
+            f.open(vFileLxs.GetAsciiString());
 
             // insert header for files
             write_header_files();
 
-            //-- cam
+            /////////////////////////////////////////////
+            app.LogMessage(L"[DEBUG]: Write Camera..");//
+            /////////////////////////////////////////////
+
             for (int i=0;i<aCam.GetCount();i++) writeLuxsiCam(aCam[i]);
 
             //-- basics values
@@ -2214,17 +2140,16 @@ void luxsi_write(double ftime)
 
             f << "\nWorldBegin \n";
 
-            //-- includes
+            //-- create includes for geometry and materials
             f << "\nInclude \""<< vFileLXM.GetAsciiString() <<"\" \n";
             f << "Include \""<< vFileLXO.GetAsciiString() <<"\" \n";
 
             f << "\nAttributeBegin \n";
 
             //-- lights
-            // test
             writeLuxsiLight();
-            //for (int i=0;i<aLight.GetCount();i++) writeLuxsiLight(aLight[i]);
 
+            
             f << "\nAttributeEnd \n \n";
 
             f << "WorldEnd";
@@ -2235,23 +2160,20 @@ void luxsi_write(double ftime)
             f.open(vFileLXM.GetAsciiString()); 
 
             //-- insert header
-                write_header_files();
+            write_header_files();
 
             // test 7/11/12 for texture
-                luxsi_texture();
+            //luxsi_texture();
 
-            //-- write materials !!OJO!!
-                //extern 
-                //CString int_Type;
-                //extern 
-                CString in_Str;
+            app.LogMessage(L"[DEBUG]: Write materials");
 
-                writeLuxsiShader(in_Str);
+            CString _luxsi_shader = writeLuxsiShader();
+            f << _luxsi_shader.GetAsciiString();
 
             f.close(); //--< end lxm
 
             //-- test ply
-            for (int i=0;i<aPlymesh.GetCount();i++)
+            for (int i = 0; i < aPlymesh.GetCount(); i++)
             {
                 // if (write_ply_object(aPlymesh[i],vFilePLY)==-1) break;
                 write_ply_object(aPlymesh[i],vFilePLY);
@@ -2266,7 +2188,7 @@ void luxsi_write(double ftime)
             write_header_files();
 
             //-- objects
-            for (int i=0;i<aObj.GetCount();i++) 
+            for (int i = 0; i < aObj.GetCount(); i++) 
             {
                 //if (writeLuxsiObj(aObj[i],L"obj")==-1) break;
                 if (writeLuxsiObj(aObj[i])==-1) break;
@@ -2298,12 +2220,13 @@ void luxsi_write(double ftime)
 
             //-- close _geom file
             f.close();
+
             vExportDone = true;
         }
     }
     else
     {
-     app.LogMessage(L"Filename is empty",siErrorMsg );
+     app.LogMessage(L"Filename is empty", siErrorMsg );
     }
 }
 //--
@@ -2351,7 +2274,7 @@ void luxsi_execute()
 			//--
 			CString exec = Lux_Binarie +" \""+ vFileLxs + "\"";
             app.LogMessage(exec);
-            loader(exec.GetAsciiString()); //-- for execute in Windows systems
+            loader(exec.GetAsciiString());
         #endif
     }
     else
@@ -2363,12 +2286,13 @@ void luxsi_execute()
 void luxsi_preview(CString vFile_scene_preview)
 {
     //--
-    CString lux_bin=L"" ,lux_data = L"";
+    CString lux_bin=L"", lux_data = L"";
     //-
     lux_bin = vLuXSIPath + L"/luxrender.exe";
-    if ( is_preview ){
-        lux_data = L"";
-    }
+    //if ( is_preview )
+    //{
+    //    lux_data = L"";
+    // }
     //-
     CString exec = lux_bin +" \""+ vFile_scene_preview + "\"";
     //- show path for debug...
