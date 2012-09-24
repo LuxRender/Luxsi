@@ -49,8 +49,8 @@ int writeLuxsiCloud(X3DObject obj)
     ICEAttribute attr;
     CICEAttributeDataArrayVector3f aPointPosition; 
     CICEAttributeDataArrayLong aID;
-    //- si se usa el siguiente comando, se produce un 'ERROR Runtime library c++'
-    //- TODO; revise
+    //- if use aSize, 'ERROR Runtime library c++'
+    //- TO-DO; revise
     //
     CICEAttributeDataArrayFloat aSize;
     //--
