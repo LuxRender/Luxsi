@@ -33,7 +33,7 @@ using namespace MATH;
 using namespace std;
 
 //--------------------//
-bool luxdebug = true;
+bool luxdebug = false;
 //--------------------//
 //- for write number of frame into filename image
 CString vFileLxs;
@@ -43,7 +43,7 @@ double ftime = DBL_MAX;
 bool is_preview;
 
 Application app;
-Model root( app.GetActiveSceneRoot() );
+Model root;
 ofstream f;
 Null null;
 CustomProperty prop ;
@@ -110,7 +110,7 @@ int vSampler = 2, vmaxconsecrejects=256, vchainlength= 512, vPixsampler = 3, vPi
 int vbasampler = 0;
 bool vusevariance = false;
 //-- 
-int vBounces=10, vpresets=0 ;
+int vBounces=10, vpresets=2 ;
 
 //-- stop render option, display int., save int.
 int vEngine = 0, vThreads = 2, vAccel = 2, vRmode = 0;
@@ -126,10 +126,10 @@ bool vTga = false, vTga_gamut = false, vExr = false;
 //-- hidden options
 bool vIsHiddenCam=true, vIsHiddenLight=true, vIsHiddenObj=true, vIsHiddenSurface=false, vIsHiddenClouds=false;
 //--
-bool vMLT=true, vIsLinux=true;
+bool vMLT = true, vIsLinux = true; // vIsLinux true??
 bool vProg=true; // not used ??
 bool vExportDone = false, vResume = false, vUseJitter = true, vExpOne = true;
-bool vAmbBack=false;
+// unused--bool vAmbBack=false;
 
 //-- export
 bool vSmooth_mesh = false, vSharp_bound = false, vplymesh = false;;
@@ -144,9 +144,11 @@ int vfilter = 2;
 bool vfexpert = false;
 
 //-- material preview
-int vlights = 0;
+int vlights = 0; //  UNUSED ??
 CString vblxs_file = L"";
-//bool vUse_IES = false;
+
+//- animation step
+int vframestep = 1;
 
 //----/ convention names, prefix; Mt /----->
 const char *MtBool[] = { "false", "true" };
@@ -157,6 +159,6 @@ const char *MtAccel[]= { "qbvh", "bvh", "kdtree" }; // iter vAccel
 CRefArray aGroups;
 CStringArray aMatList, aInstanceList;
 
-CString vSun=L"", vHDRI=L"", vFileObjects=L"", vFilePLY = L"", vLuXSIPath = L"";
+CString vSun = L"", vHDRI = L"", vFileObjects = L"", vFilePLY = L"", vLuXSIPath = L"";
 
 #endif //LUXSI_VALUES_H
