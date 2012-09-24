@@ -20,46 +20,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-#include "include\luxsi_main.h"
+#include "include\luxsi_geometry.h"
 
 using namespace XSI;
 using namespace MATH;
 using namespace std;
-
-//-
-extern double ftime;
-
-extern ofstream f;
-
-extern bool vplymesh;
-
-extern CString vFileObjects;
-
-extern CString vFilePLY;
-extern bool vSmooth_mesh;
-extern bool vSharp_bound;
-extern int vAccel;
-extern const char *MtBool[], *MtAccel[];
-
-extern string replace(string in_input);
-
-extern CString findInGroup(CString s);
 
 //--
 int writeLuxsiObj(X3DObject o)
 {
     // Writes objects
     //
-    CScriptErrorDescriptor status ;
-    CValueArray fooArgs(1) ;
-    fooArgs[0] = L"" ;
-    CValue retVal=false ;
     bool vIsMeshLight=false;
     bool vIsSet=false;
     bool vText = false, vIsSubD = false;
-    bool vIsMod=false;
 
-    Geometry g(o.GetActivePrimitive().GetGeometry(ftime)) ;
+    Geometry g(o.GetActivePrimitive().GetGeometry(ftime));
+
     CRefArray mats(o.GetMaterials()); // Array of all materials of the object
     Material m = mats[0];
     CRefArray shad(m.GetShaders()); // Array of all shaders attached to the material [e.g. phong]
@@ -89,10 +66,8 @@ int writeLuxsiObj(X3DObject o)
         }
     }
     //--
-    //CTransformation localTransformation = ga.GetTransform();
     KinematicState  global_kinec_state = o.GetKinematics().GetGlobal();
     CTransformation global_trans = global_kinec_state.GetTransform(ftime); // add time
-    //CMatrix4 mat4(gt.GetMatrix4());
     //--
     if (int(g.GetTriangles().GetCount()) > 0 )
     {
@@ -119,12 +94,13 @@ int writeLuxsiObj(X3DObject o)
                 allPoints[arrayPos] = pos;
                 allNormals[arrayPos] = normal;
                 allUV[arrayPos] = CVector3(uvs.u, uvs.v,0);
+                //-- triangles o faces
                 vTris += L" "+ CString(arrayPos) + L" ";
             }
             vTris += L"\n";
         }
 
-        //-- test to optimize processes
+        //-- test to optimize process
         if ( !vplymesh )
         {
             for (LONG j=0; j < allPoints.GetCount(); j++)
@@ -138,12 +114,16 @@ int writeLuxsiObj(X3DObject o)
                 //- and write string array, in correct Lux format ( x, -z, y )
                 vPoints += L" "+ CString(new_pos[0]) + L" "+  CString(-new_pos[2]) + L" "+ CString(new_pos[1]) + L"\n";
 
-                //--
-                CVector3 tr_normals(allNormals[j][0], allNormals[j][1], allNormals[j][2]);
-                tr_normals.MulByTransformationInPlace(global_trans);
-                vNormals +=  L" "+ CString(tr_normals[0]) + L" "+ CString(tr_normals[2]) + L" "+ CString(tr_normals[1]) + L"\n";
+                //-- same for normals
+                CVector3 _normals(allNormals[j][0], allNormals[j][1], allNormals[j][2]);
+                //-
+                _normals.MulByTransformationInPlace(global_trans);
+                //-- for 'normals', change 'y' for 'z'(x, z, y), but not negative value (-z)
+                //- need more testing..
+                vNormals += L" "+ CString(_normals[0]) + L" "+ CString(_normals[2]) + L" "+ CString(_normals[1]) + L"\n";
+
                 //-- UV need transpose?
-                vUV +=  L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]) + L"\n";
+                vUV += L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]) + L"\n";
             }
         }
         //--
@@ -152,14 +132,23 @@ int writeLuxsiObj(X3DObject o)
         f << "\nNamedMaterial \""<< m.GetName().GetAsciiString() <<"\"\n";
 
         //-- Geometry associated to lights
+        //- portal lights. Use a 'trick'..
+        //- TODO; find better mode
         bool vIsPortal = false;
         string::size_type loc = string(CString(o.GetName()).GetAsciiString()).find( "PORTAL", 0 );
         if (loc != string::npos) vIsPortal = true;
+
         //-- meshlight
+        //- this way is only for XSI incandescence mode
+        //- find better way for Lux
         if (float(s.GetParameterValue(L"inc_inten"))> 0 ) vIsMeshLight = true;
+        //-
         CString type_mesh = L"mesh";
+        //-
         if ( vplymesh ) type_mesh = L"plymesh";
+        //--
         CString type_shape = L"Shape";
+        //-
         if ( vIsPortal ) type_shape = L"PortalShape";
 
         //-----------------
@@ -181,16 +170,20 @@ int writeLuxsiObj(X3DObject o)
             //f << "  \"float power\" [100.0]  \"float efficacy\" [17.0] \n";
             f << "  \"color L\" ["<< (red * inc_intensity) <<" "<< (green * inc_intensity) <<" "<<(blue * inc_intensity ) <<"]\n";
         }
-        f << type_shape.GetAsciiString() <<" \""<< type_mesh.GetAsciiString() <<"\" \n";
+        f <<"\n"<< type_shape.GetAsciiString() <<" \""<< type_mesh.GetAsciiString() <<"\" \n";
         //-------------
         if ( vplymesh )
             //-------------
         {
-            //--
-            //CString vInput_FileName = vFileObjects.GetAsciiString();
-            int Loc = (int)vFileObjects.ReverseFindString(".");
-            vFilePLY = vFileObjects.GetSubString(0,Loc) + L"_"+ o.GetName() + L".ply";
-            f << "  \"string filename\" [\"" << replace(vFilePLY.GetAsciiString()) << "\"] \n";
+            //-- make link to .ply file
+            //-- vFilePLY has the number of frame, but not the extension .ply
+            app.LogMessage(L"File ply is: "+ vFilePLY);
+            //-
+            CString ply_frame(vFilePLY + L"_"+ o.GetName() + L".ply");
+            //-
+            app.LogMessage(L"Frame ply is: "+ ply_frame);
+
+            f <<"  \"string filename\" [\""<< replace(ply_frame.GetAsciiString()) <<"\"] \n";
         }
         //-- share
         f << "  \"integer nsubdivlevels\" [" << subdLevel  <<"] \"string subdivscheme\" [\"loop\"] \n";
@@ -220,4 +213,116 @@ int writeLuxsiObj(X3DObject o)
         f << "\nAttributeEnd #" << o.GetName().GetAsciiString() << "\n";
     }
     return 0;
+}
+
+//--
+void write_ply_object(X3DObject o, CString vFilePLY)
+{
+    Geometry g(o.GetActivePrimitive().GetGeometry(ftime)); // add time
+    KinematicState  global_kinec_state = o.GetKinematics().GetGlobal();
+    CTransformation global_trans = global_kinec_state.GetTransform(ftime); // add time value
+
+    //--
+    CTriangleRefArray triangles(g.GetTriangles());
+    CLongArray indices(triangles.GetIndexArray());
+
+    CVector3Array allPoints(triangles.GetCount()*3);
+    CVector3Array allUV(triangles.GetCount()*3);
+    CVector3Array allNormals(triangles.GetCount()*3);
+
+    long index=0;
+    for (int i=0; i<triangles.GetCount(); i++)
+    {
+        Triangle triangle(triangles.GetItem(i));
+        for (int j=0; j<triangle.GetPoints().GetCount(); j++)
+        {
+            TriangleVertex vertex0(triangle.GetPoints().GetItem(j));
+            CVector3 pos(vertex0.GetPosition());
+            CVector3 normal(vertex0.GetNormal());
+            CUV uvs(vertex0.GetUV());
+            //--
+            long arrayPos = index++;
+            allPoints[arrayPos] = pos;
+            allNormals[arrayPos] = normal;
+            allUV[arrayPos] = CVector3(uvs.u, uvs.v,0);
+        }
+    }
+    //----------------------------------------------------------
+    //-- vertex
+    long vCount(triangles.GetCount()*3);
+    long pCount(g.GetTriangles().GetCount());
+
+    //-- vertex
+    CString sPos;
+    for (LONG j=0; j < allPoints.GetCount(); j++)
+    {
+        //-- vertex
+        CVector3 point_pos(allPoints[j][0], allPoints[j][1], allPoints[j][2]);
+        point_pos.MulByTransformationInPlace(global_trans);
+        //-- normals
+        CVector3 norm_idx(allNormals[j][0], allNormals[j][1], allNormals[j][2]);
+        norm_idx.MulByTransformationInPlace(global_trans);
+
+        //-- ply write points..
+        sPos += CString(point_pos[0]) + L" "+ CString(-point_pos[2]) + L" "+ CString(point_pos[1]);
+
+        //- and normals if 'smooth_mesh' is ON
+        //- !!WARNING!!, POSSIBLE ERROR IN NORMALS
+        if ( vSmooth_mesh )
+        {
+            sPos += L" "+ CString(norm_idx[0]) + L" "+ CString(norm_idx[2]) + L" "+ CString(norm_idx[1]);
+        }
+        //-- UV need transpose?
+        //-- if ( UV ) {
+        sPos += L" "+ CString(allUV[j][0]) + L" "+ CString(allUV[j][1]);
+        //-- }
+        sPos += L"\n";
+    }
+    //-- triangles
+    CString vFaces;
+    LONG nIndices = indices.GetCount();
+    for ( LONG k=0; k < nIndices; k += 3 )
+    {
+        //--
+        vFaces += L"3 "+ CString(int(k)) + L" "+ CString(int(k+1)) + L" "+ CString(int(k+2)) + L"\n";
+        //vFaces += L"\n";
+    }
+    //--
+
+    vFilePLY += L"_"+ o.GetName() + L".ply";
+    //FILE * file=fopen(vFilePLY.GetAsciiString(), "wb"); // from kies project
+    f.open(vFilePLY.GetAsciiString(), ios::out | ios::binary);
+    f << "ply\n";
+    f << "format ascii 1.0\n";
+    f << "comment LuXSI; LuxRender Exporter for Autodesk Softimage\n";
+    f << "element vertex "<< vCount <<"\n";
+    f << "property float x\n";
+    f << "property float y\n";
+    f << "property float z\n";
+    /* for vertex colors?
+    f << "property uchar red\n";
+    f << "property uchar green\n";
+    f << "property uchar blue\n";
+    */
+    if ( vSmooth_mesh )
+    {
+        f << "property float nx\n";
+        f << "property float ny\n";
+        f << "property float nz\n";
+    }
+    f << "property float u\n";
+    f << "property float v\n";
+
+    f << "element face "<< pCount <<"\n";
+    f << "property list uchar uint vertex_indices\n";
+    f << "end_header\n";
+
+    //-- vertex, normals and UV, if exist
+    f << sPos.GetAsciiString();
+    //-- faces
+    f << vFaces.GetAsciiString();
+    //->
+    f.close();
+    //--
+
 }
