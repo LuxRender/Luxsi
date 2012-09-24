@@ -134,35 +134,32 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.EndRow();
         /* new place */
         lay.AddRow();
-            lay.AddItem(L"disint",L"Display Int.");
-            lay.AddItem(L"savint",L"Save Int.");
+            lay.AddItem(L"disint", L"Display Int.");
+            lay.AddItem(L"savint", L"Save Int.");
         lay.EndRow();
+            lay.AddItem(L"fLuxPath", L"Luxrender Path", siControlFolder);
+            PPGItem lpath = lay.GetItem( L"fLuxPath" ); 
+            lpath.PutLabelPercentage(55);
+    lay.EndGroup();
 
         /* spacer */
-        lay.AddSpacer(2,0);
+        lay.AddSpacer(1,0);
         ///////////////////////////////////////////
         lay.AddGroup(L"Animation / Particles");  //
             lay.AddRow();
-                lay.AddItem(L"hSpp",L"Halt at S/px");
-                lay.AddItem(L"hTime",L"Halt at time");
+                lay.AddItem(L"hSpp", L"Halt at S/px");
+                lay.AddItem(L"hTime", L"Halt at time");
             lay.EndRow();
             lay.AddRow();
-                lay.AddItem(L"hSpp",L"Start Frame");
-                lay.AddButton(L"render_ani",L"Export animation");
+                lay.AddItem(L"bframestep", L"Frame Step");
+                lay.AddButton(L"render_ani", L"Export animation");
             lay.EndRow();
             lay.AddItem(L"resume", L"Resume render");
         /////////////////
         lay.EndGroup();//
         /////////////////
 
-        lay.AddItem(L"fLuxPath",L"Path to Luxrender", siControlFolder);
-        PPGItem lpath = lay.GetItem( L"fLuxPath" );
-        
-        
-    lay.EndGroup();
-//--
-    
-    //--
+ 
     //------------------------------// 
         lay.AddTab(L"Render ");
     //------------------------------//
@@ -178,8 +175,6 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         aPresets[16] = L"Bucket - Bidir Path Tracing (interior)" ;       aPresets[17] = 8;
         aPresets[18] = L"Bucket - Path Tracing (exterior)" ;             aPresets[19] = 9;
     lay.AddEnumControl(L"bpresets", aPresets, L"R. Presets", siControlCombo ) ;
-
-//    lay.AddItem(L"AmbBack",L"Use Ambience as background");
 
     lay.AddGroup(L"Surface Integrator"); //-- surface
         lay.AddRow();
@@ -226,6 +221,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddItem(L"bindirectdiffuse", L"Diffuse");
             lay.AddItem(L"bindirectglossy", L"Glossy");
         lay.EndRow();
+
     lay.AddGroup(L"Diffuse settings");
         lay.AddRow();
             lay.AddItem(L"bdiffusereflectsamples", L"Refl. sampl").PutLabelPercentage(80);
@@ -236,6 +232,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddItem(L"bdiffuserefractdepth", L"Refr. depth").PutLabelPercentage(80);
         lay.EndRow();
     lay.EndGroup();
+
     lay.AddGroup(L"Glossy settings");
         lay.AddRow();
             lay.AddItem(L"bglossyreflectsamples", L"Refl. sampl").PutLabelPercentage(80);
@@ -246,12 +243,14 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddItem(L"bglossyrefractdepth", L"Refr. depth").PutLabelPercentage(80);
         lay.EndRow();
     lay.EndGroup();
+
     lay.AddGroup(L"Specular settings");
         lay.AddRow();            
             lay.AddItem(L"bspecularreflectdepth", L"Refl. sampl").PutLabelPercentage(80);
             lay.AddItem(L"bspecularrefractdepth", L"Refr. depth").PutLabelPercentage(80);
         lay.EndRow();
     lay.EndGroup();
+
     lay.AddGroup(L"Rejection settings");
         lay.AddRow();
             lay.AddItem( L"bdiff_reflect_reject", L"Diffuse reflect reject").PutLabelPercentage(70); 
@@ -454,34 +453,19 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
     lay.AddTab(L"Materials"); 
     //-----------------------/
 		lay.AddGroup(); // no label
-            lay.AddSpacer(10,2);
+            lay.AddSpacer(5,2);
             lay.AddRow();
                 //lay.AddItem(L"Width").PutAttribute(siUINoSlider,true);
 			    //lay.AddItem(L"Height").PutAttribute(siUINoSlider,true);
             lay.EndRow();
 			lay.AddSpacer(10,2);
-                CValueArray pshape(8);
-				    pshape[0] = L"Sphere"	; pshape[1] = 0;
-				    pshape[2] = L"Cube"	    ; pshape[3] = 1;
-				    pshape[4] = L"Plane"	; pshape[5] = 2;
-                    pshape[6] = L"Cylinder"	; pshape[7] = 3;
-                lay.AddEnumControl(L"btype_geo", pshape, L"Shape", siControlCombo).PutLabelPercentage(60);
-            //lay.AddRow();
+                //lay.AddRow();
                 lay.AddButton(L"blpreview",L"Preview Materials");
                 //lay.AddButton(L"bwritexml",L"Export LXM parameters");
             //lay.EndRow();
         lay.EndGroup();
-        //----
-        /*
-        lay.AddGroup(L"Load YafaRay XML file format...");
-			lay.AddItem(L"bselect_file", L"Find file..",siControlFilePath);
-            PPGItem sel_item = lay.GetItem(L"bselect_file");
-			sel_item.PutAttribute( siUIOpenFile, 1 ) ;
-			sel_item.PutAttribute( siUIFileMustExist, 1 ) ;
-			sel_item.PutAttribute( siControlFilePath , "test" ) ;
-            sel_item.PutAttribute( siUIFileFilter, L"YafaRay XML files|*.xml" ) ;
-            */
-        lay.AddSpacer(10,2);
+        //---
+        lay.AddSpacer(5,2);
         lay.AddGroup(L"Load LuxRender .LXS scene file");
             lay.AddSpacer(5,2);
 			lay.AddItem(L"blxs_file", L"Find file..",siControlFilePath);
