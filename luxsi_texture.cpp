@@ -32,7 +32,7 @@ extern float vContrast;
 //-
 extern CString vChanel;
 //-
-extern string replace(string input);
+extern std::string luxsi_replace(string input);
 //-
 
 CString luxsi_texture(Material mat, Shader s, CString texStr)
@@ -76,7 +76,7 @@ CString luxsi_texture(Material mat, Shader s, CString texStr)
             texStr += L"\nTexture \"" + _tex_name + L"\" \""+ vChanType + L"\" \"imagemap\" \n";
             texStr += L"  \"string wrap\" [\"repeat\"] \n";//TODO; create option at spdl shader
             //f << "    \"string chanel\" [\"mean\"] \n"; // not work??
-            texStr += L"  \"string filename\" [\""+ CString(replace(vFileName.GetAsciiString()).c_str()) + L"\"] \n";
+            texStr += L"  \"string filename\" [\""+ CString(luxsi_replace(vFileName.GetAsciiString()).c_str()) + L"\"] \n";
             texStr += L"  \"float gamma\" ["+ CString( vContrast ) + L"]\n";
             texStr += L"  \"float gain\" [1.000000]\n";
             texStr += L"  \"string filtertype\" [\"bilinear\"] \n";// TODO; create option
