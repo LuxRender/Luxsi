@@ -32,15 +32,23 @@ int writeLuxsiObj(X3DObject o)
     // Writes objects
     //
     bool vIsMeshLight=false;
-    bool vIsSet=false;
+    //bool vIsSet=false;
     bool vText = false, vIsSubD = false;
 
     Geometry g(o.GetActivePrimitive().GetGeometry(ftime));
 
-    CRefArray mats(o.GetMaterials()); // Array of all materials of the object
+
+    CRefArray mats(o.GetMaterials());
     Material m = mats[0];
-    CRefArray shad(m.GetShaders()); // Array of all shaders attached to the material [e.g. phong]
-    Shader s(shad[0]);
+
+    CRefArray shaderArray(m.GetShaders());
+    Shader s(shaderArray[0]);
+
+    CRefArray vtexture(s.GetShaders());
+    Texture tex(vtexture[0]);
+    CString vTexID(tex.GetProgID().Split(L".")[1]);
+    if (vTexID == L"txt2d-image-explicit" || vTexID == L"Softimage.txt2d-image-explicit.1") vText = true;
+
     CGeometryAccessor ga;
     CString vUV=L"",vNormals=L"",vTris=L"",vMod=L"",vPoints=L"";
 
@@ -52,23 +60,15 @@ int writeLuxsiObj(X3DObject o)
         subdLevel = (int)geopr.GetParameterValue(L"gapproxmordrsl"); //-- only render
     }
     //--
-    CRefArray vImags=m.GetShaders();
-    for (int i=0; i<vImags.GetCount(); i++)
-    {
-        CRefArray vImags2 = Shader(vImags[i]).GetShaders();
-        for (int j=0; j<vImags2.GetCount(); j++)
-        {
-            CString vWhat((Shader(vImags2[j]).GetProgID()).Split(L".")[1]);
-            if (vWhat==L"txt2d-image-explicit" || vWhat==L"Softimage.txt2d-image-explicit.1")
-            {
-                vText = true;
-            }
-        }
-    }
-    //--
     KinematicState  global_kinec_state = o.GetKinematics().GetGlobal();
     CTransformation global_trans = global_kinec_state.GetTransform(ftime); // add time
-    //--
+    
+    //-- 
+    bool have_UV = false; ga = PolygonMesh(g).GetGeometryAccessor();
+    //int uvdata = ga.GetUVs().GetCount();
+    if ( ga.GetUVs().GetCount() > 0 && vText) have_UV = true;
+
+   //--
     if (int(g.GetTriangles().GetCount()) > 0 )
     {
         //--
@@ -94,7 +94,7 @@ int writeLuxsiObj(X3DObject o)
                 allPoints[arrayPos] = pos;
                 allNormals[arrayPos] = normal;
                 allUV[arrayPos] = CVector3(uvs.u, uvs.v,0);
-                //-- triangles o faces
+                //-- triangles or faces
                 vTris += L" "+ CString(arrayPos) + L" ";
             }
             vTris += L"\n";
@@ -106,24 +106,30 @@ int writeLuxsiObj(X3DObject o)
             for (LONG j=0; j < allPoints.GetCount(); j++)
             {
                 //-- create vector..
-                CVector3 new_pos(allPoints[j][0], allPoints[j][1], allPoints[j][2]);
+                CVector3 vPos(allPoints[j][0], allPoints[j][1], allPoints[j][2]);
 
                 //- set transform..
-                new_pos.MulByTransformationInPlace(global_trans);
+                vPos.MulByTransformationInPlace(global_trans);
 
                 //- and write string array, in correct Lux format ( x, -z, y )
-                vPoints += L" "+ CString(new_pos[0]) + L" "+  CString(-new_pos[2]) + L" "+ CString(new_pos[1]) + L"\n";
+                vPoints += L" "+ CString(vPos[0]) + L" "+  CString(-vPos[2]) + L" "+ CString(vPos[1]) + L"\n";
 
                 //-- same for normals
-                CVector3 _normals(allNormals[j][0], allNormals[j][1], allNormals[j][2]);
-                //-
-                _normals.MulByTransformationInPlace(global_trans);
-                //-- for 'normals', change 'y' for 'z'(x, z, y), but not negative value (-z)
-                //- need more testing..
-                vNormals += L" "+ CString(_normals[0]) + L" "+ CString(_normals[2]) + L" "+ CString(_normals[1]) + L"\n";
+                if ( vSmooth_mesh )
+                {
+                    CVector3 vNorm(allNormals[j][0], allNormals[j][1], allNormals[j][2]);
+                    //-
+                    vNorm.MulByTransformationInPlace(global_trans);
+                    //-- for 'normals', change 'y' for 'z'(x, z, y), but not negative value (-z)
+                    //- need more testing..
+                    vNormals += L" "+ CString(vNorm[0]) + L" "+ CString(vNorm[2]) + L" "+ CString(vNorm[1]) + L"\n";
+                }
 
                 //-- UV need transpose?
-                vUV += L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]) + L"\n";
+                if ( have_UV )
+                {
+                    vUV += L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]) + L"\n";
+                }
             }
         }
         //--
@@ -153,7 +159,7 @@ int writeLuxsiObj(X3DObject o)
 
         //-----------------
         if ( vIsMeshLight )
-            //-----------------
+        //-----------------
         {
             //--
             float red = 0.0f, green = 0.0f, blue = 0.0f, alpha = 0.0f;
@@ -183,34 +189,36 @@ int writeLuxsiObj(X3DObject o)
             //-
             app.LogMessage(L"Frame ply is: "+ ply_frame);
 
-            f <<"  \"string filename\" [\""<< replace(ply_frame.GetAsciiString()) <<"\"] \n";
+            f <<"  \"string filename\" [\""<< luxsi_replace(ply_frame.GetAsciiString()) <<"\"] \n";
         }
         //-- share
-        f << "  \"integer nsubdivlevels\" [" << subdLevel  <<"] \"string subdivscheme\" [\"loop\"] \n";
-        f << "  \"bool dmnormalsmooth\" [\""<< MtBool[vSmooth_mesh] <<"\"]";
-        f << "  \"bool dmsharpboundary\" [\""<< MtBool[vSharp_bound] <<"\"] \n";
+        //f << "  \"integer nsubdivlevels\" [" << subdLevel  <<"]\n";
+        //f << "  \"string subdivscheme\" [\"loop\"] \n";
+        //f << "  \"bool dmnormalsmooth\" [\""<< MtBool[vSmooth_mesh] <<"\"]";
+        //f << "  \"bool dmsharpboundary\" [\""<< MtBool[vSharp_bound] <<"\"] \n";
         //f << "  \"string displacementmap\" [\"none\"]\n";
         //f << "  \"float dmscale\" [\"0.0\"] \"float dmoffset\" [\" 0.0\"]\n";
 
         //--------------
         if ( !vplymesh )
-            //--------------
+        //--------------
         {
-            f << "  \"string acceltype\" [\""<< MtAccel[vAccel] <<"\"] \"string tritype\" [\"wald\"] \n";//TODO
-            f << "  \"integer triindices\" [\n" << vTris.GetAsciiString() << "\n ]";
-            f << "  \"point P\" [\n" << vPoints.GetAsciiString() << "\n ]";
+            f << "  \"string acceltype\" [\""<< MtAccel[vAccel] <<"\"]\n";
+            f << "  \"string tritype\" [\"auto\"] \n";//TODO
+            f << "  \"integer triindices\" [\n"<< vTris.GetAsciiString() <<"\n ]";
+            f << "  \"point P\" [\n"<< vPoints.GetAsciiString() <<"\n ]"; // 
             if ( vSmooth_mesh && vNormals != L"" )
             {
-                f << " \"normal N\" [\n" << vNormals.GetAsciiString() << "\n ]";
+                f <<" \"normal N\" [\n"<< vNormals.GetAsciiString() <<"\n ]";
             }
             //--
-            if ( vUV != L"") //vText && vUV != L"" )
+            if (have_UV)
             {
-                f << " \"float uv\" [\n" << vUV.GetAsciiString() << "\n ]";
+                f <<" \"float uv\" [\n"<< vUV.GetAsciiString() <<"\n ]";
             }
         }
         //--
-        f << "\nAttributeEnd #" << o.GetName().GetAsciiString() << "\n";
+        f << "\nAttributeEnd #"<< o.GetName().GetAsciiString() <<"\n";
     }
     return 0;
 }
@@ -225,10 +233,12 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     //--
     CTriangleRefArray triangles(g.GetTriangles());
     CLongArray indices(triangles.GetIndexArray());
+    CVector3Array allPoints(triangles.GetPositionArray().GetCount());
+    CVector3Array allUV(triangles.GetUVArray().GetCount());
+    CVector3Array allNormals(triangles.GetPolygonNodeNormalArray().GetCount());
 
-    CVector3Array allPoints(triangles.GetCount()*3);
-    CVector3Array allUV(triangles.GetCount()*3);
-    CVector3Array allNormals(triangles.GetCount()*3);
+    //-- test for UV
+    app.LogMessage(L"[DEBUG]: UV count: "+ CString(triangles.GetUVArray().GetCount()));
 
     long index=0;
     for (int i=0; i<triangles.GetCount(); i++)
@@ -244,7 +254,7 @@ void write_ply_object(X3DObject o, CString vFilePLY)
             long arrayPos = index++;
             allPoints[arrayPos] = pos;
             allNormals[arrayPos] = normal;
-            allUV[arrayPos] = CVector3(uvs.u, uvs.v,0);
+            allUV[arrayPos] = CVector3(uvs.u, uvs.v, 0);
         }
     }
     //----------------------------------------------------------
