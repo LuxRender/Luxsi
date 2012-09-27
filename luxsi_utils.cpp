@@ -27,16 +27,18 @@ using namespace XSI;
 using namespace MATH;
 using namespace std;
 
-//
+/*
+*/
 extern Application app;
-
+/*
+*/
 extern Model root;
-
-//-
+/*
+*/
 extern bool luxdebug;
 
 
-//--
+//-
 CString find_texlayer(Shader s)
 {
     //- texturelayer name
@@ -96,14 +98,14 @@ CString findInGroup(CString s)
     return L"";
 }
 //--
-string replace(string input)
+string luxsi_replace(string input)
 {
     //-
     int len = input.length();
     //->
     for (int i=0; i<len; i++)
     {
-        if (input[i]=='\\')
+        if (input[i]=='\\' || input[i]=='/')
         {
             input.replace(i, 1, "\\\\");
             i++;
