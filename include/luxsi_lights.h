@@ -28,47 +28,58 @@ using namespace MATH;
 
 // extern
 extern Model root;
-// test MsgBox
+
+/* test MsgBox
+*/
 extern UIToolkit kit;
-//--
+
+/*
+*/
 extern bool vIsHiddenLight;
 
+/*
+*/
 extern ofstream f;
 
-/* convert  0 and 1 value bool to string */
-/**/
+/* convert  0 and 1 value bool to string
+*/
 extern const char *MtBool[];
 
-/* float color values */
-/**/
+/* float color values 
+*/
 extern float red, green, blue, alpha;
 
-/* search name of light nodes */
-/**/
+/* search name of light nodes
+*/
 CString Light_Shader_ID;
 
 //-
 float vIntensity;
 
-/* IES file path */
-/**/
+/* IES file path
+*/
 extern CString ies_file;
 
+/* generic XSI Application 
+*/
 extern XSI::Application app;
 
-extern std::string replace(string input);
+/* replace  '/' and  '\' chars into path files
+*/
+extern std::string luxsi_replace(string input);
 
-/* find name into a group */
-/**/
+/* find name object into a group 
+*/
 extern CString findInGroup(CString in_name);
 
-/* for math transform to 'light area' oobject */
-/**/
+/* for math transform to 'light area' oobject 
+*/
 CString luxsi_area_transf(X3DObject o, float in_sizeX, float in_sizeY);
 
-/* Search IBL and HDRI files used */
-/**/
+/* Search IBL and HDRI files used
+*/
 CString find_XSI_env(CString env_file);
 
-//-
+/* Write specific 'point light' type
+*/
 void luxsi_point_light(X3DObject in_obj, Shader in_shader, CVector3 in_vector);
