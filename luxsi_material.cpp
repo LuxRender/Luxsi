@@ -31,7 +31,7 @@ using namespace MATH;
 CString writeLuxsiShader() //CString in_shader)
 {
     // test for fail write scene after material preview
-    CString shaderData;
+    //CString shaderData;
     //- end test
 
     //- begin values..
@@ -313,7 +313,7 @@ CString writeLuxsiShader() //CString in_shader)
             in_shader += L" "+ shaderStr + L"\n";
                         
             return in_shader;
-            break; // placed here ?? Investigate about this options
+            break; // placed here ?? Investigate about this option
         }//--------------------------------------------------------------/
         else
         {

@@ -29,10 +29,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace std;
 using namespace XSI;
 
-/* for preview materials */
-/**/
+/* for preview materials
+*/
 extern bool is_preview;
 
+/* generic float for color
+*/
 extern float red, green, blue, alpha;
 
 extern Application app;
@@ -45,7 +47,7 @@ extern float vContrast;
 //--
 extern bool luxsi_find(CStringArray in_array, CString in_string);
 //-
-extern string replace(string input);
+extern std::string luxsi_replace(string input);
 //-
 extern bool luxdebug;
 
@@ -58,19 +60,24 @@ float sp_red, sp_green, sp_blue, sp_alpha;
 
 float refl_red, refl_green, refl_blue, refl_alpha;
 
+/* for roughness value
+*/
 float mRough;
 
-//ImageClip2 vBumpFile;
+/* shader is defined
+*/
 bool vIsSet=false;
 
-/* instance of Material class */
-/**/
+/* instance of Material Class
+*/
 Material mat;
 
-/* instance of Texture class */
+/* instance of Texture class 
+*/
 Texture vTexture;
 
-//- generic string containers for shader definitions
+/* generic string containers for shader definitions
+*/
 CString
     shaderStr,		//- container string for Shader
     shaderData,     //- container for global material data.
@@ -79,39 +86,39 @@ CString
     shaderType;		//- shader type
 
 
-/* Find texture connect to shader port */
-/**/
+/* Find texture connect to shader port
+*/
 Texture find_tex_used(Shader in_shader, CString in_string);
 
-/* Find an specific shader port */
-/**/
+/* Find an specific shader port
+*/
 CString find_shader_used( Shader in_shader, CString in_string);
 
-/* Write LuxRender Glass shader */
-/**/
+/* Write LuxRender Glass shader
+*/
 CString write_lux_glass(Shader in_shader, CString in_string, CString in_ID);
 
-/* Write LuxRender Metal shader */
-/**/
+/* Write LuxRender Metal shader
+*/
 CString write_lux_metal(Shader in_shader, CString in_string);
 
-/* Write LuxRender Car Paint shader */
-/**/
+/* Write LuxRender Car Paint shader
+*/
 CString write_lux_car_paint(Shader in_shader, CString in_string);
 
-/* Write test to translate an generic mia_material_phen shader */
-/**/
+/* Write test to translate an generic mia_material_phen shader
+*/
 CString write_mia_material_phen(Shader in_shader, CString in_string);
 
-/* Write LuxRender Shinymetal shader (deprecated?)*/
-/**/
+/* Write LuxRender Shinymetal shader (deprecated?)
+*/
 CString write_lux_shinymetal(Shader in_shader, CString in_string);
 
-//--
+/**/
 CString write_lux_substrate(Shader in_shader, CString in_string);
 
-/* Write LuxRender Matte and Matte Translucent shader */
-/**/
+/* Write LuxRender Matte and Matte Translucent shader
+*/
 CString write_lux_matte(Shader in_shader, CString in_string);
 
 /**/
