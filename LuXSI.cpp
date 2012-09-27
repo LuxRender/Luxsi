@@ -38,10 +38,8 @@ void writeLuxsiBasics();
 
 void writeLuxsiCam(X3DObject o);
 
-//void writeLuxsiLight(X3DObject o);
-
-//- test
-void writeLuxsiLight();
+//-
+int writeLuxsiLight();
 
 int writeLuxsiCloud(X3DObject o);
 
@@ -51,7 +49,7 @@ int writeLuxsiObj(X3DObject o);
 
 void luxsi_texture();
 
-CString writeLuxsiShader(); // testCString in_shaderString);
+CString writeLuxsiShader();
 
 void luxsi_write(double ftime);
 
@@ -60,9 +58,9 @@ void luxsi_preview(CString in_mat);
 //-
 void luxsi_execute();
 
-void luxsi_mat_preview(); //bool is_preview);
+void luxsi_mat_preview();
 
-string replace(string input);
+std::string luxsi_replace(string input);
 //--
 bool luxsi_find(CStringArray a, CString s);
 //--
@@ -1378,7 +1376,7 @@ void writeLuxsiBasics()
 
     f << "\nFilm \"fleximage\"\n"; //----
     f << "  \"integer xresolution\" ["<< vXRes <<"]\n  \"integer yresolution\" ["<< vYRes <<"]\n";
-    f << "  \"string filename\" [\""<< replace(fname.substr(0,loc)) <<"\"]\n";
+    f << "  \"string filename\" [\""<< luxsi_replace(fname.substr(0,loc)) <<"\"]\n";
 
     f << "  \"integer writeinterval\" ["<< vSave <<"]\n";
     f << "  \"integer displayinterval\" ["<< vDis <<"]\n";
@@ -1479,7 +1477,6 @@ void writeLuxsiBasics()
     {
         app.LogMessage( L"Not Sampler for exporter",siErrorMsg );
     }
-    //-
     
 
     //-------------------------------------------------------------
@@ -1869,7 +1866,7 @@ int writeLuxsiInstance(X3DObject o)
     //-
     if ( luxsi_find(aInstanceList, vModel.GetName() ) ) 
     {
-        //return 0;
+        if ( luxdebug ) app.LogMessage(L"Instance exist into a list");
     }
     else
     {
@@ -1901,7 +1898,7 @@ int writeLuxsiInstance(X3DObject o)
     }
     if (global_transf.GetSclX()!=1 || global_transf.GetSclY()!=1 || global_transf.GetSclZ()!=1) //-- changed && to ||, add support for not uniform scale
     {
-        //- !WARNING! change 'Y' for 'Z', but not poner negative ( -z).
+        //- !WARNING! change 'Y' for 'Z', but not negative ( -z).
         f << "Scale "<< global_transf.GetSclX() <<" "<< global_transf.GetSclZ() <<" "<< global_transf.GetSclY() <<"\n";
     }
 
@@ -1911,19 +1908,22 @@ int writeLuxsiInstance(X3DObject o)
     return 0;
 }
 //--
-void write_header_files()
+CString write_header_files()
 {
     //-- commons header for files .lxm and .lxo
-    f <<"\n# Created by LuXSI; Luxrender Exporter for Autodesk Softimage \n";
-    f <<"# Copyright (C) 2010 - 2012 by Michael Gangolf aka Miga \n";
-    f <<"# Code contributor;    P. Alcaide, aka povmaniaco. \n \n";
+    CString _header = L"";
+    _header += L"\n# Created by LuXSI; Luxrender Exporter for Autodesk Softimage \n";
+    _header += L"# Copyright (C) 2010 - 2012 by Michael Gangolf aka Miga \n";
+    _header += L"# Code contributor;    P. Alcaide, aka povmaniaco. \n \n";
+    //-
+    return _header;
 }
 //--
-void luxsi_mat_preview() //bool is_preview)
+void luxsi_mat_preview()
 {
     //--
     CString 
-        vFile_scene_folder = L"",   //- this file is create a '/resources' folder
+        vFile_scene_folder = L"",   //- this file is create a './resources' folder
         vfile_mat_preview = L"",    //- file name for exporter material data 
         mat_data_preview = L"";     //- container string for material data
     
@@ -1932,85 +1932,88 @@ void luxsi_mat_preview() //bool is_preview)
     //--
     vfile_mat_preview = vFile_scene_folder + L"/LuXSI/resources/scene_preview_mat.lxm";
     //--
-    app.LogMessage(L"File for material preview: "+ vfile_mat_preview);
+    if ( luxdebug ) app.LogMessage(L"File for material preview: "+ vfile_mat_preview);
    
     
     mat_data_preview = writeLuxsiShader();
     //-
-    app.LogMessage(L"Data for Preview mat: "+ mat_data_preview);
+    if ( luxdebug ) app.LogMessage(L"Data for Preview mat: "+ mat_data_preview);
     //--
     if ( luxsi_find(aMatList, L"Preview" ) )
     {
         //-
-        app.LogMessage(L"Inside mat preview");
+        if ( luxdebug ) app.LogMessage(L"Inside mat preview");
+        //-
 		std::ofstream fmat;
 		fmat.open(vfile_mat_preview.GetAsciiString());
-
-		//fmat << "\nMakeNamedMaterial \"sphere_mat\" \n";
         fmat << "# Material preview for LuXSI";
         fmat << mat_data_preview.GetAsciiString();
         fmat.close();
 
-        //-- scene file
+        //- scene file
         vFile_scene_folder += L"/LuXSI/resources/scene.lxs";
-        //-
-        luxsi_preview(vFile_scene_folder);
+
+        //- start rendering..
+        luxsi_preview( vFile_scene_folder );
 
     }
     // else ..algo :)
 }
 //--
+CString luxsi_normalize_path(CString vFile)
+{
+    //-- normalize path name
+    CString normalized_path = luxsi_replace(vFile.GetAsciiString()).c_str();
+
+    //- extract folder base for use 'relative path'
+    int base = int(normalized_path.ReverseFindString("\\\\"));
+    CString folder_base = normalized_path.GetSubString(0, base+2);
+
+    //- extract filename
+    CString file_path = normalized_path.GetSubString(base+2, normalized_path.Length());
+    //-
+    if ( luxdebug )
+    {
+        app.LogMessage(L"Path normalized is: "+ folder_base + L" File name is: "+ file_path);
+    }
+    //- extract extension
+    int ext = int(file_path.ReverseFindString("."));
+    //-
+    return file_path.GetSubString(0, ext);
+
+}
+//--
 void luxsi_write(double ftime)
 {
     // write objects, materials, lights, cameras
-    //root= app.GetActiveSceneRoot();
-    vIsLinux = CUtils::IsLinuxOS(); // linux check
-    CScriptErrorDescriptor status ;
-    CValueArray fooArgs(1) ;
-    fooArgs.Clear();
-    CValue retVal2="";
-
-    // only write settings
-    if ( vFileObjects == L"" )
-    {
-        CString def_lxs_file = app.GetInstallationPath(siProjectPath);
-        def_lxs_file += L"/def.lxs";
-        app.LogMessage( L"File path export is empty, used default path: "+ def_lxs_file );
-        vFileObjects = def_lxs_file; 
-    }
-    //else
-    app.LogMessage(L"[DEBUG]: Write data to: "+ vFileObjects);
-    //-
     if (vFileObjects != L"")
     {
-
-        CRefArray _array,
-            aObj,
-            aLight,
-            aCam,
-            aSurfaces,
-            aClouds,
-            aInstance;
-        //--
-        CRefArray aPlymesh;
-        aPlymesh.Clear();
+        CRefArray 
+            _array,     //- array for all items
+            aObj,       //- for objects( polygon mesh )
+            aCam,       //- for cams ( only export active camera ? )
+            aSurfaces,  //- for 'surface' primitives
+            aClouds,    //- for 'pointclouds' objects
+            aInstance,  //- for instance objects
+            aPlymesh;   //- for exporter object in .ply format
+            
         //--
         CStringArray emptyArray;
+        //-
         emptyArray.Clear();
+        //-
         _array.Clear();
-        //unused aMatList.Clear();
-        aInstanceList.Clear();
-
         aObj.Clear();
-        aSurfaces.Clear();
-        aLight.Clear();
         aCam.Clear();
+        aSurfaces.Clear();
         aClouds.Clear();
         aInstance.Clear();
+        aPlymesh.Clear();
 
-        ///////////////////////////////////////////////////////////
-        app.LogMessage(L"[DEBUG]: Created and cleaned arrays..");//
-        ///////////////////////////////////////////////////////////
+        //- cleaned global CStringArray  for instance list
+        aInstanceList.Clear();
+        //--
+        if ( luxdebug ) app.LogMessage(L"[DEBUG]: Created and cleaned arrays..");
 
         root = app.GetActiveSceneRoot();
         //--
@@ -2028,7 +2031,7 @@ void luxsi_write(double ftime)
             //-- Collection objects / visibilty check
             if (o.GetType()==L"polymsh")
             {
-                if (vIsHiddenObj || (vIsHiddenObj == false && (view_visbl == true && rend_visbl == true)))
+                if (vIsHiddenObj || (!vIsHiddenObj && ( view_visbl && rend_visbl )))
                 {
                     aObj.Add(o); // for create link into _geo.lxo file
                     if ( vplymesh ) aPlymesh.Add(o); // for write .ply file
@@ -2080,39 +2083,46 @@ void luxsi_write(double ftime)
 
         if ( vNumObj == 0)
         {
-            app.LogMessage(L"Any objects/surfaces to export! Check if objects are visible in XSI or switch on 'export hidden objects / surfaces'",siFatalMsg );
+            app.LogMessage(L"Any objects/surfaces to export! Check a list of 'Export hidden items..' in GUI", siFatalMsg );
         }
         else if (aCam.GetCount()==0)
         {
-            app.LogMessage(L"Any camera to export! Check if a camera is visible in XSI or switch on 'export hidden cameras'",siFatalMsg );
+            app.LogMessage(L"Any camera to export! Check a visible cameras in scene or switch ON 'export hidden cameras'", siFatalMsg );
         }
         else
         {
-            //-- test for animation
             vFileLxs = vFileObjects;
-
+            //-
+            int ext = int(vFileLxs.ReverseFindString("."));
+            
+            //- use only for exporter animation -----------------------------------------//
             CString vtime = L"";
             if ( ftime != DBL_MAX )
             {
-                //--
+                //- add framenumber to outfile name
                 vtime = CString(ftime);
-                int Loc = (int)vFileObjects.ReverseFindString(".");
-                vFileLxs = vFileObjects.GetSubString(0,Loc) + (L"_"+ vtime + L".lxs");
-                //--
-                app.LogMessage(L"OUT Filename: "+ vFileLxs );
-            }
+                vFileLxs = vFileLxs.GetSubString(0,ext) + (L"_"+ vtime + L".lxs");
+                //-
+                if ( luxdebug ) app.LogMessage(L"OUT Filename: "+ vFileLxs );
+            }//--------------------------------------------------------------------------//
 
-            //-- write files
-            CString vFileLXM = L"", vFileLXO = L""; 
-            //-
-            int Loc = (int)vFileLxs.ReverseFindString(".");
-            vFileLXM = vFileLxs.GetSubString(0,Loc) + (L"_mat.lxm");
-            vFileLXO = vFileLxs.GetSubString(0,Loc) + (L"_geo.lxo");
-            // vFileVOL = vInput_FileName.GetSubString(0,Loc) + (L"_vol.lxm");
-            vFilePLY = vFileLxs.GetSubString(0,Loc);
+            //- set extension for include files
+            CString path_base = luxsi_normalize_path(vFileLxs);
+            CString inc_LXM = path_base + L"_mat.lxm";
+            CString inc_LXO = path_base + L"_geo.lxo";
 
+            //- set extension for write files. Full path, not normalized 
+            CString vFileLXM = vFileLxs.GetSubString(0,ext) + (L"_mat.lxm");
+            //- for geometry..
+            CString vFileLXO = vFileLxs.GetSubString(0,ext) + (L"_geo.lxo");
+            //- for volume..
+            //CString vFileVOL = luxsi_normalize_path(vFileLxs, L"_vol.lxv");
 
-            //-- init progress bar
+            //- for PLy files
+            // it is not necessary to normalize the path... atm!
+            vFilePLY = vFileLxs.GetSubString(0,ext);
+
+            //- init progress bar
             pb.PutValue(0);
             pb.PutMaximum( aObj.GetCount()+ aInstance.GetCount() );
             pb.PutStep(1);
@@ -2120,20 +2130,21 @@ void luxsi_write(double ftime)
             pb.PutCaption( L"Processing data for exporter.." );
             pb.PutCancelEnabled(true);
 
-            //////////////////////////////////////////////////////////////////
-            app.LogMessage(L"[DEBUG]: Open files for write data"+ vFileLxs);//
-            //////////////////////////////////////////////////////////////////
+            //--
+            if ( luxdebug ) app.LogMessage(L"[DEBUG]: Open files for write data "+ vFileLxs);
+            //--
 
+            CString _header = write_header_files();
+            //-
             f.open(vFileLxs.GetAsciiString());
 
-            // insert header for files
-            write_header_files();
+            //- insert header
+            f << _header.GetAsciiString();
 
-            /////////////////////////////////////////////
-            app.LogMessage(L"[DEBUG]: Write Camera..");//
-            /////////////////////////////////////////////
-
-            for (int i=0;i<aCam.GetCount();i++) writeLuxsiCam(aCam[i]);
+            //--
+            if ( luxdebug ) app.LogMessage(L"[DEBUG]: Write Camera..");
+            //--
+            for (int i=0;i<aCam.GetCount(); i++) writeLuxsiCam(aCam[i]);
 
             //-- basics values
             writeLuxsiBasics();
@@ -2141,38 +2152,39 @@ void luxsi_write(double ftime)
             f << "\nWorldBegin \n";
 
             //-- create includes for geometry and materials
-            f << "\nInclude \""<< vFileLXM.GetAsciiString() <<"\" \n";
-            f << "Include \""<< vFileLXO.GetAsciiString() <<"\" \n";
+            f << "\nInclude \""<< inc_LXM.GetAsciiString() <<"\" \n";
+            f << "Include \""<< inc_LXO.GetAsciiString() <<"\" \n";
 
             f << "\nAttributeBegin \n";
 
             //-- lights
             writeLuxsiLight();
 
-            
             f << "\nAttributeEnd \n \n";
 
             f << "WorldEnd";
 
             f.close(); //------------------------------------------------------- end lxs
 
-            //-- open file _mat.lxm 
+            //- TEST NEW METHODE: 1) gathering data.. 2) write file..
+            CString luxsi_Shader_Data = writeLuxsiShader();
+            
+            //-- open file .lxm for write data
             f.open(vFileLXM.GetAsciiString()); 
 
             //-- insert header
-            write_header_files();
-
-            // test 7/11/12 for texture
-            //luxsi_texture();
-
-            app.LogMessage(L"[DEBUG]: Write materials");
-
-            CString _luxsi_shader = writeLuxsiShader();
-            f << _luxsi_shader.GetAsciiString();
-
+            f << _header.GetAsciiString();
+            
+            //- insert shader data
+            f << luxsi_Shader_Data.GetAsciiString();
+            
+            //->
             f.close(); //--< end lxm
+            //-
+            if ( luxdebug ) app.LogMessage(L"[DEBUG]: Write materials");
 
-            //-- test ply
+
+            //-- write ply files ( each for geometry object )
             for (int i = 0; i < aPlymesh.GetCount(); i++)
             {
                 // if (write_ply_object(aPlymesh[i],vFilePLY)==-1) break;
@@ -2181,11 +2193,11 @@ void luxsi_write(double ftime)
                 pb.Increment();
             }
 
-            //-- open file  _geom.lxo 
+            //-- write geometry file.
             f.open(vFileLXO.GetAsciiString()); 
 
             //-- insert header
-            write_header_files();
+            f << _header.GetAsciiString();
 
             //-- objects
             for (int i = 0; i < aObj.GetCount(); i++) 
@@ -2197,12 +2209,11 @@ void luxsi_write(double ftime)
             }
             //-- surfaces
             for (int i=0;i<aSurfaces.GetCount();i++) {
-                //if (writeLuxsiObj(aSurfaces[i],L"surface")==-1) break;
-                if (writeLuxsiSurface(aSurfaces[i],L"surface")==-1) break;
+                if (writeLuxsiSurface(aSurfaces[i], L"surface")==-1) break;
                 if (pb.IsCancelPressed() ) break;
                 pb.Increment();
             }
-            //-- clouds
+            //-- pointclouds
             for (int i=0;i<aClouds.GetCount();i++) {
                 if (writeLuxsiCloud(aClouds[i])==-1) break;
                 if (pb.IsCancelPressed() ) break; 
@@ -2215,18 +2226,18 @@ void luxsi_write(double ftime)
                 if (pb.IsCancelPressed() ) break;
                 pb.Increment();
             }
-            //-- close pogress bar
-            pb.PutVisible( false );
-
             //-- close _geom file
             f.close();
 
+            //-- close pogress bar
+            pb.PutVisible( false );
+            //- done..
             vExportDone = true;
         }
     }
     else
     {
-     app.LogMessage(L"Filename is empty", siErrorMsg );
+        app.LogMessage(L"Filename is empty", siFatalMsg );
     }
 }
 //--
@@ -2286,15 +2297,12 @@ void luxsi_execute()
 void luxsi_preview(CString vFile_scene_preview)
 {
     //--
-    CString lux_bin=L"", lux_data = L"";
+    CString lux_bin = L"";
     //-
     lux_bin = vLuXSIPath + L"/luxrender.exe";
-    //if ( is_preview )
-    //{
-    //    lux_data = L"";
-    // }
     //-
     CString exec = lux_bin +" \""+ vFile_scene_preview + "\"";
+
     //- show path for debug...
     app.LogMessage(exec);
     //-
