@@ -489,16 +489,18 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
     
     //* About....
     lay.AddTab(L"About");
-    lay.AddStaticText(L" LuXSI; LuxRender Exporter for Softimage");
-    lay.AddStaticText(L" Copyright 2010-2012 Michael Gangolf aka \"miga\"");
-    lay.AddStaticText(L" e-mail; migaweb@de");
-    //-
-    lay.AddStaticText(L" Code contributor; Pedro Alcaide \"povmaniaco\"");
-    lay.AddStaticText(L" e-mail; p.alcaide@hotmail.com");
-    //-
-    lay.AddStaticText(L" LuxRender is a GPL physically based ");
-    lay.AddStaticText(L" and unbiased rendering engine.");
-    lay.AddStaticText(L" http://www.luxrender.net");
+    lay.AddGroup();
+        lay.AddStaticText(L" LuXSI; LuxRender Exporter for Softimage");
+        lay.AddStaticText(L" Copyright 2010-2012 Michael Gangolf \"miga\"");
+        lay.AddStaticText(L" e-mail; migaweb@de");
+        //-
+        lay.AddStaticText(L" Code contributor; Pedro Alcaide \"povmaniaco\"");
+        lay.AddStaticText(L" e-mail; p.alcaide@hotmail.com");
+        //-
+        lay.AddStaticText(L" LuxRender is a GPL physically based ");
+        lay.AddStaticText(L" and unbiased rendering engine.");
+        lay.AddStaticText(L" http://www.luxrender.net");
+    lay.EndGroup();
     
 
     return CStatus::OK;
