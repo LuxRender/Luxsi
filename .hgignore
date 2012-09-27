@@ -87,3 +87,9 @@ Release/link.command.1.tlog
 Release/cl.command.1.tlog
 Release/CL.write.1.tlog
 Release/CL.read.1.tlog
+luxsi.ncb
+luxsi2008.sln
+Release/luxsi.dll.intermediate.manifest
+*.dll
+*.suo
+*.ncb
