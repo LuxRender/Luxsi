@@ -33,8 +33,10 @@ extern ofstream f;
 extern Application app;
 
 extern bool luxdebug;
+//-
+CString strCloud;
 
-int writeLuxsiCloud(X3DObject obj)
+CString writeLuxsiCloud(X3DObject obj)
 {     
     //
     // Write pointclouds
@@ -50,7 +52,7 @@ int writeLuxsiCloud(X3DObject obj)
     CICEAttributeDataArrayVector3f aPointPosition; 
     CICEAttributeDataArrayLong aID;
     //- if use aSize, 'ERROR Runtime library c++'
-    //- TO-DO; revise
+    //- TODO; revise
     //
     CICEAttributeDataArrayFloat aSize;
     //--
@@ -68,7 +70,8 @@ int writeLuxsiCloud(X3DObject obj)
     {
         ICEAttribute attr = attrs[i]; 
         //attr = attrs[i];
-        if ( luxdebug ) app.LogMessage(L"Particle attributes..: "+ CString(attr.GetName()));
+        //if ( luxdebug ) 
+        //app.LogMessage(L"Particle attributes name ..: "+ CString(attr.GetName()));
         //--
         if (attr.GetName() == L"PointPosition"){
             attr.GetDataArray(aPointPosition);
@@ -87,21 +90,21 @@ int writeLuxsiCloud(X3DObject obj)
             attr.GetDataArray(aVel);
         }
         //- test shape
-        if (attr.GetName() == L"Shape")
-        {
-            attr.GetDataArray(ashape);
-           // particle_shape = ashape[0];
-        }
+       // CString _shape=L"";
+       // if (attr.GetName() == L"Shape")
+       // {
+           
+       // }
     }
     //- set transform
     KinematicState start_state = obj.GetKinematics().GetGlobal();
     CTransformation cloud_transform = start_state.GetTransform(ftime); //-- time
     CVector3 cloud_pos;
 
-    //--- more  test´s for particle support
-    //-- only for test; not better way
-    //- float not work, use a 'trick'
-    //-
+    /** More tests for particle support.
+    *   Only for test; not better way
+    *   Float not work, use a 'trick'
+    */
     CString _size = L"0.2"; 
     //- TODO; shape options into 'emmiter' UI
     //->
@@ -119,25 +122,25 @@ int writeLuxsiCloud(X3DObject obj)
     }
        
     //-
-    for (unsigned int i=0;i<aPointPosition.GetCount();i++)
+    strCloud.Clear();
+    //-
+    for (unsigned int i = 0; i < aPointPosition.GetCount(); i++)
     {
         //-
         cloud_pos.Set(double(aPointPosition[i][0]), double(aPointPosition[i][1]), double(aPointPosition[i][2]));
         cloud_pos.MulByTransformationInPlace(cloud_transform);
 
         //- get all points
-        f << "\nAttributeBegin \n";
-        f << "\nNamedMaterial \""<< m.GetName().GetAsciiString() <<"\"\n";
-        f << "Translate "<< cloud_pos[0] <<" "<< -cloud_pos[2] <<" "<< cloud_pos[1] <<"\n";
+        strCloud += L"\nAttributeBegin \n";
+        strCloud += L"\nNamedMaterial \""+ m.GetName() + L"\"\n";
+        strCloud += L"Translate "+ CString(cloud_pos[0]) + L" "+ CString(-cloud_pos[2]) + L" "+ CString(cloud_pos[1]) + L"\n";
         //-
-        f << "Shape \"sphere\"\n";          //- TODO; use other shapes from GUI options?
-        f << "  \"float radius\" ["<< CString(_size).GetAsciiString() <<"]\n";  //- if use float 'aSize', make a error; revised
-        f << "  \"float zmin\" [ -90 ]\n";  //- test; semi-sphere up =  -90
-        f << "  \"float zmax\" [ 90 ]\n";   //- test; semi-sphere down = 90
-        f << "  \"float phimax\" [360]\n";
-        f << "AttributeEnd #"<< obj.GetName().GetAsciiString() <<"\n"; // CString(i)...   
+        strCloud += L"Shape \"sphere\"\n";              //- TODO; use other shapes from GUI options?
+        strCloud += L"  \"float radius\" ["+ _size + L"]\n";  //- if use float 'aSize', make a error; revised
+        strCloud += L"  \"float zmin\" [ -90 ]\n";      //- test; semi-sphere up =  -90
+        strCloud += L"  \"float zmax\" [ 90 ]\n";   //- test; semi-sphere down = 90
+        strCloud += L"  \"float phimax\" [360]\n";
+        strCloud += L"AttributeEnd #"+ obj.GetName() + L"\n"; // CString(i)...     
     }
-    return 0;
-   
+    return strCloud;
 }
-//--
