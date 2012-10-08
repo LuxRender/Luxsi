@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #include "include\luxsi_values.h"
+#include "include\LuXSI.h"
 //#include "plymesh/rply.h"
 //--
 using namespace XSI;
@@ -41,13 +42,13 @@ void writeLuxsiCam(X3DObject o);
 //-
 int writeLuxsiLight();
 
-int writeLuxsiCloud(X3DObject o);
+CString writeLuxsiCloud(X3DObject o);
 
 int writeLuxsiInstance(X3DObject o);
 
 int writeLuxsiObj(X3DObject o);
 
-void luxsi_texture();
+//void luxsi_texture();
 
 CString writeLuxsiShader();
 
@@ -289,11 +290,10 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     prop.AddParameter( L"btraversalcost",      CValue::siInt4, sps,L"",L"",  vtraversalcost,    0,100,0,100,  oParam );
     //--
     
-//  prop.AddParameter( L"mlt",      CValue::siBool, sps,L"",L"",  vMLT,     dft,dft,dft,dft,    oParam); // unused?
     prop.AddParameter( L"resume",   CValue::siBool, sps,L"",L"",  vResume,  dft,dft,dft,dft,    oParam);
  
     //- set default filename for scene and image out
-    vFileObjects = app.GetInstallationPath(siProjectPath);
+    vFileExport = app.GetInstallationPath(siProjectPath);
 
     //- set path for LuxRender binarie file
     vLuXSIPath = app.GetInstallationPath(siUserAddonPath);
@@ -302,9 +302,9 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     vblxs_file = app.GetInstallationPath(siProjectPath);
     //--
     #ifdef __unix__
-        vFileObjects += L"/tmp.lxs";
+        vFileExport += L"/tmp.lxs";
     #else
-        vFileObjects += L"/tmp.lxs"; //-- also work in windows systems ?
+        vFileExport += L"/tmp.lxs"; //-- also work in windows systems ?
 		
         vLuXSIPath += L"/LuXSI/Application/bin";
     #endif
@@ -313,7 +313,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     //-- lxs files for re-render  
     prop.AddParameter( L"blxs_file",    CValue::siString, sps, L"",L"", vblxs_file,    oParam);
     
-	prop.AddParameter( L"fObjects",     CValue::siString, sps, L"", L"", vFileObjects, oParam );
+	prop.AddParameter( L"fObjects",     CValue::siString, sps, L"", L"", vFileExport, oParam );
 
     prop.AddParameter( L"fLuxPath",     CValue::siString, sps, L"", L"", vLuXSIPath, oParam );
 
@@ -323,6 +323,8 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
 {
     //--
+    ftime = DBL_MAX;
+    //-
     PPGEventContext ctxt( in_ctxt ) ;
     PPGLayout lay = Context(in_ctxt).GetSource() ; // UNUSED
 
@@ -347,14 +349,14 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
     {
         CValue buttonPressed = ctxt.GetAttribute( L"Button" );
 
-        //-- bpreview
-        is_preview = false;
         //-
+        is_preview = false;
+        //- bpreview
         if (buttonPressed.GetAsText()==L"blpreview")
         {
             //--
             is_preview = true;
-            luxsi_mat_preview(); //is_preview);
+            luxsi_mat_preview();
         }
         if (buttonPressed.GetAsText()==L"bre_render")
         {
@@ -374,26 +376,38 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
             int time_start = playControl.GetParameterValue( L"In" );
             int time_end = playControl.GetParameterValue( L"Out" );
 
-            app.LogMessage(L"Frame Start is: "+ CString(time_start)
-                + L" End frame is: "+ CString(time_end));
-
-            //-- test for render animation
+            //- Todo: create option menu for lqueue
+            lqueue = true;
+            //- reset queue_list
+            queue_list.Clear();
+            //-
             for ( int i = time_start; i < time_end; i += vframestep)
             {
                 //-
-                app.LogMessage(L" PLAY FRAME: "+ CString(i)); 
+                app.LogMessage(L" PLAY FRAME: "+ CString(i));
+                
                 //- frame
                 ftime = i;
                 luxsi_write(ftime);
-                //--
-                //luxsi_execute();
-                //-
-                // time++;
+                
                 //- test MsgBox
                 //long st = 3;
                 //kit.MsgBox(L"Wait, render frame: "+ CString(time)+ L"in curse", siMsgOk, L"Warning!!", st);
             }
-            return 1; // para que??
+            /** si deseamos lanzar el render de la animacion inmediatamente
+            *   aqui podriamos escribir el .lxq y llamar a luxsi_execute con el
+            *   parametro -L "file.lxq"
+            */
+            int ext = int(vFileExport.ReverseFindString("."));
+            //- for 'queue' files
+            vFileQueue = vFileExport.GetSubString(0,ext) + L".lxq";
+            //-
+            f.open(vFileQueue.GetAsciiString());
+            //-
+            f << queue_list.GetAsciiString();
+            f.close();
+            //-
+            luxsi_execute();
         }
         if (buttonPressed.GetAsText()==L"render_luxsi")
         {
@@ -486,7 +500,7 @@ void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext c
     } else if (paramName == L"save_png")     { vPng          = changed.GetValue();
 
     //-- save file name
-    } else if (paramName == L"fObjects")     { vFileObjects  = changed.GetValue();
+    } else if (paramName == L"fObjects")     { vFileExport  = changed.GetValue();
     } else {
         //app.LogMessage(L"Tab 'Main' update values..");
     }
@@ -1966,11 +1980,12 @@ CString luxsi_normalize_path(CString vFile)
     CString normalized_path = luxsi_replace(vFile.GetAsciiString()).c_str();
 
     //- extract folder base for use 'relative path'
-    int base = int(normalized_path.ReverseFindString("\\\\"));
+    int base = int(normalized_path.ReverseFindString("\\\\")); // .ext
     CString folder_base = normalized_path.GetSubString(0, base+2);
 
     //- extract filename
     CString file_path = normalized_path.GetSubString(base+2, normalized_path.Length());
+    // file path es ==  fichero.ext
     //-
     if ( luxdebug )
     {
@@ -1978,7 +1993,7 @@ CString luxsi_normalize_path(CString vFile)
     }
     //- extract extension
     int ext = int(file_path.ReverseFindString("."));
-    //-
+    //- return only filename, without extension
     return file_path.GetSubString(0, ext);
 
 }
@@ -1986,10 +2001,10 @@ CString luxsi_normalize_path(CString vFile)
 void luxsi_write(double ftime)
 {
     // write objects, materials, lights, cameras
-    if (vFileObjects != L"")
+    if (vFileExport != L"")
     {
         CRefArray 
-            _array,     //- array for all items
+            itemsArray, //- array for all items
             aObj,       //- for objects( polygon mesh )
             aCam,       //- for cams ( only export active camera ? )
             aSurfaces,  //- for 'surface' primitives
@@ -2002,7 +2017,7 @@ void luxsi_write(double ftime)
         //-
         emptyArray.Clear();
         //-
-        _array.Clear();
+        itemsArray.Clear();
         aObj.Clear();
         aCam.Clear();
         aSurfaces.Clear();
@@ -2017,10 +2032,10 @@ void luxsi_write(double ftime)
 
         root = app.GetActiveSceneRoot();
         //--
-        _array += root.FindChildren( L"", L"", emptyArray, true );
-        for ( int i=0; i < _array.GetCount(); i++ )
+        itemsArray += root.FindChildren( L"", L"", emptyArray, true );
+        for ( int i=0; i < itemsArray.GetCount(); i++ )
         {
-            X3DObject o(_array[i]);
+            X3DObject o(itemsArray[i]);
             //app.LogMessage( L"\tObject Name: " + o.GetName() + L" Type: " + o.GetType() 
             //    + L" parent: "+ X3DObject(o.GetParent()).GetType());
             //--
@@ -2091,36 +2106,55 @@ void luxsi_write(double ftime)
         }
         else
         {
-            vFileLxs = vFileObjects;
-            //-
-            int ext = int(vFileLxs.ReverseFindString("."));
+            /** vFileExport is a base name path
+            */
+            vFileLxs.Clear();// is same what '='?
+            vFileLxs = vFileExport;
+            //- default extension..
+            int ext = 0;
+            ext = int(vFileExport.ReverseFindString("."));
             
             //- use only for exporter animation -----------------------------------------//
+            app.LogMessage(L"[DEBUG]: ftime is: "+ CString(ftime));
             CString vtime = L"";
+            //-
             if ( ftime != DBL_MAX )
             {
-                //- add framenumber to outfile name
+                //- add frame number to outfile name
                 vtime = CString(ftime);
-                vFileLxs = vFileLxs.GetSubString(0,ext) + (L"_"+ vtime + L".lxs");
+                vFileLxs = vFileLxs.GetSubString(0, ext) + (L"_"+ vtime + L".lxs");
                 //-
+                if ( lqueue )
+                {
+                    queue_list += vFileLxs + L"\n";
+                }
                 if ( luxdebug ) app.LogMessage(L"OUT Filename: "+ vFileLxs );
             }//--------------------------------------------------------------------------//
 
-            //- set extension for include files
+            /** Setup extension for include files
+            *   luxsi_normalize_path() return filename + framenumber if exist,
+            *   but not include the extension.
+            */
             CString path_base = luxsi_normalize_path(vFileLxs);
-            CString inc_LXM = path_base + L"_mat.lxm";
-            CString inc_LXO = path_base + L"_geo.lxo";
+            CString inc_LXM = path_base + L"_mat.lxm";  // material definitions
+            CString inc_LXO = path_base + L"_geo.lxo";  // geometry definitions
+            
 
-            //- set extension for write files. Full path, not normalized 
-            CString vFileLXM = vFileLxs.GetSubString(0,ext) + (L"_mat.lxm");
+            /** For animation, reset 'ext' value to new filename.
+            *   The lenght of new filename it is more long (name + frame + extension).
+            *   Not use normalized path.
+            */
+            ext = int(vFileLxs.ReverseFindString("."));
+            CString vFileLXM = vFileLxs.GetSubString(0, ext) + (L"_mat.lxm");
             //- for geometry..
-            CString vFileLXO = vFileLxs.GetSubString(0,ext) + (L"_geo.lxo");
+            CString vFileLXO = vFileLxs.GetSubString(0, ext) + (L"_geo.lxo");
             //- for volume..
             //CString vFileVOL = luxsi_normalize_path(vFileLxs, L"_vol.lxv");
-
-            //- for PLy files
-            // it is not necessary to normalize the path... atm!
-            vFilePLY = vFileLxs.GetSubString(0,ext);
+            
+            /** for PLy files.
+            *   use vFileLxs for include number of frame.
+            */
+            vFilePLY = vFileLxs.GetSubString(0, ext);
 
             //- init progress bar
             pb.PutValue(0);
@@ -2144,7 +2178,7 @@ void luxsi_write(double ftime)
             //--
             if ( luxdebug ) app.LogMessage(L"[DEBUG]: Write Camera..");
             //--
-            for (int i=0;i<aCam.GetCount(); i++) writeLuxsiCam(aCam[i]);
+            for (int i = 0; i < aCam.GetCount(); i++) writeLuxsiCam(aCam[i]);
 
             //-- basics values
             writeLuxsiBasics();
@@ -2166,8 +2200,11 @@ void luxsi_write(double ftime)
 
             f.close(); //------------------------------------------------------- end lxs
 
-            //- TEST NEW METHODE: 1) gathering data.. 2) write file..
-            CString luxsi_Shader_Data = writeLuxsiShader();
+            /** TEST NEW METHOD: 1) gathering data, 2) open file, 3)write data, 4)closed file..
+            *   This method reduces the time that the file is open for writing.
+            */
+            CString luxsi_Shader_Data = L"";
+            luxsi_Shader_Data = writeLuxsiShader();
             
             //-- open file .lxm for write data
             f.open(vFileLXM.GetAsciiString()); 
@@ -2181,19 +2218,20 @@ void luxsi_write(double ftime)
             //->
             f.close(); //--< end lxm
             //-
-            if ( luxdebug ) app.LogMessage(L"[DEBUG]: Write materials");
+            if ( luxdebug ) app.LogMessage(L"[DEBUG]: Write file materials: "+ vFileLXM);
 
 
             //-- write ply files ( each for geometry object )
             for (int i = 0; i < aPlymesh.GetCount(); i++)
             {
-                // if (write_ply_object(aPlymesh[i],vFilePLY)==-1) break;
+                //if (write_ply_object(aPlymesh[i],vFilePLY)==-1) break;
                 write_ply_object(aPlymesh[i],vFilePLY);
                 if (pb.IsCancelPressed() ) break;
                 pb.Increment();
             }
 
-            //-- write geometry file.
+            //- write geometry file.
+            app.LogMessage(L"[DEBUG]: Open file for geometry: "+ vFileLXO);
             f.open(vFileLXO.GetAsciiString()); 
 
             //-- insert header
@@ -2208,17 +2246,23 @@ void luxsi_write(double ftime)
                 pb.Increment();
             }
             //-- surfaces
-            for (int i=0;i<aSurfaces.GetCount();i++) {
+            for (int i=0;i<aSurfaces.GetCount();i++) 
+            {
                 if (writeLuxsiSurface(aSurfaces[i], L"surface")==-1) break;
                 if (pb.IsCancelPressed() ) break;
                 pb.Increment();
             }
             //-- pointclouds
-            for (int i=0;i<aClouds.GetCount();i++) {
-                if (writeLuxsiCloud(aClouds[i])==-1) break;
+            CString cloud_data; // = L"";
+            //
+            for (int i = 0; i < aClouds.GetCount(); i++) 
+            {
+                cloud_data = writeLuxsiCloud(aClouds[i]);
                 if (pb.IsCancelPressed() ) break; 
                 pb.Increment();
             }
+            f << cloud_data.GetAsciiString();
+
             //-- instances
             for (int i=0;i<aInstance.GetCount();i++) 
             {
@@ -2256,6 +2300,7 @@ void luxsi_execute()
     //-- make default path
     if ( vLuXSIPath == L"" )
     {
+        // To do; use option for validate path
         CString def_exe_path = app.GetInstallationPath(siUserAddonPath);
         def_exe_path += L"/LuXSI/Application/bin";
         app.LogMessage(L"Path empty, used default path: "+ CString(def_exe_path));
@@ -2268,22 +2313,28 @@ void luxsi_execute()
                 pid_t pid = fork();
 				if( 0 == pid ) 
                 {
-                     system ( ( vLuXSIPath +" \""+ vFileObjects.GetAsciiString()));
+                     system ( ( vLuXSIPath +" \""+ vFileExport.GetAsciiString()));
                      exit(0);
                 }
         #else
             // windows
-            CString Lux_Binarie = L"";
-            if (vRmode == 1) //-- console
-            {
-                Lux_Binarie = vLuXSIPath + L"/luxconsole.exe";
-            }
-			else
-			{
-				Lux_Binarie = vLuXSIPath + L"/luxrender.exe";
-			}
-			//--
-			CString exec = Lux_Binarie +" \""+ vFileLxs + "\"";
+            CString Lux_Binarie = L"", exec = L"";
+
+            //- by default use LuxRender GUI..
+            Lux_Binarie = vLuXSIPath + L"/luxrender.exe";
+
+            //- or use console..
+            if (vRmode == 1) Lux_Binarie = vLuXSIPath + L"/luxconsole.exe";
+
+            //- by default load  unique .lxs file..
+            exec = Lux_Binarie +" \""+ vFileLxs + "\"";
+
+            //- or use queue list for load a list files..
+            if (lqueue) exec = Lux_Binarie + L" -L \""+ vFileQueue + "\"";
+            
+            // reset queue
+            lqueue = false;
+            //-
             app.LogMessage(exec);
             loader(exec.GetAsciiString());
         #endif
