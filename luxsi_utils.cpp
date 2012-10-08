@@ -27,55 +27,48 @@ using namespace XSI;
 using namespace MATH;
 using namespace std;
 
-/*
-*/
+/**/
 extern Application app;
-/*
-*/
+/**/
 extern Model root;
-/*
-*/
+/**/
 extern bool luxdebug;
 
 
 //-
 CString find_texlayer(Shader s)
 {
-    //- texturelayer name
-    CString tl_name = L"";
-    //- texturelayerports name
-    CString tlportName = L"";
-
+    CString
+        textureLayerName = L"",      //- texturelayer name
+        textureLayerPortName = L"";   //- texturelayerports name
+    
     //--
-    CRefArray texlayer(s.GetTextureLayers());
+    CRefArray texLayerArray(s.GetTextureLayers());
     //->
-    for ( long i = 0; i < texlayer.GetCount(); i++)
+    for ( long i = 0; i < texLayerArray.GetCount(); i++)
     {
         //->
-        TextureLayer t_layer(texlayer[i]);
-        tl_name = t_layer.GetName();
+        TextureLayer texLayer(texLayerArray[i]);
+        textureLayerName = texLayer.GetName();
         //-
-        if ( luxdebug )
-        {
-            app.LogMessage(L"TextureLayer name in use: "+ tl_name);
-        }
+        if ( luxdebug ) app.LogMessage(L"TextureLayer name in use: "+ textureLayerName);
         //->
-        if (tl_name != L"")
+        if (textureLayerName != L"")
         {
             //->
-            CRefArray t_layerPort(t_layer.GetTextureLayerPorts());
+            CRefArray t_layerPort(texLayer.GetTextureLayerPorts());
             for (long j = 0; j < t_layerPort.GetCount(); j++)
             {
                 //->
                 TextureLayerPort tlport(t_layerPort[j]);
-                tlportName = tlport.GetName();
+                textureLayerPortName = tlport.GetName();
                 //-
-                if ( luxdebug ) app.LogMessage(L"TexLayerPort name in use: "+ tlportName);
+                if ( luxdebug ) app.LogMessage(L"TexLayerPort name in use: "+ textureLayerPortName);
             }
         }
-        return tlportName;
+        return textureLayerPortName;
     }
-    return tl_name;
+    return textureLayerName;
 }
 //--
 CString findInGroup(CString s)
@@ -114,14 +107,14 @@ string luxsi_replace(string input)
     return input;
 }
 //--
-bool luxsi_find(CStringArray a, CString s)
+bool luxsi_find(CStringArray in_array, CString in_string)
 {
     //
-    // Returns true if String s is in Array a
+    // Returns true if String is in Array
     //
-    for (int i = 0; i < a.GetCount(); i++)
+    for (int i = 0; i < in_array.GetCount(); i++)
     {
-        if (a[i]==s)
+        if (in_array[i] == in_string)
         {
             return true;
         }
@@ -157,7 +150,7 @@ CString find_shader_used( Shader s, CString used_shader)
         //--
         CString objname = obj.GetName();
 
-        if (luxdebug) app.LogMessage(L" Obj name is: "+ objname);
+        //if (luxdebug) app.LogMessage(L" Obj name is: "+ objname);
 
         //--
         if ( objname == used_shader )
@@ -170,7 +163,7 @@ CString find_shader_used( Shader s, CString used_shader)
                 SIObject parent_obj = parent_needobj[j];
                 used_shader = parent_obj.GetName(); // GetAsciiString() ??
                 //-
-                if (luxdebug) app.LogMessage(L"Texture name: "+ used_shader);
+                //if (luxdebug) app.LogMessage(L"Texture name: "+ used_shader);
             }
         }
     }
