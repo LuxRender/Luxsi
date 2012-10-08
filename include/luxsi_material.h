@@ -51,7 +51,7 @@ extern std::string luxsi_replace(string input);
 //-
 extern bool luxdebug;
 
-extern CString luxsi_texture( Material in_mat, Shader in_shader, CString in_string);
+extern CString luxsi_texture( Material in_mat, Shader in_shader);
 
 //- declare local variables
 float b_red, b_green, b_blue, b_alpha;
@@ -80,7 +80,7 @@ Texture vTexture;
 */
 CString
     shaderStr,		//- container string for Shader
-    shaderData,     //- container for global material data.
+    materialData,     //- for material data.
     texStr,         //- container string for Texture data
     vChanel,		//- chanel texture type
     shaderType;		//- shader type
@@ -121,11 +121,12 @@ CString write_lux_substrate(Shader in_shader, CString in_string);
 */
 CString write_lux_matte(Shader in_shader, CString in_string);
 
-/**/
-CString(mat_value(
-            Shader in_shader,       //- specific Shader Class
-            CString in_texture,     //- Lux texture component ( Kd, Ks, Kr...)
-            CString in_shader_port  //- Nodeport name ( diffuse, specular, Kd,,)
-        ));
+/** Helper for search color of texture connect to each node port
+* @function mat_value,
+* @param in_shader,      //- specific Shader Class
+* @param in_texture,     //- Lux texture component ( Kd, Ks, Kr...)
+* @param in_shader_port  //- Nodeport name ( diffuse, specular, Kd,,)
+*/
+CString mat_value( Shader in_shader, CString in_texture, CString in_shader_port);
 
 #endif //LUXSI_MATERIAL_H

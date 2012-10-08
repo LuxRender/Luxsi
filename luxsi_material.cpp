@@ -26,42 +26,30 @@ using namespace std;
 using namespace XSI;
 using namespace MATH;
 
-
-//void
-CString writeLuxsiShader() //CString in_shader)
+//-
+CString writeLuxsiShader()
 {
-    // test for fail write scene after material preview
-    //CString shaderData;
-    //- end test
-
-    //- begin values..
+    //-first of all..
     aMatList.Clear();
+    //- clear data
+    materialData.Clear();
 
     //- Search materials library.
     Scene scene = app.GetActiveProject().GetActiveScene();
     Library matlib = scene.GetActiveMaterialLibrary();
     CRefArray materials = matlib.GetItems();
-    // use for all scene material libs : scene.GetMaterialLibraries() ??;
-
-    /*//- write default bumpmap texture
-    f <<"\nTexture \"mate_bump+normal_generated\" \"float\" \"multimix\" \n";
-    f <<"	\"texture tex1\" [\"\"] # bumpmap\n";
-    f <<"	\"texture tex2\" [\"\"] # normalmap\n";
-    f <<"	\"float weights\" [1.000000000000000 1.000000000000000]\n";
-    */
-
+    //-
     for ( LONG i=0; i < materials.GetCount(); i++ )
     {
-        //-
-        shaderStr = L"";
-        texStr = L"";
-        vChanel = L"";
-        shaderType = L"";
+        //- clear shader containers..
+        shaderStr.Clear();
+        texStr.Clear();
+        vChanel.Clear();
+        shaderType.Clear();
 
-        //-------------------------
-        //Material m( materials[i] );
+        //------------------
         mat = materials[i];
-        //-------------------------
+        //------------------
         if ( int(mat.GetUsedBy().GetCount())== 0 ) continue;
 
         CString MatName(mat.GetName());
@@ -289,55 +277,56 @@ CString writeLuxsiShader() //CString in_shader)
                 // fall back shader
                 app.LogMessage(L"Non valid shader for LuxRender: [ "+ vMatID + L" ]. Writen the default shader values");
                 //-
-                shaderType = L"matte";
+                shaderType = L"matte"; 
                 shaderStr = L"  \"color Kd\" [0.7 0.7 0.7]\n";
                 shaderStr += L"  \"float sigma\" [0.1]\n";
             }
             
-            //-- texture data
-            texStr = luxsi_texture(mat, s, texStr);
+            //-- if have texture data
+            if ( s.GetShaders().GetCount() > 0 )
+            {
+                texStr = luxsi_texture(mat, s); 
+            }
 
         }//- process material preview ----------------------------------/
         if ( MatName == L"Preview" && is_preview )
         {
-            CString in_shader;  //- for shader preview data
+            CString prev_material;  //- for material preview data
             //-
             if (luxdebug) app.LogMessage(L"[DEBUG]: Process data for Material Preview");
 
             //- texture component
-            if ( texStr != L"") in_shader = texStr + L"\n";
+            if ( texStr != L"") prev_material = texStr + L"\n";
             
             //- shader component
-            in_shader += L"\nMakeNamedMaterial \"sphere_mat\" \n";
-            in_shader += L"  \"string type\" [\""+ shaderType + L"\"]\n";
-            in_shader += L" "+ shaderStr + L"\n";
+            prev_material += L"\nMakeNamedMaterial \"sphere_mat\" \n";
+            prev_material += L"  \"string type\" [\""+ shaderType + L"\"]\n";
+            prev_material += L" "+ shaderStr + L"\n";
                         
-            return in_shader;
+            return prev_material;
             break; // placed here ?? Investigate about this option
         }//--------------------------------------------------------------/
         else
         {
-            //-  write texture 
+            //-  request texture data 
             if (texStr != L"") 
             {
-                shaderData += texStr;
+                materialData += texStr;
             }
             //- write shader
-            shaderData += L"\nMakeNamedMaterial \""+ MatName + L"\" \n";
-            shaderData += L"    \"string type\" [\""+ shaderType + L"\"]\n";
-            shaderData += L"	"+ shaderStr;
+            materialData += L"\nMakeNamedMaterial \""+ MatName + L"\" \n";
+            materialData += L"    \"string type\" [\""+ shaderType + L"\"]\n";
+            materialData += L"	"+ shaderStr;
         }
     }
-    return shaderData;
+    return materialData;
 }
 
 //-- procces_mat
 CValue _process(Shader s, CString vfloat)
 {
     //- only for test..
-    CValue in_string=s.GetParameterValue(vfloat);
-    //-
-    return in_string;
+    return s.GetParameterValue(vfloat);
 }
 
 //--
@@ -345,7 +334,7 @@ CString mat_value(Shader s, CString in_texture, CString in_shader_port)
 {
     //-------------
     //- status: Ok
-    // app.LogMessage(L"in texture: "+ in_texture + L" in node color: "+ in_node_color);
+    if ( luxdebug ) app.LogMessage(L"in texture: "+ in_texture + L" in node color: "+ in_shader_port);
     //-------------
     CString _component = L"";
     //--
@@ -356,8 +345,8 @@ CString mat_value(Shader s, CString in_texture, CString in_shader_port)
     //-
     CString t_name = tex_shader.GetName(); 
     //-
-    app.LogMessage(L"Connect..: "+ in_shader_port + L" port, to texture: " + tex_shader.GetName());
-
+    if ( luxdebug ) app.LogMessage(L"Connect..: "+ in_shader_port + L" port, to texture: "+ tex_shader.GetName());
+    
     //-
     if ( tex_shader.GetName() != L"") //t_name != L"")
     {
@@ -417,7 +406,7 @@ CString write_lux_glass(Shader s, CString shStr, CString vMatID)
 CString write_lux_metal(Shader s, CString shStr)
 {
     //-----------------------------
-    //- status: Add NK files option
+    //  Status: Add NK files option
     //-----------------------------
     const char *ametal [5] = {"amorphous carbon", "silver", "gold", "copper", "aluminium"};
     int nmetal = s.GetParameterValue(L"mname");
@@ -439,7 +428,7 @@ CString write_lux_metal(Shader s, CString shStr)
 CString write_lux_car_paint(Shader s, CString shStr)
 {
     //--------------
-    //- status: Ok
+    //  status: Ok
     //--------------
     //-- car paint
     const char *A_carpaint [] = {"2k acrylack", "blue", "blue matte", "bmw339",
@@ -558,9 +547,9 @@ CString write_lux_substrate( Shader s, CString shStr)
 //--
 CString write_lux_matte(Shader s, CString vMatID)
 {
-    //--------------
-    //- status: OK
-    //--------------
+    //-------------
+    //  Status: OK
+    //-------------
     
     CString shStr=L"";
 
