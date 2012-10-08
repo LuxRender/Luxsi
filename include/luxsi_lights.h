@@ -26,19 +26,20 @@ using namespace std;
 using namespace XSI;
 using namespace MATH;
 
-// extern
+/**/
+extern bool luxdebug;
+
+/**/
 extern Model root;
 
-/* test MsgBox
+/* for test MsgBox
 */
 extern UIToolkit kit;
 
-/*
-*/
+/**/
 extern bool vIsHiddenLight;
 
-/*
-*/
+/**/
 extern ofstream f;
 
 /* convert  0 and 1 value bool to string
@@ -53,7 +54,7 @@ extern float red, green, blue, alpha;
 */
 CString Light_Shader_ID;
 
-//-
+/**/
 float vIntensity;
 
 /* IES file path

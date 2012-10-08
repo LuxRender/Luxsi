@@ -95,8 +95,9 @@ int writeLuxsiLight()
 
             //--
             Shader s((Light(o).GetShaders())[0]);
-            //- same name for xsi and Lux shaders: 'color'
-            //- if no have shader, the color is black (0,0,0)
+            /** same name for xsi and Lux shaders: 'color'
+            *   if no have shader, the color is black (0,0,0)
+            */
             s.GetColorParameterValue(L"color", red, green, blue, alpha);
 
             //-- finding for light group name
@@ -182,14 +183,12 @@ int writeLuxsiLight()
 //--
 void luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
 {
-    //-- for Softimage light area; only work into 'point' or 'spot' lights
-    //- antes de nada comprobamos el shader conectado
-    //- si es del tipo Lux, podremos configurar la luz con nuestras opciones del 'nodo'
-
-    //-- placed here, for all shaders??
-    //s.GetColorParameterValue(L"color", red, green, blue, alpha);
+    /** For Softimage light area; only work into 'point' or 'spot' lights
+    *   first check all type shaders connects
+    *   if have a LuxRender type I can config the light with the node options
+    */
     //-
-    app.LogMessage(L"Color values: "+ CString(red) + L" "+ CString(green) + L" "+ CString(blue));
+    if ( luxdebug ) app.LogMessage(L"Color values: "+ CString(red) + L" "+ CString(green) + L" "+ CString(blue));
     //-
     if ( bool(o.GetParameterValue(L"LightArea")) == true)
     {
@@ -215,9 +214,9 @@ void luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
         }
         else if ( Light_Shader_ID == L"lux_point_light")
         {
-            //- if is arealight with the 'lux' node connect..
-            //- use only the appropiates values from node?
-            //
+            /** if is arealight with the 'lux' node connect..
+            *   use only the appropiates values from node?
+            */
             f << "  \"float gain\" ["<< float(s.GetParameterValue(L"gain")) <<"]\n";
             f << "  \"float importance\" ["<< float(s.GetParameterValue(L"importance")) <<"]\n"; // TODO
             f << "  \"float power\" ["<< float(s.GetParameterValue(L"power")) <<"]\n";
@@ -255,7 +254,7 @@ void luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
         }
         else if ( vlight_geo == 3 )// sphere
         {
-            //- en LuxBlend esta opcion esta solo disponible para 'point light'??
+            //- in LuxBlend this option is only for use in 'point light'??
             //- really, sphere is an area light object, like XSI
             f << "\nTransformBegin \n";
             f << "Translate "<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1] <<"\n";
@@ -419,4 +418,3 @@ CString find_XSI_env(CString env_file)
     }
     return env_file;
 }
-//--
