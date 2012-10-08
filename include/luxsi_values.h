@@ -33,14 +33,8 @@ using namespace MATH;
 using namespace std;
 
 //--------------------//
-bool luxdebug = false;
+bool luxdebug = true;
 //--------------------//
-//- for write number of frame into filename image
-CString vFileLxs;
-
-double ftime = DBL_MAX;
-//- for material preview
-bool is_preview;
 
 Application app;
 Model root;
@@ -95,7 +89,7 @@ int vvolumeint = 0;
 int vmaxprimsperleaf = 4, vfullsweepthr = 16, vskipfactor = 1, vtreetype = 2; // combo
 int vcostsamples = 0, vmaxprims = 1, vacmaxdepth = -1;
 
-//-- per kd-tree, floats ?
+//-- kd-tree
 int vintersectcost = 80, vtraversalcost = 1; 
 float vemptybonus = 0.2f;
 bool vrefineimmediately = false, vacexpert = false;
@@ -106,7 +100,7 @@ int vnsets = 4, vnlights = 64;
 float vmindist = 0.10f; 
 //-- Sampler
 float vlmutationpro = 0.1f, vmutationrange = 2.5;
-int vSampler = 2, vmaxconsecrejects=256, vchainlength= 512, vPixsampler = 3, vPixelsamples = 2;
+int vSampler = 2, vmaxconsecrejects = 256, vchainlength = 512, vPixsampler = 3, vPixelsamples = 2;
 int vbasampler = 0;
 bool vusevariance = false;
 //-- 
@@ -115,50 +109,58 @@ int vBounces=10, vpresets=2 ;
 //-- stop render option, display int., save int.
 int vEngine = 0, vThreads = 2, vAccel = 2, vRmode = 0;
 bool vAutoTh = true, vExpert = false;
-int vhaltspp=0, vhalttime=0, vDis=12, vSave=120;
+int vhaltspp = 0, vhalttime = 0, vDis = 12, vSave = 120;
 
 //-- save image options
-int vXRes=640, vYRes=480;
+int vXRes = 640, vYRes = 480;
 int vRpng = 3, vRtga = 1, vExr_Znorm = 2;
 bool vPng = true, vWpng_16 = false, vPng_gamut = false;
 bool vTga = false, vTga_gamut = false, vExr = false;
 
 //-- hidden options
-bool vIsHiddenCam=true, vIsHiddenLight=true, vIsHiddenObj=true, vIsHiddenSurface=false, vIsHiddenClouds=false;
+/** Booleans for export hidden scene items:
+*   vIsHiddenCam,       />! cameras. Really, atm, luxsi only expor an active camera
+*   vIsHiddenLight,     />! lights
+*   vIsHiddenObj,       />! Geometry..
+*   vIsHiddenSurface,   />! Surface primitives
+*   vIsHiddenClouds,    />! Pointclouds
+*/
+bool vIsHiddenCam = true, vIsHiddenLight = true, vIsHiddenObj = true, vIsHiddenSurface = false, vIsHiddenClouds = false;
+
 //--
-bool vMLT = true, vIsLinux = true; // vIsLinux true??
-bool vProg=true; // not used ??
-bool vExportDone = false, vResume = false, vUseJitter = true, vExpOne = true;
-// unused--bool vAmbBack=false;
+bool vIsLinux = false;
+bool vProg = true; // not used ??
+bool vExportDone = false, vResume = false; // unused ? , vExpOne = true;
 
 //-- export
 bool vSmooth_mesh = false, vSharp_bound = false, vplymesh = false;;
-bool vSupers = false;
-float vCSize=0.4f, vGITolerance=0.025f, vSpacingX=0.1f, vSpacingY=0.1f, vContrast=2.2f;
-float vrrprob=0.65f;
+
+float vCSize = 0.4f, vGITolerance = 0.025f, vSpacingX = 0.1f, vSpacingY = 0.1f, vContrast = 2.2f;
+float vrrprob = 0.65f;
 //-- surface
 
 //-- filter
 float vXwidth = 2.0f, vYwidth = 2.0f, vFalpha = 2.0f, vF_B = 0.3f, vF_C = 0.3f, vTau = 0.3f;
 int vfilter = 2;
-bool vfexpert = false;
+bool vfexpert = false, vSupers = false;;
 
 //-- material preview
 int vlights = 0; //  UNUSED ??
-CString vblxs_file = L"";
 
-//- animation step
-int vframestep = 1;
+
+/* is 'preview' or normal scene
+*/
+bool is_preview;
 
 //----/ convention names, prefix; Mt /----->
 const char *MtBool[] = { "false", "true" };
 const char *MtBsampler[]= { "lowdiscrepancy", "random" }; // mode, Asampler [vSampler]
-const char *MtAccel[]= { "qbvh", "bvh", "kdtree" }; // iter vAccel
+const char *MtAccel[]= { "qbvh", "bvh", "kdtree" }; // mode; iter vAccel
 
 //--
 CRefArray aGroups;
 CStringArray aMatList, aInstanceList;
 
-CString vSun = L"", vHDRI = L"", vFileObjects = L"", vFilePLY = L"", vLuXSIPath = L"";
+CString vSun = L"", vHDRI = L"", vFileExport = L"", vFilePLY = L"", vLuXSIPath = L"";
 
 #endif //LUXSI_VALUES_H
