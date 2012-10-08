@@ -25,19 +25,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace XSI;
 using namespace std;
 
-//-
+/**/
 extern Application app;
-//-
+/**/
 extern float vContrast;
-//-
+/**/
 extern CString vChanel;
-//-
+/**/
 extern std::string luxsi_replace(string input);
-//-
+/**/
+extern bool is_preview;
 
-CString luxsi_texture(Material mat, Shader s, CString texStr)
+CString luxsi_texture(Material mat, Shader s)
 {
-    //--
+    //-- test
+    CString texStr;
+    //- end
     CRefArray texMat = s.GetShaders();
 
     //-( 3 ) for textures..
@@ -64,6 +67,10 @@ CString luxsi_texture(Material mat, Shader s, CString texStr)
 
             //- TODO; synch by shader
             CString _tex_name = mat.GetName() + L"_"+ tex.GetName();
+
+            //- trick for Preview material
+            CString uvmap = L"uv";
+            if ( is_preview ) uvmap = L"spherical";
                  
             //- 
             if ( bool(tex.GetParameterValue(L"bump_inuse")) == true && vChanel == L"bumpmap")
@@ -74,13 +81,13 @@ CString luxsi_texture(Material mat, Shader s, CString texStr)
                     
             //----/ rewrite all /-------->
             texStr += L"\nTexture \"" + _tex_name + L"\" \""+ vChanType + L"\" \"imagemap\" \n";
-            texStr += L"  \"string wrap\" [\"repeat\"] \n";//TODO; create option at spdl shader
+            texStr += L"  \"string wrap\" [\"repeat\"] \n";//TODO; create option at spdl file
             //f << "    \"string chanel\" [\"mean\"] \n"; // not work??
             texStr += L"  \"string filename\" [\""+ CString(luxsi_replace(vFileName.GetAsciiString()).c_str()) + L"\"] \n";
             texStr += L"  \"float gamma\" ["+ CString( vContrast ) + L"]\n";
             texStr += L"  \"float gain\" [1.000000]\n";
             texStr += L"  \"string filtertype\" [\"bilinear\"] \n";// TODO; create option
-            texStr += L"  \"string mapping\" [\"uv\"] \n";// TODO; create option / search data in XSI
+            texStr += L"  \"string mapping\" [\""+ uvmap +"\"] \n";
             texStr += L"  \"float vscale\" [-1.0]\n";
             texStr += L"  \"float uscale\" [1.0] \n";
             texStr += L"  \"float udelta\" [0.000000] \n";
