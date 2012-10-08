@@ -32,7 +32,6 @@ int writeLuxsiObj(X3DObject o)
     // Writes objects
     //
     bool vIsMeshLight=false;
-    //bool vIsSet=false;
     bool vText = false, vIsSubD = false;
 
     Geometry g(o.GetActivePrimitive().GetGeometry(ftime));
@@ -62,8 +61,8 @@ int writeLuxsiObj(X3DObject o)
     //--
     KinematicState  global_kinec_state = o.GetKinematics().GetGlobal();
     CTransformation global_trans = global_kinec_state.GetTransform(ftime); // add time
-    
-    //-- 
+
+    //--
     bool have_UV = false; ga = PolygonMesh(g).GetGeometryAccessor();
     //int uvdata = ga.GetUVs().GetCount();
     if ( ga.GetUVs().GetCount() > 0 && vText) have_UV = true;
@@ -101,6 +100,7 @@ int writeLuxsiObj(X3DObject o)
         }
 
         //-- test to optimize process
+        CVector3 _ply;
         if ( !vplymesh )
         {
             for (LONG j=0; j < allPoints.GetCount(); j++)
@@ -137,16 +137,18 @@ int writeLuxsiObj(X3DObject o)
         //--
         f << "\nNamedMaterial \""<< m.GetName().GetAsciiString() <<"\"\n";
 
-        //-- Geometry associated to lights
-        //- portal lights. Use a 'trick'..
-        //- TODO; find better mode
+        /** Geometry associated to lights
+        *   Portal lights. Use a 'trick'..
+        *   TODO; find better mode
+        */
         bool vIsPortal = false;
         string::size_type loc = string(CString(o.GetName()).GetAsciiString()).find( "PORTAL", 0 );
         if (loc != string::npos) vIsPortal = true;
 
-        //-- meshlight
-        //- this way is only for XSI incandescence mode
-        //- find better way for Lux
+        /** Meshlight
+        *   this way is only for XSI incandescence mode
+        *   search better way for Lux
+        */
         if (float(s.GetParameterValue(L"inc_inten"))> 0 ) vIsMeshLight = true;
         //-
         CString type_mesh = L"mesh";
@@ -179,7 +181,7 @@ int writeLuxsiObj(X3DObject o)
         f <<"\n"<< type_shape.GetAsciiString() <<" \""<< type_mesh.GetAsciiString() <<"\" \n";
         //-------------
         if ( vplymesh )
-            //-------------
+        //-------------
         {
             //-- make link to .ply file
             //-- vFilePLY has the number of frame, but not the extension .ply
@@ -206,7 +208,7 @@ int writeLuxsiObj(X3DObject o)
             f << "  \"string acceltype\" [\""<< MtAccel[vAccel] <<"\"]\n";
             f << "  \"string tritype\" [\"auto\"] \n";//TODO
             f << "  \"integer triindices\" [\n"<< vTris.GetAsciiString() <<"\n ]";
-            f << "  \"point P\" [\n"<< vPoints.GetAsciiString() <<"\n ]"; // 
+            f << "  \"point P\" [\n"<< vPoints.GetAsciiString() <<"\n ]"; //
             if ( vSmooth_mesh && vNormals != L"" )
             {
                 f <<" \"normal N\" [\n"<< vNormals.GetAsciiString() <<"\n ]";
@@ -226,6 +228,9 @@ int writeLuxsiObj(X3DObject o)
 //--
 void write_ply_object(X3DObject o, CString vFilePLY)
 {
+    /** test
+    */
+    
     Geometry g(o.GetActivePrimitive().GetGeometry(ftime)); // add time
     KinematicState  global_kinec_state = o.GetKinematics().GetGlobal();
     CTransformation global_trans = global_kinec_state.GetTransform(ftime); // add time value
@@ -290,8 +295,7 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     }
     //-- triangles
     CString vFaces;
-    LONG nIndices = indices.GetCount();
-    for ( LONG k=0; k < nIndices; k += 3 )
+    for ( LONG k=0; k < indices.GetCount(); k += 3 )
     {
         //--
         vFaces += L"3 "+ CString(int(k)) + L" "+ CString(int(k+1)) + L" "+ CString(int(k+2)) + L"\n";
@@ -300,7 +304,6 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     //--
 
     vFilePLY += L"_"+ o.GetName() + L".ply";
-    //FILE * file=fopen(vFilePLY.GetAsciiString(), "wb"); // from kies project
     f.open(vFilePLY.GetAsciiString(), ios::out | ios::binary);
     f << "ply\n";
     f << "format ascii 1.0\n";
@@ -314,6 +317,7 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     f << "property uchar green\n";
     f << "property uchar blue\n";
     */
+    //ply_add_comment(L"hola..")
     if ( vSmooth_mesh )
     {
         f << "property float nx\n";

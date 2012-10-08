@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define LUXSI_GEOMETRY_H
 
 #include "include\luxsi_main.h"
+#include "plymesh\rply.h"
 
 using namespace XSI;
 using namespace MATH;
@@ -33,7 +34,7 @@ using namespace std;
 */
 extern double ftime;
 
-/* for write file export
+/* ofstream pointer for write file export.
 */
 extern ofstream f;
 
@@ -41,26 +42,32 @@ extern ofstream f;
 */
 extern bool vplymesh;
 
-extern CString vFileObjects;
+extern CString vFileExport;
 
-/* the name of PLY file
+/* The name of PLY file
 */
 extern CString vFilePLY;
 
-/* define on/off exported smoooth objects
+/* Define on/off exported smoooth objects
 */
 extern bool vSmooth_mesh;
 
+/**/
 extern bool vSharp_bound;
 
+/**/
 extern int vAccel;
-//-
+
+/**/
 extern Application app;
 
+/**/
 extern const char *MtBool[], *MtAccel[];
 
+/**/
 extern std::string luxsi_replace(string in_input);
 
+/**/
 extern CString findInGroup(CString s);
 
 #endif // LUXSI_GEOMETRY_H
