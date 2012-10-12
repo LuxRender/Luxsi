@@ -1,5 +1,5 @@
 /*
-LuXSI - Autodesk(c) Softimage(c) XSI Export addon for the LuxRender  Renderer
+LuXSI - Autodesk(c) Softimage(c) XSI Export addon for the LuxRender Renderer
 (http://www.luxrender.org)
 
 Copyright (C) 2010 - 2012  Michael Gangolf 
@@ -37,19 +37,21 @@ using namespace std;
 *   vFileQueue      //- lxq file name
 *   luxsiShaderData //- shader data
 *   queue_list      //- queue list data
+*   vblxs_file      //- name of reload .lxs file
 */
-CString vFileLxs, vFileQueue, luxsiShaderData;
+CString vFileLxs, vFileQueue, luxsiShaderData, queue_list, vblxs_file;
 
-/* for load lxs file from GUI
-*/
-CString vblxs_file = L"";
-
-/**/
-CString queue_list;
+//-- new test for values
+//-- save image options
+int vXRes = 640, vYRes = 480, vRpng = 3, vExr_Znorm = 2, vRtga = 1;
+bool vPng = true, vWpng_16 = false, vPng_gamut = false, vTga = false, vTga_gamut = false, vExr = false;
 
 /* for launch LuxRender with -L "queue.lxq" param 
 */
 bool lqueue = false;
+
+/* experimental override */
+bool overridegeom = false;
 
 /* time 
 */
@@ -58,6 +60,32 @@ double ftime = DBL_MAX;
 /**/
 int vframestep = 1;
 
+/* Update UI values
+*/
+void update_general_values(CString paramName, Parameter changed, PPGEventContext ctxt);
 
+/**/
+void update_surfaceInt_values(CString paramName, Parameter changed, PPGEventContext ctxt);
+
+/**/
+void update_sampler_values(CString paramName, Parameter changed, PPGEventContext ctxt);
+
+/**/
+void update_filter_values(CString paramName, Parameter changed, PPGEventContext ctxt);
+
+/**/
+void update_accelerator_values(CString paramName, Parameter changed, PPGEventContext ctxt);
+
+/**/
+void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext ctxt);
+
+/**/
+void dynamic_filter_UI(Parameter changed, CString paramName, PPGEventContext ctxt);
+
+/**/
+void dynamic_Accel_UI(Parameter changed, CString paramName, PPGEventContext ctxt);
+
+/**/
+std::map<CString, int> int_values;
 
 #endif //LUXSI_H
