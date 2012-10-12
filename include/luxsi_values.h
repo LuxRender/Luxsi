@@ -26,14 +26,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #pragma warning (disable : 4244) 
 #pragma warning (disable : 4996) 
 
-#include "include\luxsi_main.h"
+#include "luxsi_main.h"
 
 using namespace XSI;
 using namespace MATH;
 using namespace std;
 
 //--------------------//
-bool luxdebug = true;
+
 //--------------------//
 
 Application app;
@@ -45,15 +45,14 @@ UIToolkit kit = app.GetUIToolkit();
 ProgressBar pb = kit.GetProgressBar();
 //--
 CRefArray params;
-//- for all
+
+//-
 float red = 0.0f, green = 0.0f, blue = 0.0f, alpha = 0.0f;
 
 //-- distributepath
 bool vdirectdiffuse = true, vdirectglossy = true, vindirectsampleall = false, vindirectdiffuse = true, vindirectglossy = true;
-bool vdiffuserefractreject= false, vglossyrefractreject= false, vglossyreflectreject = false, vdiffusereflectreject = false;	
 bool vdirectsampleall = true;
-bool vdiff_reflect_reject = false, vdiff_refract_reject = false, vglossy_reflect_reject = false;
-bool vglossy_refract_reject = false;
+bool vdiff_reflect_reject = false, vdiff_refract_reject = false, vglossy_reflect_reject = false, vglossy_refract_reject = false;
 
 int vdirectsamples = 1, vindirectsamples = 1, vdiffusereflectdepth = 3, vdiffusereflectsamples = 1;
 int vdiffuserefractdepth = 5, vdiffuserefractsamples = 1, vglossyreflectdepth = 2, vglossyreflectsamples = 1;
@@ -92,7 +91,7 @@ int vcostsamples = 0, vmaxprims = 1, vacmaxdepth = -1;
 //-- kd-tree
 int vintersectcost = 80, vtraversalcost = 1; 
 float vemptybonus = 0.2f;
-bool vrefineimmediately = false, vacexpert = false;
+bool vrefineinmed = false, vacexpert = false;
 
 
 //-- igi
@@ -108,14 +107,10 @@ int vBounces=10, vpresets=2 ;
 
 //-- stop render option, display int., save int.
 int vEngine = 0, vThreads = 2, vAccel = 2, vRmode = 0;
-bool vAutoTh = true, vExpert = false;
+bool vAutoTh = true, vExpert = false, luxdebug = false;
 int vhaltspp = 0, vhalttime = 0, vDis = 12, vSave = 120;
 
-//-- save image options
-int vXRes = 640, vYRes = 480;
-int vRpng = 3, vRtga = 1, vExr_Znorm = 2;
-bool vPng = true, vWpng_16 = false, vPng_gamut = false;
-bool vTga = false, vTga_gamut = false, vExr = false;
+
 
 //-- hidden options
 /** Booleans for export hidden scene items:
@@ -129,13 +124,14 @@ bool vIsHiddenCam = true, vIsHiddenLight = true, vIsHiddenObj = true, vIsHiddenS
 
 //--
 bool vIsLinux = false;
-bool vProg = true; // not used ??
+//bool vProg = true; // not used ??
 bool vExportDone = false, vResume = false; // unused ? , vExpOne = true;
 
 //-- export
 bool vSmooth_mesh = false, vSharp_bound = false, vplymesh = false;;
 
-float vCSize = 0.4f, vGITolerance = 0.025f, vSpacingX = 0.1f, vSpacingY = 0.1f, vContrast = 2.2f;
+// float vCSize = 0.4f, vGITolerance = 0.025f, vSpacingX = 0.1f, vSpacingY = 0.1f; 
+float vContrast = 2.2f;
 float vrrprob = 0.65f;
 //-- surface
 
@@ -146,7 +142,6 @@ bool vfexpert = false, vSupers = false;;
 
 //-- material preview
 int vlights = 0; //  UNUSED ??
-
 
 /* is 'preview' or normal scene
 */
