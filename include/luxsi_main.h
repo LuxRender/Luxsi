@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 #include <sstream>
 #include <fstream>
+#include <map> // for map
 
 //--
 #include <xsi_segment.h>
