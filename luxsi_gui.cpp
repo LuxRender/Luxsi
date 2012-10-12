@@ -102,6 +102,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.AddItem(L"smooth_mesh", L"Export smooth meshes");
         lay.AddItem(L"sharp_bound", L"Preserve sharp edges");
         lay.AddItem(L"bplymesh",	L"Export to PLY file");
+        lay.AddItem(L"over_geo",    L"Override geometry (exp.)");
     lay.EndGroup();
 
     
@@ -121,9 +122,9 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             Acombo[2] = L"Console"; Acombo[3] = 1;
         lay.AddEnumControl( L"brmode", Acombo, L"Render", siControlCombo ) ;
 
-        CValueArray vAengine(4);
+        CValueArray vAengine(2);
             vAengine[0] = L"Classic" ;   vAengine[1] = 0;
-            vAengine[2] = L"Hybrid" ;    vAengine[3] = 1;
+            //vAengine[2] = L"Hybrid" ;    vAengine[3] = 1;
         lay.AddEnumControl( L"bengine", vAengine, L"Engine", siControlCombo ) ;
         lay.EndRow();
         
@@ -154,7 +155,10 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
                 lay.AddItem(L"bframestep", L"Frame Step");
                 lay.AddButton(L"render_ani", L"Export animation");
             lay.EndRow();
-            lay.AddItem(L"resume", L"Resume render");
+            lay.AddRow();
+                lay.AddItem(L"resume", L"Resume render");
+                lay.AddItem(L"loglevel", L"Debug Msg");
+            lay.EndRow();
         /////////////////
         lay.EndGroup();//
         /////////////////
