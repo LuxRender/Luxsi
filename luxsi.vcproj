@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="H:\XSISDK2012\include\Core;H:\XSISDK2012\include"
+				AdditionalIncludeDirectories="H:\XSISDK75\include\Core;H:\XSISDK75\include"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -59,7 +59,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="H:\XSISDK2012\lib\nt-x86\sicppsdk.lib H:\XSISDK2012\lib\nt-x86\sicoresdk.lib"
+				AdditionalDependencies="H:\XSISDK75\lib\nt-x86\sicppsdk.lib H:\XSISDK75\lib\nt-x86\sicoresdk.lib"
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
@@ -203,7 +203,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="H:\XSISDK2012\lib\nt-x86\sicppsdk.lib H:\XSISDK2012\lib\nt-x86\sicoresdk.lib"
+				AdditionalDependencies="H:\XSISDK75\lib\nt-x86\sicppsdk.lib H:\XSISDK75\lib\nt-x86\sicoresdk.lib"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
