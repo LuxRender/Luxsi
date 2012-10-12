@@ -72,18 +72,18 @@ bool vIsSet=false;
 */
 Material mat;
 
-/* instance of Texture class 
+/* instance of Texture class
 */
 Texture vTexture;
 
 /* generic string containers for shader definitions
 */
 CString
-    shaderStr,		//- container string for Shader
-    materialData,     //- for material data.
-    texStr,         //- container string for Texture data
-    vChanel,		//- chanel texture type
-    shaderType;		//- shader type
+    shaderStr,      //- container string for Shader.
+    materialData,   //- for material data.
+    texStr,         //- container string for Texture data.
+    vChanel,        //- chanel texture type.
+    shaderType;     //- shader type.
 
 
 /* Find texture connect to shader port

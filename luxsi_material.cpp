@@ -64,11 +64,11 @@ CString writeLuxsiShader()
             Shader s(shad[j]);
             //- name
             CString shader_name = s.GetName();
-            app.LogMessage(L"Name of shader: "+ shader_name);
+            if ( luxdebug ) app.LogMessage(L"Name of shader: "+ shader_name);
 
             //- shader node ID
             CString vMatID((s.GetProgID()).Split(L".")[1]);
-            app.LogMessage(L" Shader ID: "+ vMatID);
+            if ( luxdebug ) app.LogMessage(L"Shader ID: "+ vMatID);
 
             //-- specific LuxRender shaders  --------------------------////
             if (vMatID == L"lux_glass" || vMatID == L"lux_roughglass")
@@ -275,7 +275,7 @@ CString writeLuxsiShader()
             else
             {
                 // fall back shader
-                app.LogMessage(L"Non valid shader for LuxRender: [ "+ vMatID + L" ]. Writen the default shader values");
+                app.LogMessage(L"Non valid shader for LuxRender: [ "+ vMatID + L" ]. Use the default shader values", siErrorMsg);
                 //-
                 shaderType = L"matte"; 
                 shaderStr = L"  \"color Kd\" [0.7 0.7 0.7]\n";
