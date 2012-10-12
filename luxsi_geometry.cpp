@@ -36,7 +36,9 @@ int writeLuxsiObj(X3DObject o)
 
     Geometry g(o.GetActivePrimitive().GetGeometry(ftime));
 
-
+    /** use an 'obus' for kill flyes?
+    *   nah nah... find better way!
+    */
     CRefArray mats(o.GetMaterials());
     Material m = mats[0];
 
@@ -49,14 +51,21 @@ int writeLuxsiObj(X3DObject o)
     if (vTexID == L"txt2d-image-explicit" || vTexID == L"Softimage.txt2d-image-explicit.1") vText = true;
 
     CGeometryAccessor ga;
-    CString vUV=L"",vNormals=L"",vTris=L"",vMod=L"",vPoints=L"";
+    CString 
+        vUV = L"",      //- for UV data
+        vNormals = L"", //- for normals data
+        vTris = L"",    //- for faces
+        vPoints = L"";  //- for point poditions
+    //- test new ply
+    CString plytest;
 
     LONG subdLevel = 0;
     Property geopr = o.GetProperties().GetItem(L"Geometry Approximation");
     if ((int)geopr.GetParameterValue(L"gapproxmordrsl") > 0 )
     {
-        vIsSubD = true;
-        subdLevel = (int)geopr.GetParameterValue(L"gapproxmordrsl"); //-- only render
+        vIsSubD = true; //-- only render
+        subdLevel = (int)geopr.GetParameterValue(L"gapproxmordrsl");
+        //- TODO; create advice message, for used this option ?
     }
     //--
     KinematicState  global_kinec_state = o.GetKinematics().GetGlobal();
@@ -64,7 +73,7 @@ int writeLuxsiObj(X3DObject o)
 
     //--
     bool have_UV = false; ga = PolygonMesh(g).GetGeometryAccessor();
-    //int uvdata = ga.GetUVs().GetCount();
+    //-
     if ( ga.GetUVs().GetCount() > 0 && vText) have_UV = true;
 
    //--
@@ -73,10 +82,10 @@ int writeLuxsiObj(X3DObject o)
         //--
         CTriangleRefArray triangles(g.GetTriangles()); // miga
         CLongArray indices( triangles.GetIndexArray() );
-
-        CVector3Array allPoints(triangles.GetCount()*3);
-        CVector3Array allUV(triangles.GetCount()*3);
-        CVector3Array allNormals(triangles.GetCount()*3);
+        
+        CVector3Array allPoints(triangles.GetPositionArray().GetCount());
+        CVector3Array allUV(triangles.GetUVArray().GetCount());
+        CVector3Array allNormals(triangles.GetPolygonNodeNormalArray().GetCount());
 
         long index=0;
         for (int i=0; i<triangles.GetCount(); i++)
@@ -99,8 +108,10 @@ int writeLuxsiObj(X3DObject o)
             vTris += L"\n";
         }
 
-        //-- test to optimize process
-        CVector3 _ply;
+        /** test to optimize process
+        *   Si no esta activo el uso de PLY
+        *   cargamos los datos de geometria
+        */
         if ( !vplymesh )
         {
             for (LONG j=0; j < allPoints.GetCount(); j++)
@@ -113,6 +124,7 @@ int writeLuxsiObj(X3DObject o)
 
                 //- and write string array, in correct Lux format ( x, -z, y )
                 vPoints += L" "+ CString(vPos[0]) + L" "+  CString(-vPos[2]) + L" "+ CString(vPos[1]) + L"\n";
+                //plytest += vPoints;
 
                 //-- same for normals
                 if ( vSmooth_mesh )
@@ -120,15 +132,18 @@ int writeLuxsiObj(X3DObject o)
                     CVector3 vNorm(allNormals[j][0], allNormals[j][1], allNormals[j][2]);
                     //-
                     vNorm.MulByTransformationInPlace(global_trans);
-                    //-- for 'normals', change 'y' for 'z'(x, z, y), but not negative value (-z)
-                    //- need more testing..
+                    /** for 'normals', change 'y' for 'z'(x, z, y), but not negative value (-z)
+                    *   need more testing..
+                    */
                     vNormals += L" "+ CString(vNorm[0]) + L" "+ CString(vNorm[2]) + L" "+ CString(vNorm[1]) + L"\n";
+                    //plytest += vNormals;
                 }
 
                 //-- UV need transpose?
                 if ( have_UV )
                 {
                     vUV += L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]) + L"\n";
+                    //plytest += vUV;
                 }
             }
         }
@@ -164,42 +179,29 @@ int writeLuxsiObj(X3DObject o)
         //-----------------
         {
             //--
-            float red = 0.0f, green = 0.0f, blue = 0.0f, alpha = 0.0f;
-            s.GetColorParameterValue(L"incandescence",red,green,blue,alpha );
-            float inc_intensity(s.GetParameterValue(L"inc_inten"));
+            float red, green, blue, alpha;
+            s.GetColorParameterValue(L"incandescence", red, green, blue, alpha );
+            float inc_inten(s.GetParameterValue(L"inc_inten"));
             //--
             CString lName = findInGroup(o.GetName());
             if (lName == L"") lName = o.GetName().GetAsciiString();
             //--
-            f << " LightGroup \"" << lName.GetAsciiString() << "\"\n";
+            f << " LightGroup \""<< lName.GetAsciiString() <<"\"\n";
             f << "\nAreaLightSource \"area\" \n";
             f << "  \"float importance\" [1.00] \n";
-            f << "  \"float gain\" ["<< inc_intensity <<"] \n";
+            f << "  \"float gain\" ["<< inc_inten <<"] \n";
             //f << "  \"float power\" [100.0]  \"float efficacy\" [17.0] \n";
-            f << "  \"color L\" ["<< (red * inc_intensity) <<" "<< (green * inc_intensity) <<" "<<(blue * inc_intensity ) <<"]\n";
+            f << "  \"color L\" ["<< (red * inc_inten) <<" "<< (green * inc_inten) <<" "<<(blue * inc_inten ) <<"]\n";
         }
         f <<"\n"<< type_shape.GetAsciiString() <<" \""<< type_mesh.GetAsciiString() <<"\" \n";
-        //-------------
-        if ( vplymesh )
-        //-------------
-        {
-            //-- make link to .ply file
-            //-- vFilePLY has the number of frame, but not the extension .ply
-            app.LogMessage(L"File ply is: "+ vFilePLY);
-            //-
-            CString ply_frame(vFilePLY + L"_"+ o.GetName() + L".ply");
-            //-
-            app.LogMessage(L"Frame ply is: "+ ply_frame);
-
-            f <<"  \"string filename\" [\""<< luxsi_replace(ply_frame.GetAsciiString()) <<"\"] \n";
-        }
+        
         //-- share
-        //f << "  \"integer nsubdivlevels\" [" << subdLevel  <<"]\n";
-        //f << "  \"string subdivscheme\" [\"loop\"] \n";
-        //f << "  \"bool dmnormalsmooth\" [\""<< MtBool[vSmooth_mesh] <<"\"]";
-        //f << "  \"bool dmsharpboundary\" [\""<< MtBool[vSharp_bound] <<"\"] \n";
-        //f << "  \"string displacementmap\" [\"none\"]\n";
-        //f << "  \"float dmscale\" [\"0.0\"] \"float dmoffset\" [\" 0.0\"]\n";
+        f << "  \"integer nsubdivlevels\" [" << subdLevel  <<"]\n";
+        f << "  \"string subdivscheme\" [\"loop\"] \n";
+        f << "  \"bool dmnormalsmooth\" [\""<< MtBool[vSmooth_mesh] <<"\"]";
+        f << "  \"bool dmsharpboundary\" [\""<< MtBool[vSharp_bound] <<"\"] \n";
+        //f << "  \"string displacementmap\" [\"none\"]\n"; // here, place normalmap texture
+        //f << "  \"float dmscale\" [\"0.0\"] \"float dmoffset\" [\"0.0\"]\n";
 
         //--------------
         if ( !vplymesh )
@@ -219,18 +221,67 @@ int writeLuxsiObj(X3DObject o)
                 f <<" \"float uv\" [\n"<< vUV.GetAsciiString() <<"\n ]";
             }
         }
+        else
+        {
+            /** make link to .ply file
+            *   vFilePLY has the number of frame, but not the extension .ply
+            */
+            CString plyFilename = luxsi_normalize_path(vFilePLY) + L"_"+ o.GetName() + L".ply";
+            //-
+            if (luxdebug ) app.LogMessage(L"File ply: "+ vFilePLY + L" Frame ply: "+ plyFilename);
+            //
+            f <<"  \"string filename\" [\""<< plyFilename.GetAsciiString() <<"\"] \n";
+            //
+            //new_ply(plytest, vTris, plyFilename);
+        }
         //--
         f << "\nAttributeEnd #"<< o.GetName().GetAsciiString() <<"\n";
     }
     return 0;
 }
+//-
+void new_ply(CString in_VertNormUv, CString in_faces, CString in_plyFile, int vCount, int pCount)
+{
+    f.open(in_plyFile.GetAsciiString(), ios::out | ios::binary);
+    f << "ply\n";
+    f << "format ascii 1.0\n";
+    f << "comment created with LuXSI; LuxRender Exporter for Autodesk Softimage\n";
+    f << "element vertex "<< vCount <<"\n";
+    f << "property float x\n";
+    f << "property float y\n";
+    f << "property float z\n";
+    /* for vertex colors?
+    f << "property uchar red\n";
+    f << "property uchar green\n";
+    f << "property uchar blue\n";
+    */
+    //ply_add_comment(L"hola..")
+    if ( vSmooth_mesh )
+    {
+        f << "property float nx\n";
+        f << "property float ny\n";
+        f << "property float nz\n";
+    }
+    f << "property float u\n";
+    f << "property float v\n";
 
+    f << "element face "<< pCount <<"\n";
+    f << "property list uchar uint vertex_indices\n";
+    f << "end_header\n";
+
+    //-- vertex, normals and UV, if exist
+    f << in_VertNormUv.GetAsciiString();
+    //-- faces
+    f << in_faces.GetAsciiString();
+    //->
+    f.close();
+    //--
+}
 //--
-void write_ply_object(X3DObject o, CString vFilePLY)
+void write_ply_object(X3DObject o, CString in_fileply)
 {
     /** test
     */
-    
     Geometry g(o.GetActivePrimitive().GetGeometry(ftime)); // add time
     KinematicState  global_kinec_state = o.GetKinematics().GetGlobal();
     CTransformation global_trans = global_kinec_state.GetTransform(ftime); // add time value
@@ -243,7 +294,7 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     CVector3Array allNormals(triangles.GetPolygonNodeNormalArray().GetCount());
 
     //-- test for UV
-    app.LogMessage(L"[DEBUG]: UV count: "+ CString(triangles.GetUVArray().GetCount()));
+    if ( luxdebug ) app.LogMessage(L"[DEBUG]: UV count: "+ CString(triangles.GetUVArray().GetCount()));
 
     long index=0;
     for (int i=0; i<triangles.GetCount(); i++)
@@ -264,8 +315,8 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     }
     //----------------------------------------------------------
     //-- vertex
-    long vCount(triangles.GetCount()*3);
-    long pCount(g.GetTriangles().GetCount());
+    long num_vertex(allPoints.GetCount());
+    long num_faces(g.GetTriangles().GetCount());
 
     //-- vertex
     CString sPos;
@@ -299,16 +350,14 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     {
         //--
         vFaces += L"3 "+ CString(int(k)) + L" "+ CString(int(k+1)) + L" "+ CString(int(k+2)) + L"\n";
-        //vFaces += L"\n";
     }
     //--
-
-    vFilePLY += L"_"+ o.GetName() + L".ply";
-    f.open(vFilePLY.GetAsciiString(), ios::out | ios::binary);
+    CString plyfile = in_fileply + L"_"+ o.GetName() + L".ply";
+    f.open(plyfile.GetAsciiString(), ios::out | ios::binary);
     f << "ply\n";
     f << "format ascii 1.0\n";
     f << "comment LuXSI; LuxRender Exporter for Autodesk Softimage\n";
-    f << "element vertex "<< vCount <<"\n";
+    f << "element vertex "<< num_vertex <<"\n";
     f << "property float x\n";
     f << "property float y\n";
     f << "property float z\n";
@@ -327,7 +376,7 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     f << "property float u\n";
     f << "property float v\n";
 
-    f << "element face "<< pCount <<"\n";
+    f << "element face "<< num_faces <<"\n";
     f << "property list uchar uint vertex_indices\n";
     f << "end_header\n";
 
@@ -338,5 +387,4 @@ void write_ply_object(X3DObject o, CString vFilePLY)
     //->
     f.close();
     //--
-
 }

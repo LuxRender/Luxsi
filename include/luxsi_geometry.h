@@ -59,6 +59,9 @@ extern bool vSharp_bound;
 extern int vAccel;
 
 /**/
+extern bool luxdebug;
+
+/**/
 extern Application app;
 
 /**/
@@ -69,5 +72,11 @@ extern std::string luxsi_replace(string in_input);
 
 /**/
 extern CString findInGroup(CString s);
+
+/**/
+void new_ply(CString in_VertNormUv, CString in_faces, CString in_plyFile, int vcount, int pcount);
+
+/**/
+extern CString luxsi_normalize_path(CString vFile);
 
 #endif // LUXSI_GEOMETRY_H
