@@ -30,6 +30,9 @@ using namespace XSI;
 using namespace MATH;
 using namespace std;
 
+/**/
+bool have_UV = false;
+
 /* for animation
 */
 extern double ftime;
@@ -42,6 +45,7 @@ extern ofstream f;
 */
 extern bool vplymesh;
 
+/**/
 extern CString vFileExport;
 
 /* The name of PLY file
@@ -60,6 +64,9 @@ extern int vAccel;
 
 /**/
 extern bool luxdebug;
+
+/**/
+extern bool overrGeometry;
 
 /**/
 extern Application app;

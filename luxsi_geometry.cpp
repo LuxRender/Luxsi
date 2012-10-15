@@ -27,7 +27,8 @@ using namespace MATH;
 using namespace std;
 
 //--
-int writeLuxsiObj(X3DObject o)
+//int 
+CString writeLuxsiObj(X3DObject o)
 {
     // Writes objects
     //
@@ -57,7 +58,9 @@ int writeLuxsiObj(X3DObject o)
         vTris = L"",    //- for faces
         vPoints = L"";  //- for point poditions
     //- test new ply
-    CString plytest;
+    CString plyData, plyFaces;
+    //- test to string
+    CString lxoData;
 
     LONG subdLevel = 0;
     Property geopr = o.GetProperties().GetItem(L"Geometry Approximation");
@@ -72,7 +75,7 @@ int writeLuxsiObj(X3DObject o)
     CTransformation global_trans = global_kinec_state.GetTransform(ftime); // add time
 
     //--
-    bool have_UV = false; ga = PolygonMesh(g).GetGeometryAccessor();
+    ga = PolygonMesh(g).GetGeometryAccessor();
     //-
     if ( ga.GetUVs().GetCount() > 0 && vText) have_UV = true;
 
@@ -91,7 +94,7 @@ int writeLuxsiObj(X3DObject o)
         for (int i=0; i<triangles.GetCount(); i++)
         {
             Triangle triangle(triangles.GetItem(i));
-            for (int j=0; j<triangle.GetPoints().GetCount(); j++)
+            for (int j=0; j < triangle.GetPoints().GetCount(); j++)
             {
                 TriangleVertex vertex0(triangle.GetPoints().GetItem(j));
                 CVector3 pos(vertex0.GetPosition());
@@ -101,18 +104,14 @@ int writeLuxsiObj(X3DObject o)
                 long arrayPos = index++;
                 allPoints[arrayPos] = pos;
                 allNormals[arrayPos] = normal;
-                allUV[arrayPos] = CVector3(uvs.u, uvs.v,0);
-                //-- triangles or faces
-                vTris += L" "+ CString(arrayPos) + L" ";
             }
-            vTris += L"\n";
         }
 
-        /** test to optimize process
-        *   Si no esta activo el uso de PLY
-        *   cargamos los datos de geometria
+        /** Process geometry
         */
-        if ( !vplymesh )
+        plyData.Clear();
+        //-
+        if (!overrGeometry)
         {
             for (LONG j=0; j < allPoints.GetCount(); j++)
             {
@@ -123,55 +122,91 @@ int writeLuxsiObj(X3DObject o)
                 vPos.MulByTransformationInPlace(global_trans);
 
                 //- and write string array, in correct Lux format ( x, -z, y )
-                vPoints += L" "+ CString(vPos[0]) + L" "+  CString(-vPos[2]) + L" "+ CString(vPos[1]) + L"\n";
-                //plytest += vPoints;
-
+                if ( !vplymesh )
+                {
+                    vPoints += L" "+ CString(vPos[0]) + L" "+  CString(-vPos[2]) + L" "+ CString(vPos[1]) + L"\n";
+                } 
+                else
+                {
+                    plyData += CString(vPos[0]) + L" "+  CString(-vPos[2]) + L" "+ CString(vPos[1]);
+                }
                 //-- same for normals
                 if ( vSmooth_mesh )
                 {
                     CVector3 vNorm(allNormals[j][0], allNormals[j][1], allNormals[j][2]);
                     //-
                     vNorm.MulByTransformationInPlace(global_trans);
-                    /** for 'normals', change 'y' for 'z'(x, z, y), but not negative value (-z)
-                    *   need more testing..
+                    /** for 'normals', change 'y' for 'z'(x, z, y), but not negative value (-z). TODO: more testing..
                     */
-                    vNormals += L" "+ CString(vNorm[0]) + L" "+ CString(vNorm[2]) + L" "+ CString(vNorm[1]) + L"\n";
-                    //plytest += vNormals;
+                    if ( !vplymesh )
+                    {
+                        vNormals += L" "+ CString(vNorm[0]) + L" "+ CString(vNorm[2]) + L" "+ CString(vNorm[1]) + L"\n";
+                    }
+                    else
+                    {
+                        plyData += L" "+ CString(vNorm[0]) + L" "+ CString(vNorm[2]) + L" "+ CString(vNorm[1]);
+                    }
                 }
-
                 //-- UV need transpose?
-                if ( have_UV )
+                if ( have_UV ) 
                 {
-                    vUV += L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]) + L"\n";
-                    //plytest += vUV;
+                    if ( !vplymesh ) 
+                    {
+                        vUV += L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]) + L"\n";
+                    }
+                    else
+                    {
+                        plyData += L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]);
+                    }
                 }
+                //-
+                if ( vplymesh ) plyData += L"\n";
+            }
+            //-- tes ply
+            plyFaces.Clear();
+            CString _dat = L"";
+            for ( int k = 0; k < indices.GetCount(); k += 3)
+            {
+                _dat = CString(int(k)) + L" "+ CString(int(k+1)) + L" "+ CString(int(k+2)) + L"\n";
+
+                /*  if use this method, verify boolean two times.. ¿is better, use 'if else' method ?   
+                */
+                if ( !vplymesh ) vTris += L" "+ _dat;
+                //--
+                if ( vplymesh ) plyFaces += L"3 "+ _dat;
             }
         }
         //--
-        f << "\nAttributeBegin #" << o.GetName().GetAsciiString();
-        //--
-        f << "\nNamedMaterial \""<< m.GetName().GetAsciiString() <<"\"\n";
+        lxoData = L"\nAttributeBegin #"+ o.GetName();
+        lxoData += L"\nNamedMaterial \""+ m.GetName() + L"\"\n";
 
-        /** Geometry associated to lights
-        *   Portal lights. Use a 'trick'..
+        /** Geometry associated to lights.
+        *   Portal lights use a 'trick'..
         *   TODO; find better mode
         */
         bool vIsPortal = false;
+        
+        //- test
+        // Returns 1 if "12" is found
+		//npos = str.FindString( CString("12") );
+        CString objName = o.GetName();
+        ULONG spos;
+        spos = objName.FindString(L"PORTAL");
+        if ( spos == 1) app.LogMessage(L"Object is type Portal");
+
         string::size_type loc = string(CString(o.GetName()).GetAsciiString()).find( "PORTAL", 0 );
         if (loc != string::npos) vIsPortal = true;
 
         /** Meshlight
         *   this way is only for XSI incandescence mode
-        *   search better way for Lux
+        *   search better way for Luxsi.. or create light material, like YafXSI
         */
         if (float(s.GetParameterValue(L"inc_inten"))> 0 ) vIsMeshLight = true;
-        //-
+        //- mesh..
         CString type_mesh = L"mesh";
-        //-
         if ( vplymesh ) type_mesh = L"plymesh";
-        //--
+        //- shape..
         CString type_shape = L"Shape";
-        //-
         if ( vIsPortal ) type_shape = L"PortalShape";
 
         //-----------------
@@ -184,206 +219,118 @@ int writeLuxsiObj(X3DObject o)
             float inc_inten(s.GetParameterValue(L"inc_inten"));
             //--
             CString lName = findInGroup(o.GetName());
-            if (lName == L"") lName = o.GetName().GetAsciiString();
+            if (lName == L"") lName = o.GetName();
             //--
-            f << " LightGroup \""<< lName.GetAsciiString() <<"\"\n";
-            f << "\nAreaLightSource \"area\" \n";
-            f << "  \"float importance\" [1.00] \n";
-            f << "  \"float gain\" ["<< inc_inten <<"] \n";
+            lxoData += L" LightGroup \""+ lName + L"\"\n";
+            lxoData += L"\nAreaLightSource \"area\" \n";
+            lxoData += L"  \"float importance\" [1.00] \n";
+            lxoData += L"  \"float gain\" ["+ CString(inc_inten) + L"] \n";
             //f << "  \"float power\" [100.0]  \"float efficacy\" [17.0] \n";
-            f << "  \"color L\" ["<< (red * inc_inten) <<" "<< (green * inc_inten) <<" "<<(blue * inc_inten ) <<"]\n";
+            lxoData += L"  \"color L\" ["
+                + CString(red * inc_inten) + L" "
+                + CString(green * inc_inten) + L" "
+                + CString(blue * inc_inten ) + L"]\n";
         }
-        f <<"\n"<< type_shape.GetAsciiString() <<" \""<< type_mesh.GetAsciiString() <<"\" \n";
+        lxoData += L"\n"+ type_shape + L" \""+ type_mesh + L"\" \n";
         
         //-- share
-        f << "  \"integer nsubdivlevels\" [" << subdLevel  <<"]\n";
-        f << "  \"string subdivscheme\" [\"loop\"] \n";
-        f << "  \"bool dmnormalsmooth\" [\""<< MtBool[vSmooth_mesh] <<"\"]";
-        f << "  \"bool dmsharpboundary\" [\""<< MtBool[vSharp_bound] <<"\"] \n";
+        lxoData += L"  \"integer nsubdivlevels\" ["+ CString( subdLevel ) + L"]\n";
+        lxoData += L"  \"string subdivscheme\" [\"loop\"] \n";
+        lxoData += L"  \"bool dmnormalsmooth\" [\""+ CString( MtBool[vSmooth_mesh] ) + L"\"]";
+        lxoData += L"  \"bool dmsharpboundary\" [\""+ CString( MtBool[vSharp_bound] ) + L"\"] \n";
         //f << "  \"string displacementmap\" [\"none\"]\n"; // here, place normalmap texture
         //f << "  \"float dmscale\" [\"0.0\"] \"float dmoffset\" [\"0.0\"]\n";
+        //-
 
+        long vertCount(allPoints.GetCount());
+        long triCount(g.GetTriangles().GetCount());
         //--------------
         if ( !vplymesh )
         //--------------
         {
-            f << "  \"string acceltype\" [\""<< MtAccel[vAccel] <<"\"]\n";
-            f << "  \"string tritype\" [\"auto\"] \n";//TODO
-            f << "  \"integer triindices\" [\n"<< vTris.GetAsciiString() <<"\n ]";
-            f << "  \"point P\" [\n"<< vPoints.GetAsciiString() <<"\n ]"; //
+            lxoData += L"  \"string acceltype\" [\""+ CString( MtAccel[vAccel] ) + L"\"]\n";
+            lxoData += L"  \"string tritype\" [\"auto\"] \n";//TODO
+            lxoData += L"  \"integer triindices\" [\n"+ vTris + L"\n ]";
+            lxoData += L"  \"point P\" [\n"+ vPoints + L"\n ]"; //
             if ( vSmooth_mesh && vNormals != L"" )
             {
-                f <<" \"normal N\" [\n"<< vNormals.GetAsciiString() <<"\n ]";
+                lxoData += L" \"normal N\" [\n"+ vNormals + L"\n ]";
             }
             //--
             if (have_UV)
             {
-                f <<" \"float uv\" [\n"<< vUV.GetAsciiString() <<"\n ]";
+                lxoData += L" \"float uv\" [\n"+ vUV + L"\n ]";
             }
         }
         else
         {
             /** make link to .ply file
-            *   vFilePLY has the number of frame, but not the extension .ply
+            *   The vFilePLY value = full path + filename + framenumber + LXS extension. 
+            *   luxsi_normalize_path(), extract only the filename + framenumber and add
+            *   the name of object and the PLY extension.
             */
-            CString plyFilename = luxsi_normalize_path(vFilePLY) + L"_"+ o.GetName() + L".ply";
+            CString ply_ext = L"_"+ o.GetName() + L".ply";
+            CString include_ply_filename = luxsi_normalize_path(vFilePLY) + ply_ext;
             //-
-            if (luxdebug ) app.LogMessage(L"File ply: "+ vFilePLY + L" Frame ply: "+ plyFilename);
-            //
-            f <<"  \"string filename\" [\""<< plyFilename.GetAsciiString() <<"\"] \n";
-            //
-            //new_ply(plytest, vTris, plyFilename);
+            if (luxdebug ) app.LogMessage(L"File ply: "+ vFilePLY + L" Include ply: "+ include_ply_filename);
+            //-
+            lxoData += L"  \"string filename\" [\""+ include_ply_filename + L"\"]\n";
+
+            /* if not override geometry, go to write ply file 
+            */
+            if ( !overrGeometry )
+            {
+                int next = vFilePLY.ReverseFindString(".");
+                CString write_ply_filename = vFilePLY.GetSubString(0,next) + ply_ext;
+                //-
+                write_plyFile(plyData, plyFaces, write_ply_filename, vertCount, triCount);
+            }
         }
         //--
-        f << "\nAttributeEnd #"<< o.GetName().GetAsciiString() <<"\n";
+        lxoData += L"\nAttributeEnd #"+ o.GetName() + L"\n";
     }
-    return 0;
+    return lxoData;
 }
 //-
-void new_ply(CString in_VertNormUv, CString in_faces, CString in_plyFile, int vCount, int pCount)
+void write_plyFile(CString in_plyData, CString in_faceData, CString vfile, int vertCount, int triCount)
 {
-    f.open(in_plyFile.GetAsciiString(), ios::out | ios::binary);
+    //-
+    f.open(vfile.GetAsciiString());
     f << "ply\n";
     f << "format ascii 1.0\n";
     f << "comment created with LuXSI; LuxRender Exporter for Autodesk Softimage\n";
-    f << "element vertex "<< vCount <<"\n";
+    f << "element vertex "<< vertCount <<"\n";
     f << "property float x\n";
     f << "property float y\n";
     f << "property float z\n";
+
     /* for vertex colors?
     f << "property uchar red\n";
     f << "property uchar green\n";
     f << "property uchar blue\n";
     */
     //ply_add_comment(L"hola..")
+
     if ( vSmooth_mesh )
     {
         f << "property float nx\n";
         f << "property float ny\n";
         f << "property float nz\n";
     }
-    f << "property float u\n";
-    f << "property float v\n";
+    if ( have_UV )
+    {
+        f << "property float u\n";
+        f << "property float v\n";
+    }
 
-    f << "element face "<< pCount <<"\n";
+    f << "element face "<< triCount <<"\n";
     f << "property list uchar uint vertex_indices\n";
     f << "end_header\n";
 
     //-- vertex, normals and UV, if exist
-    f << in_VertNormUv.GetAsciiString();
+    f << in_plyData.GetAsciiString();
     //-- faces
-    f << in_faces.GetAsciiString();
-    //->
-    f.close();
-    //--
-}
-//--
-void write_ply_object(X3DObject o, CString in_fileply)
-{
-    /** test
-    */
-    Geometry g(o.GetActivePrimitive().GetGeometry(ftime)); // add time
-    KinematicState  global_kinec_state = o.GetKinematics().GetGlobal();
-    CTransformation global_trans = global_kinec_state.GetTransform(ftime); // add time value
-
-    //--
-    CTriangleRefArray triangles(g.GetTriangles());
-    CLongArray indices(triangles.GetIndexArray());
-    CVector3Array allPoints(triangles.GetPositionArray().GetCount());
-    CVector3Array allUV(triangles.GetUVArray().GetCount());
-    CVector3Array allNormals(triangles.GetPolygonNodeNormalArray().GetCount());
-
-    //-- test for UV
-    if ( luxdebug ) app.LogMessage(L"[DEBUG]: UV count: "+ CString(triangles.GetUVArray().GetCount()));
-
-    long index=0;
-    for (int i=0; i<triangles.GetCount(); i++)
-    {
-        Triangle triangle(triangles.GetItem(i));
-        for (int j=0; j<triangle.GetPoints().GetCount(); j++)
-        {
-            TriangleVertex vertex0(triangle.GetPoints().GetItem(j));
-            CVector3 pos(vertex0.GetPosition());
-            CVector3 normal(vertex0.GetNormal());
-            CUV uvs(vertex0.GetUV());
-            //--
-            long arrayPos = index++;
-            allPoints[arrayPos] = pos;
-            allNormals[arrayPos] = normal;
-            allUV[arrayPos] = CVector3(uvs.u, uvs.v, 0);
-        }
-    }
-    //----------------------------------------------------------
-    //-- vertex
-    long num_vertex(allPoints.GetCount());
-    long num_faces(g.GetTriangles().GetCount());
-
-    //-- vertex
-    CString sPos;
-    for (LONG j=0; j < allPoints.GetCount(); j++)
-    {
-        //-- vertex
-        CVector3 point_pos(allPoints[j][0], allPoints[j][1], allPoints[j][2]);
-        point_pos.MulByTransformationInPlace(global_trans);
-        //-- normals
-        CVector3 norm_idx(allNormals[j][0], allNormals[j][1], allNormals[j][2]);
-        norm_idx.MulByTransformationInPlace(global_trans);
-
-        //-- ply write points..
-        sPos += CString(point_pos[0]) + L" "+ CString(-point_pos[2]) + L" "+ CString(point_pos[1]);
-
-        //- and normals if 'smooth_mesh' is ON
-        //- !!WARNING!!, POSSIBLE ERROR IN NORMALS
-        if ( vSmooth_mesh )
-        {
-            sPos += L" "+ CString(norm_idx[0]) + L" "+ CString(norm_idx[2]) + L" "+ CString(norm_idx[1]);
-        }
-        //-- UV need transpose?
-        //-- if ( UV ) {
-        sPos += L" "+ CString(allUV[j][0]) + L" "+ CString(allUV[j][1]);
-        //-- }
-        sPos += L"\n";
-    }
-    //-- triangles
-    CString vFaces;
-    for ( LONG k=0; k < indices.GetCount(); k += 3 )
-    {
-        //--
-        vFaces += L"3 "+ CString(int(k)) + L" "+ CString(int(k+1)) + L" "+ CString(int(k+2)) + L"\n";
-    }
-    //--
-    CString plyfile = in_fileply + L"_"+ o.GetName() + L".ply";
-    f.open(plyfile.GetAsciiString(), ios::out | ios::binary);
-    f << "ply\n";
-    f << "format ascii 1.0\n";
-    f << "comment LuXSI; LuxRender Exporter for Autodesk Softimage\n";
-    f << "element vertex "<< num_vertex <<"\n";
-    f << "property float x\n";
-    f << "property float y\n";
-    f << "property float z\n";
-    /* for vertex colors?
-    f << "property uchar red\n";
-    f << "property uchar green\n";
-    f << "property uchar blue\n";
-    */
-    //ply_add_comment(L"hola..")
-    if ( vSmooth_mesh )
-    {
-        f << "property float nx\n";
-        f << "property float ny\n";
-        f << "property float nz\n";
-    }
-    f << "property float u\n";
-    f << "property float v\n";
-
-    f << "element face "<< num_faces <<"\n";
-    f << "property list uchar uint vertex_indices\n";
-    f << "end_header\n";
-
-    //-- vertex, normals and UV, if exist
-    f << sPos.GetAsciiString();
-    //-- faces
-    f << vFaces.GetAsciiString();
+    f << in_faceData.GetAsciiString();
     //->
     f.close();
     //--
