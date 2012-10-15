@@ -121,9 +121,9 @@ CString writeLuxsiCloud(X3DObject obj)
         _size = CString(aSize[0]);
     }
        
-    //-
+    //---------------
     strCloud.Clear();
-    //-
+    //---------------
     for (unsigned int i = 0; i < aPointPosition.GetCount(); i++)
     {
         //-
