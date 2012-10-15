@@ -51,7 +51,7 @@ bool vPng = true, vWpng_16 = false, vPng_gamut = false, vTga = false, vTga_gamut
 bool lqueue = false;
 
 /* experimental override */
-bool overridegeom = false;
+bool overrGeometry = false;
 
 /* time 
 */

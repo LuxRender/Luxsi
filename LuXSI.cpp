@@ -1,5 +1,5 @@
 /*
-LuXSI - Autodesk(c) Softimage(c) XSI Export addon for the LuxRender  Renderer
+LuXSI - Autodesk(c) Softimage(c) XSI Export addon for LuxRender  Renderer
 (http://www.luxrender.org)
 
 Copyright (C) 2010 - 2012  Michael Gangolf 
@@ -44,9 +44,9 @@ int writeLuxsiLight();
 
 CString writeLuxsiCloud(X3DObject o);
 
-int writeLuxsiInstance(X3DObject o);
+CString writeLuxsiInstance(X3DObject o);
 
-int writeLuxsiObj(X3DObject o);
+CString writeLuxsiObj(X3DObject o);
 
 CString writeLuxsiShader();
 
@@ -118,7 +118,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     prop.AddParameter( L"sharp_bound",      CValue::siBool, sps,L"",L"", vSharp_bound,      dft,dft,dft,dft, oParam );
     prop.AddParameter( L"bplymesh",         CValue::siBool, sps,L"",L"", vplymesh,          dft,dft,dft,dft, oParam );
     /**/
-    prop.AddParameter( L"over_geo",         CValue::siBool, sps,L"",L"", overridegeom,      dft,dft,dft,dft, oParam );
+    prop.AddParameter( L"over_geo",         CValue::siBool, sps,L"",L"", overrGeometry,      dft,dft,dft,dft, oParam );
     
     
     //----/ image /-->
@@ -464,7 +464,7 @@ void update_main_values(CString paramName, Parameter changed, PPGEventContext ct
     } else if (paramName == L"use_hidden_cloud"){ vIsHiddenClouds   = changed.GetValue();
     } else if (paramName == L"use_hidden_cam")  { vIsHiddenCam      = changed.GetValue();
     } else if (paramName == L"use_hidden_light"){ vIsHiddenLight    = changed.GetValue(); // over_geo
-    } else if (paramName == L"over_geo")        { overridegeom      = changed.GetValue();
+    } else if (paramName == L"over_geo")        { overrGeometry     = changed.GetValue();
 
     //-- mesh export
     } else if (paramName == L"smooth_mesh")     { vSmooth_mesh  = changed.GetValue();
@@ -474,17 +474,27 @@ void update_main_values(CString paramName, Parameter changed, PPGEventContext ct
     //-- save images /----/ tga /--->
     } else if (paramName == L"tga_gamut")   { vTga_gamut    = changed.GetValue();
     } else if (paramName == L"mode_rtga")   { vRtga         = changed.GetValue();
-    } else if (paramName == L"save_tga")    { vTga          = changed.GetValue();
+    } else if (paramName == L"save_tga")    
+    {
+        vTga = changed.GetValue();
+        dynamic_luxsi_UI(changed, paramName, ctxt);
 
     //----/ save images /----/ exr /--->
     } else if (paramName == L"mode_Znorm")  { vExr_Znorm    = changed.GetValue();
-    } else if (paramName == L"save_exr")    { vExr          = changed.GetValue();
+    } else if (paramName == L"save_exr")
+    {
+        vExr = changed.GetValue();
+        dynamic_luxsi_UI(changed, paramName, ctxt);
 
     //----/ save images /----/ png /--->
     } else if (paramName == L"mode_rpng")   { vRpng         = changed.GetValue();
     } else if (paramName == L"save_png_16") { vWpng_16      = changed.GetValue();
     } else if (paramName == L"png_gamut")   { vPng_gamut    = changed.GetValue();
-    } else if (paramName == L"save_png")    { vPng          = changed.GetValue();
+    } else if (paramName == L"save_png")
+    {
+        vPng = changed.GetValue();
+        dynamic_luxsi_UI(changed, paramName, ctxt);
+
     } else if (paramName == L"fObjects")    { vFileExport   = changed.GetValue();
     
     //- material preview
@@ -526,7 +536,6 @@ void update_surfaceInt_values(CString paramName, Parameter changed, PPGEventCont
         vSurfaceInt = changed.GetValue();
         //-
         dynamic_surfaceInt_UI(changed, paramName, ctxt);
-
     } 
     else if (paramName == L"bsexpert")
     { 
@@ -589,7 +598,6 @@ void update_surfaceInt_values(CString paramName, Parameter changed, PPGEventCont
     } else if (paramName == L"bdiff_refract_reject_thr")   { vdiff_refract_reject_thr   = changed.GetValue(); 
     } else if (paramName == L"bglossy_reflect_reject_thr") { vglossy_reflect_reject_thr = changed.GetValue();
     } else if (paramName == L"bglossy_refract_reject_thr") { vglossy_refract_reject_thr = changed.GetValue();
-
 
     //-- igi
     } else if (paramName == L"bnsets")      { vnsets     = changed.GetValue();
@@ -733,7 +741,7 @@ void update_accelerator_values(CString paramName, Parameter changed, PPGEventCon
     } 
     else if (paramName == L"bcostsamples")        { vcostsamples        = changed.GetValue();
     } 
-    else if (paramName == L"brefineimmediately")  { vrefineinmed  = changed.GetValue();
+    else if (paramName == L"brefineimmediately")  { vrefineinmed        = changed.GetValue();
     } 
     else if (paramName == L"bintersectcost")      { vintersectcost      = changed.GetValue();
     } 
@@ -1259,7 +1267,6 @@ void dynamic_filter_UI( Parameter changed, CString paramName, PPGEventContext ct
     for ( long f = 0; f < 7;)
     {
         hide_params(ui_filter[f]);
-        //Parameter(params.GetItem(ui_filter[f])).PutCapabilityFlag(siNotInspectable, true);
         f++;
     }    
     //-- show with all options, if mode expert is true
@@ -1295,14 +1302,13 @@ void dynamic_filter_UI( Parameter changed, CString paramName, PPGEventContext ct
     {
         ctxt.PutAttribute(L"Refresh", true); 
     }
-    //ctxt.PutAttribute(L"Refresh", true);
 }
 //-
 void dynamic_Accel_UI(Parameter changed, CString paramName, PPGEventContext ctxt)
 {
     //-- Accelerator
     vAccel = prop.GetParameterValue(L"bAccel");
-    vacexpert = prop.GetParameterValue(L"bacexpert"); //-- provisional
+    vacexpert = prop.GetParameterValue(L"bacexpert");
     //--
     const char *ui_accel [9] = {/*qbvh*/ "bmaxprimsperleaf", "bfullsweepthreshold", "bskipfactor",
         /*bvh*/"bcostsamples", "bintersectcost", "btraversalcost", "bmaxprims", "bacmaxdepth", "bemptybonus" };
@@ -1934,12 +1940,10 @@ int writeLuxsiSurface(X3DObject o, CString vType)
     if (gt.GetSclX()!=1 || gt.GetSclY()!=1 || gt.GetSclZ()!=1) 
     {
         f << "Scale " << gt.GetSclX() << " " << gt.GetSclY() << " "<< gt.GetSclZ() << "\n";
-    }
-        
+    }    
 	//-
     float end_v = o.GetParameterValue(L"endvangle");
-	float start_v = o.GetParameterValue(L"startvangle");
-		
+	float start_v = o.GetParameterValue(L"startvangle");	
     //--
     f << " Shape  \"sphere\" \n";
     f << "  \"float radius\" [" << vradius << "]\n";
@@ -1952,12 +1956,13 @@ int writeLuxsiSurface(X3DObject o, CString vType)
     return 0;
 }
 //-
-int writeLuxsiInstance(X3DObject o)
+CString writeLuxsiInstance(X3DObject o)
 {
     //--------------------
     // status: in progress
     //--------------------
     //-- instance
+    CString instanceData = L"";
     //- write source object [won't be displayed]
     Model vModel = Model(o).GetInstanceMaster();
     CRefArray vGroup = X3DObject(vModel).GetChildren();
@@ -1968,43 +1973,57 @@ int writeLuxsiInstance(X3DObject o)
     }
     else
     {
-        f << "\nObjectBegin \""<< vModel.GetName().GetAsciiString() <<"\"";
+        CString obj_instance = L"";
+        //-
+        instanceData = L"\nObjectBegin \""+ vModel.GetName() + L"\"";
+        //-
         for (int i=0; i < vGroup.GetCount(); i++)
         {
-            //writeLuxsiObj(X3DObject(vGroup[i]),L"instance");
-            writeLuxsiObj(X3DObject(vGroup[i]));
+            obj_instance = writeLuxsiObj(X3DObject(vGroup[i]));
         }
-        f << "\nObjectEnd #"<< o.GetName().GetAsciiString() <<"\n";
+        //- test
+        instanceData += obj_instance;
+        //- end
+        instanceData += L"\nObjectEnd #"+ o.GetName() + L"\n";
         aInstanceList.Add(vModel.GetName());// is correct?
     }
     //-
-    f << "\nAttributeBegin #" << o.GetName().GetAsciiString();
+    instanceData += L"\nAttributeBegin #"+ o.GetName();
     //--
     KinematicState global_state = o.GetKinematics().GetGlobal();
-    //-
-    CTransformation global_transf = global_state.GetTransform(ftime); // ad time frame value
-    
+    CTransformation global_transf = global_state.GetTransform(ftime);
     CVector3 axis;
     double rot = global_transf.GetRotationAxisAngle(axis); 
     
     //-
-    f << "\nTranslate "<< global_transf.GetPosX() <<" "<< -global_transf.GetPosZ() <<" "<< global_transf.GetPosY() <<"\n";
+    instanceData += L"\nTranslate "
+        + CString( global_transf.GetPosX() )  + L" "
+        + CString( -global_transf.GetPosZ())  + L" "
+        + CString( global_transf.GetPosY() )  + L"\n";
     //--
     if (rot!= 0)
     {
-        f << "Rotate "<< (rot*180/PI) <<" "<< axis[0] <<" "<< -axis[2] <<" "<< axis[1] <<"\n";
+        instanceData += L"Rotate "
+            + CString( rot*180/PI) + L" "
+            + CString( axis[0] )   + L" "
+            + CString( -axis[2])   + L" "
+            + CString( axis[1] )   + L"\n";
     }
-    /** changed && to ||, add support for not uniform scale */
+    /** changed && to ||, add support for not uniform scale 
+    */
     if (global_transf.GetSclX()!=1 || global_transf.GetSclY()!=1 || global_transf.GetSclZ()!=1)
     {
         //- !WARNING! change 'Y' for 'Z', but not negative ( -z).
-        f << "Scale "<< global_transf.GetSclX() <<" "<< global_transf.GetSclZ() <<" "<< global_transf.GetSclY() <<"\n";
+        instanceData += L"Scale "
+            + CString(global_transf.GetSclX()) + L" "
+            + CString(global_transf.GetSclZ()) + L" "
+            + CString(global_transf.GetSclY()) + L"\n";
     }
 
-    f << "ObjectInstance \"" << Model(o).GetInstanceMaster().GetName().GetAsciiString() <<"\"\n";
-    f << "AttributeEnd #" << o.GetName().GetAsciiString() << "\n\n";
+    instanceData += L"ObjectInstance \""+ Model(o).GetInstanceMaster().GetName() + L"\"\n";
+    instanceData += L"AttributeEnd #"+ o.GetName() + L"\n\n";
     //-
-    return 0;
+    return instanceData;
 }
 //--
 CString write_header_files()
@@ -2076,6 +2095,7 @@ CString luxsi_normalize_path(CString vFile)
     }
     //- extract extension
     int ext = int(file_path.ReverseFindString("."));
+
     //- return only filename, without extension
     return file_path.GetSubString(0, ext);
 
@@ -2167,7 +2187,7 @@ void luxsi_write(double ftime)
             if (o.GetType()==L"#model")
             {
                 //- test for include object instance master
-                if (Model(o).GetModelKind()==2 || Model(o).GetModelKind()==0)
+                if (Model(o).GetModelKind()==2 ) //|| Model(o).GetModelKind()==0)
                 {   // instances
                     if (vIsHiddenObj || (!vIsHiddenObj && (view_visbl && rend_visbl )))
                     {
@@ -2196,7 +2216,7 @@ void luxsi_write(double ftime)
             vFileLxs = vFileExport;
             //- default extension..
             int ext = 0;
-            ext = int(vFileLxs.ReverseFindString(".")); // remember this change if problems with file names...
+            ext = int(vFileLxs.ReverseFindString("."));
             
             //- use only for exporter animation -----------------------------------------//
             if ( luxdebug ) app.LogMessage(L"[DEBUG]: ftime is: "+ CString(ftime));
@@ -2222,6 +2242,7 @@ void luxsi_write(double ftime)
             CString path_base = luxsi_normalize_path(vFileLxs);
             CString inc_LXM = path_base + L"_mat.lxm";  // material definitions
             CString inc_LXO = path_base + L"_geo.lxo";  // geometry definitions
+            CString inc_LXV = path_base + L"_geo.lxv";  // volume definitions
 
             /** For animation, reset ext value to new filename.
             *   The lenght of new filename as change (name + frame).
@@ -2304,38 +2325,45 @@ void luxsi_write(double ftime)
             //->
             f.close(); //--< end lxm
             //-
-            if ( luxdebug ) app.LogMessage(L"[DEBUG]: Write file materials: "+ vFileLXM);
+            if ( luxdebug ) app.LogMessage(L"[DEBUG]: Writed materials file: "+ vFileLXM);
 
-            /** for PLy files.
-            *   For write file in disk, need full path without normalized and
-            *   use vFileLxs for include number of frame. Not need extension.
-            *   Add option for not export geometry.
-            */
-            if ( !overridegeom )
+           
+            //- Ghatering geometry data -------------------------------#
+            //--
+            CString geometryData = L"";
+            for (int i = 0; i < aObj.GetCount(); i++) 
             {
-                CString vFile = vFileLxs.GetSubString(0, ext);
-                for (int i = 0; i < aPlymesh.GetCount(); i++)
-                {
-                    write_ply_object(aPlymesh[i], vFile);
-                    if (pb.IsCancelPressed()) break;
-                    pb.Increment();
-                }
+                geometryData += writeLuxsiObj(aObj[i]);
+                if (pb.IsCancelPressed() ) break;
+                pb.Increment();
             }
-
-            //- open for write geometry file.
+            //-- instance data
+            CString instanceData = L"";
+            for (int i=0; i < aInstance.GetCount(); i++) 
+            {
+                instanceData += writeLuxsiInstance(aInstance[i]);
+                if (pb.IsCancelPressed() ) break;
+                pb.Increment();
+            }
+            //--
+            CString pointCloudData = L"";
+            for (int i = 0; i < aClouds.GetCount(); i++) 
+            {
+                pointCloudData += writeLuxsiCloud(aClouds[i]);
+                if (pb.IsCancelPressed() ) break; 
+                pb.Increment();
+            }
+            //-
             if ( luxdebug ) app.LogMessage(L"[DEBUG]: Open file for geometry: "+ vFileLXO);
+            //-
             f.open(vFileLXO.GetAsciiString()); 
 
             //-- insert header
             f << _header.GetAsciiString();
 
-            //-- objects
-            for (int i = 0; i < aObj.GetCount(); i++) 
-            {
-                if (writeLuxsiObj(aObj[i])==-1) break;
-                if (pb.IsCancelPressed() ) break;
-                pb.Increment();
-            }
+            //-- polymesh
+            f << geometryData.GetAsciiString();
+
             //-- surfaces
             for (int i=0;i<aSurfaces.GetCount();i++) 
             {
@@ -2344,23 +2372,11 @@ void luxsi_write(double ftime)
                 pb.Increment();
             }
             //-- pointclouds
-            CString cloud_data; // = L"";
-            //
-            for (int i = 0; i < aClouds.GetCount(); i++) 
-            {
-                cloud_data = writeLuxsiCloud(aClouds[i]);
-                if (pb.IsCancelPressed() ) break; 
-                pb.Increment();
-            }
-            f << cloud_data.GetAsciiString();
+            f << pointCloudData.GetAsciiString();
 
             //-- instances
-            for (int i=0;i<aInstance.GetCount();i++) 
-            {
-                if (writeLuxsiInstance(aInstance[i])==-1) break;
-                if (pb.IsCancelPressed() ) break;
-                pb.Increment();
-            }
+            f << instanceData.GetAsciiString();
+            
             //-- close _geom file
             f.close();
 
@@ -2423,7 +2439,7 @@ void luxsi_execute()
             //- or use queue list for load a list files..
             if (lqueue) exec = Lux_Binarie + L" -L \""+ vFileQueue + "\"";
             
-            // reset queue
+            //- reset queue
             lqueue = false;
             //-
             app.LogMessage(exec);
@@ -2440,13 +2456,15 @@ void luxsi_preview(CString vFile_scene_preview)
 {
     //--
     CString lux_bin = L"";
-    //-
+
+    /** Use only GUI mode, obviusly..
+    */
     lux_bin = vLuXSIPath + L"/luxrender.exe";
     //-
     CString exec = lux_bin +" \""+ vFile_scene_preview + "\"";
 
-    //- show path for debug...
-    app.LogMessage(exec);
+    //- show commandline for debug...
+    if ( luxdebug ) app.LogMessage(exec);
     //-
     loader(exec.GetAsciiString());
 }
