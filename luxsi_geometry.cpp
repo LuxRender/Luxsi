@@ -2,8 +2,8 @@
 LuXSI - Autodesk(c) Softimage(c) XSI Export addon for the LuxRender  Renderer
 (http://www.luxrender.org)
 
-Copyright (C) 2010 - 2012  Michael Gangolf
-Code contributor ; Pedro Alcaide, aka povmaniaco
+Copyright (C) 2010 - 2012  Michael Gangolf, 'miga'
+Code contributor ; Pedro Alcaide, 'povmaniaco'
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -26,8 +26,7 @@ using namespace XSI;
 using namespace MATH;
 using namespace std;
 
-//--
-//int 
+//-- 
 CString writeLuxsiObj(X3DObject o)
 {
     // Writes objects
@@ -57,10 +56,12 @@ CString writeLuxsiObj(X3DObject o)
         vNormals = L"", //- for normals data
         vTris = L"",    //- for faces
         vPoints = L"";  //- for point poditions
-    //- test new ply
-    CString plyData, plyFaces;
-    //- test to string
-    CString lxoData;
+       
+    //- test for ply ofrmat
+    CString 
+        lxoData, 
+        plyData,
+        plyFaces;
 
     LONG subdLevel = 0;
     Property geopr = o.GetProperties().GetItem(L"Geometry Approximation");
@@ -266,8 +267,8 @@ CString writeLuxsiObj(X3DObject o)
         {
             /** make link to .ply file
             *   The vFilePLY value = full path + filename + framenumber + LXS extension. 
-            *   luxsi_normalize_path(), extract only the filename + framenumber and add
-            *   the name of object and the PLY extension.
+            *   luxsi_normalize_path(), returns alone the filename with the framenumber.
+            *   Here we add the name of the object and the expension PLY.
             */
             CString ply_ext = L"_"+ o.GetName() + L".ply";
             CString include_ply_filename = luxsi_normalize_path(vFilePLY) + ply_ext;
@@ -309,8 +310,7 @@ void write_plyFile(CString in_plyData, CString in_faceData, CString vfile, int v
     f << "property uchar green\n";
     f << "property uchar blue\n";
     */
-    //ply_add_comment(L"hola..")
-
+    
     if ( vSmooth_mesh )
     {
         f << "property float nx\n";
