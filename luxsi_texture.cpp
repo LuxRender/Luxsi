@@ -1,9 +1,9 @@
 /*
-LuXSI - Autodesk(c) Softimage(c) XSI Export addon for the LuxRender  Renderer
+LuXSI - Autodesk(c) Softimage(c) XSI Export addon for LuxRender Renderer
 (http://www.luxrender.org)
 
-Copyright (C) 2010 - 2012  Michael Gangolf
-Code contributor ; Pedro Alcaide, aka povmaniaco
+Copyright (C) 2010 - 2012  Michael Gangolf, 'miga'
+Code contributor ; Pedro Alcaide, 'povmaniaco'
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,12 +27,18 @@ using namespace std;
 
 /**/
 extern Application app;
-/**/
+
+/* for gamma value
+*/
 extern float vContrast;
+
 /**/
 extern CString vChanel;
-/**/
+
+/* for normalize path files ( slash character )
+*/
 extern std::string luxsi_replace(string input);
+
 /**/
 extern bool is_preview;
 

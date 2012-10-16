@@ -2,8 +2,8 @@
 LuXSI - Autodesk(c) Softimage(c) XSI Export addon for the LuxRender  Renderer
 (http://www.luxrender.org)
 
-Copyright (C) 2010 - 2012  Michael Gangolf
-Code contributor ; Pedro Alcaide, aka povmaniaco
+Copyright (C) 2010 - 2012  Michael Gangolf, 'miga'
+Code contributor ; Pedro Alcaide, 'povmaniaco'
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define LUXSI_GEOMETRY_H
 
 #include "include\luxsi_main.h"
-#include "plymesh\rply.h"
+//#include "plymesh\rply.h"
 
 using namespace XSI;
 using namespace MATH;
@@ -41,7 +41,7 @@ extern double ftime;
 */
 extern ofstream f;
 
-/* if mesh is a ply type
+/* define use format PLY for mesh export.
 */
 extern bool vplymesh;
 
@@ -56,34 +56,40 @@ extern CString vFilePLY;
 */
 extern bool vSmooth_mesh;
 
-/**/
+/* Preserve hard edges 
+*/
 extern bool vSharp_bound;
 
-/**/
+/* Mode expert for Accelerator GUI
+*/
 extern int vAccel;
 
 /**/
 extern bool luxdebug;
 
-/**/
+/* Override export of geometry using PLY format 
+*/
 extern bool overrGeometry;
 
 /**/
 extern Application app;
 
 /**/
-extern const char *MtBool[], *MtAccel[];
+extern const char *MtBool[];
 
 /**/
-extern std::string luxsi_replace(string in_input);
+extern const char *MtAccel[];
 
 /**/
-extern CString findInGroup(CString s);
+extern std::string luxsi_replace(string in_strInput);
 
 /**/
-void new_ply(CString in_VertNormUv, CString in_faces, CString in_plyFile, int vcount, int pcount);
+extern CString findInGroup(CString in_items);
 
 /**/
-extern CString luxsi_normalize_path(CString vFile);
+void write_plyFile(CString in_plyData, CString in_faces, CString in_plyFile, int vertexCount, int facesCount);
+
+/**/
+extern CString luxsi_normalize_path(CString in_fileNamePath);
 
 #endif // LUXSI_GEOMETRY_H

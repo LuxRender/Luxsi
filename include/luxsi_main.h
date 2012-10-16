@@ -1,8 +1,8 @@
 /*
 LuXSI - Softimage XSI Export plug-in for the LuxRender (http://www.luxrender.org) renderer
 
-Copyright (C) 2010 - 2012 by Michael Gangolf aka miga
-Code contributor ; Pedro Alcaide aka povmaniaco
+Copyright (C) 2010 - 2012  Michael Gangolf, 'miga'
+Code contributor ; Pedro Alcaide, 'povmaniaco'
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

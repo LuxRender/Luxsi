@@ -1,9 +1,9 @@
 /*
-LuXSI - Autodesk(c) Softimage(c) XSI Export addon for the LuxRender  Renderer
+LuXSI - Autodesk(c) Softimage(c) XSI Export addon for LuxRender  Renderer
 (http://www.luxrender.org)
 
-Copyright (C) 2010 - 2012  Michael Gangolf
-Code contributor ; Pedro Alcaide, aka povmaniaco
+Copyright (C) 2010 - 2012  Michael Gangolf, 'miga'
+Code contributor ; Pedro Alcaide, 'povmaniaco'
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -39,8 +39,8 @@ extern bool luxdebug;
 CString find_texlayer(Shader s)
 {
     CString
-        textureLayerName = L"",      //- texturelayer name
-        textureLayerPortName = L"";   //- texturelayerports name
+        textureLayerName = L"",     //- texturelayer name
+        textureLayerPortName = L""; //- texturelayerports name
     
     //--
     CRefArray texLayerArray(s.GetTextureLayers());
@@ -161,7 +161,7 @@ CString find_shader_used( Shader s, CString used_shader)
             {
                 //--
                 SIObject parent_obj = parent_needobj[j];
-                used_shader = parent_obj.GetName(); // GetAsciiString() ??
+                used_shader = parent_obj.GetName();
                 //-
                 //if (luxdebug) app.LogMessage(L"Texture name: "+ used_shader);
             }
