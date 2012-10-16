@@ -2,8 +2,8 @@
 LuXSI - Autodesk(c) Softimage(c) XSI Export addon for LuxRender  Renderer
 (http://www.luxrender.org)
 
-Copyright (C) 2010 - 2012  Michael Gangolf 
-Code contributor ; Pedro Alcaide, aka povmaniaco
+Copyright (C) 2010 - 2012  Michael Gangolf, 'miga'
+Code contributor ; Pedro Alcaide, 'povmaniaco'
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -1882,10 +1882,11 @@ void writeLuxsiCam(X3DObject o){
 }
 
 //-- work in progress
-int writeLuxsiSurface(X3DObject o, CString vType)
+CString writeLuxsiSurface(X3DObject o)
 {
     //-- WIP: lack a lots of updates..
     //- or use other methode (like Yafxsi :)
+    CString surfaceData;
 
     Geometry g(o.GetActivePrimitive().GetGeometry(ftime)) ; // add time
     CRefArray mats(o.GetMaterials()); // Array of all materials of the object
@@ -1926,34 +1927,47 @@ int writeLuxsiSurface(X3DObject o, CString vType)
 		rotar = -vphimax;
 		axis.Set(0,0,1);
 	}
-    f << "\nAttributeBegin\n";
+    //surfaceData.Clear();
+    //-
+    surfaceData = L"\nAttributeBegin\n";
     //CVector3 axis;
     //double rot = gt.GetRotationAxisAngle(axis);
     //-- TODO; changed for matrix
-    f << "\nTransformBegin\n";
-    f << "\nTranslate "<< gt.GetPosX() <<" "<< gt.GetPosY() <<" "<< gt.GetPosZ() <<"\n";
+    surfaceData += L"\nTransformBegin\n";
+    surfaceData += L"\nTranslate "
+        + CString( gt.GetPosX() ) + L" "
+        + CString( gt.GetPosY() ) + L" "
+        + CString( gt.GetPosZ()) + L"\n";
     //-
     if (rotar != 0)
     {
-        f << "Rotate "<< rotar /*(rot*180/PI)*/ <<" "<< axis[0] <<" "<< axis[1] <<" "<< axis[2] <<"\n";
+        surfaceData += L"Rotate "
+            + CString( rotar )/*(rot*180/PI)*/ + L" "
+            + CString( axis[0]) + L" "
+            + CString( axis[1]) + L" "
+            + CString( axis[2]) + L"\n";
     }
     if (gt.GetSclX()!=1 || gt.GetSclY()!=1 || gt.GetSclZ()!=1) 
     {
-        f << "Scale " << gt.GetSclX() << " " << gt.GetSclY() << " "<< gt.GetSclZ() << "\n";
+        surfaceData += L"Scale "
+            + CString( gt.GetSclX() ) + L" "
+            + CString( gt.GetSclY() ) + L" "
+            + CString( gt.GetSclZ() ) + L"\n";
     }    
 	//-
     float end_v = o.GetParameterValue(L"endvangle");
 	float start_v = o.GetParameterValue(L"startvangle");	
     //--
-    f << " Shape  \"sphere\" \n";
-    f << "  \"float radius\" [" << vradius << "]\n";
-	f << "  \"float zmin\" [ -90 ]\n";
-    f << "  \"float zmax\" [ 90 ]\n";
-    f << "  \"float phimax\" ["<< vphimax <<"]\n";
+    surfaceData += L" Shape  \"sphere\" \n";
+    surfaceData += L"  \"float radius\" ["+ CString( vradius ) + L"]\n";
+    surfaceData += L"  \"float zmin\" [ -90 ]\n";
+    surfaceData += L"  \"float zmax\" [ 90 ]\n";
+    surfaceData += L"  \"float phimax\" ["+ CString( vphimax ) + L"]\n";
     //--
-    f << "TransformEnd\n";
-    f << "\nAttributeEnd\n";
-    return 0;
+    surfaceData += L"TransformEnd\n";
+    surfaceData += L"\nAttributeEnd\n";
+    //--
+    return surfaceData;
 }
 //-
 CString writeLuxsiInstance(X3DObject o)
@@ -2197,9 +2211,7 @@ void luxsi_write(double ftime)
             }
         } 
         //-- end for visibility check
-        int vNumObj = aObj.GetCount() + aSurfaces.GetCount();
-
-        if ( vNumObj == 0)
+        if ( (aObj.GetCount() + aSurfaces.GetCount()) == 0 )
         {
             app.LogMessage(L"Any objects/surfaces to export! Check a list of 'Export hidden items..' in GUI", siFatalMsg );
         }
@@ -2209,8 +2221,8 @@ void luxsi_write(double ftime)
         }
         else
         {
-            /** vFileExport is a base name path
-            *   set by user from GUI.
+            /** vFileExport is the path introduced by the user in the graphic interface.
+            *   It is the base of the path.
             */
             vFileLxs.Clear();
             vFileLxs = vFileExport;
@@ -2353,9 +2365,18 @@ void luxsi_write(double ftime)
                 if (pb.IsCancelPressed() ) break; 
                 pb.Increment();
             }
-            //-
+            //--
+            CString surfaceData = L"";
+            for (int i=0; i < aSurfaces.GetCount(); i++) 
+            {
+                surfaceData += writeLuxsiSurface(aSurfaces[i]);
+                if (pb.IsCancelPressed() ) break;
+                pb.Increment();
+            }
+            //- reay for write --------------------------------------------#
             if ( luxdebug ) app.LogMessage(L"[DEBUG]: Open file for geometry: "+ vFileLXO);
-            //-
+
+            //- open geometry file
             f.open(vFileLXO.GetAsciiString()); 
 
             //-- insert header
@@ -2365,12 +2386,8 @@ void luxsi_write(double ftime)
             f << geometryData.GetAsciiString();
 
             //-- surfaces
-            for (int i=0;i<aSurfaces.GetCount();i++) 
-            {
-                if (writeLuxsiSurface(aSurfaces[i], L"surface")==-1) break;
-                if (pb.IsCancelPressed() ) break;
-                pb.Increment();
-            }
+            f << surfaceData.GetAsciiString();
+            
             //-- pointclouds
             f << pointCloudData.GetAsciiString();
 
