@@ -35,45 +35,7 @@ using namespace std;
 
 #define PI 3.14159265
 
-void writeLuxsiBasics();
 
-void writeLuxsiCam(X3DObject o);
-
-//-
-int writeLuxsiLight();
-
-CString writeLuxsiCloud(X3DObject o);
-
-CString writeLuxsiInstance(X3DObject o);
-
-CString writeLuxsiObj(X3DObject o);
-
-CString writeLuxsiShader();
-
-void luxsi_write(double ftime);
-
-void luxsi_preview(CString in_mat);
-
-//-
-void luxsi_execute();
-
-void luxsi_mat_preview();
-
-std::string luxsi_replace(string input);
-//--
-bool luxsi_find(CStringArray a, CString s);
-//--
-void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext ctxt);
-//--
-void luxsi_render_presets( PPGEventContext ctxt);
-//--
-void dynamic_luxsi_UI(Parameter changed, CString paramName, PPGEventContext ctxt);
-//-
-void dynamic_sampler_UI( Parameter changed, CString paramName, PPGEventContext ctxt);
-//-
-CString findInGroup(CString s);
-//-
-void write_ply_object(X3DObject o, CString vFilePLY);
 
 //--
 XSIPLUGINCALLBACK CStatus XSILoadPlugin( PluginRegistrar& in_reg )
@@ -454,7 +416,7 @@ CVector3 convertMatrix(CVector3 v)
 //--
 void update_main_values(CString paramName, Parameter changed, PPGEventContext ctxt)
 {
-    if (paramName == L"Width")   { vXRes     = changed.GetValue();
+    if (paramName == L"Width")  { vXRes = changed.GetValue();
     } else if (paramName == L"Height")  { vYRes     = changed.GetValue();
     } else if (paramName == L"gamma")   { vContrast = changed.GetValue();
     
@@ -463,14 +425,18 @@ void update_main_values(CString paramName, Parameter changed, PPGEventContext ct
     } else if (paramName == L"use_hidden_surf") { vIsHiddenSurface  = changed.GetValue();
     } else if (paramName == L"use_hidden_cloud"){ vIsHiddenClouds   = changed.GetValue();
     } else if (paramName == L"use_hidden_cam")  { vIsHiddenCam      = changed.GetValue();
-    } else if (paramName == L"use_hidden_light"){ vIsHiddenLight    = changed.GetValue(); // over_geo
-    } else if (paramName == L"over_geo")        { overrGeometry     = changed.GetValue();
-
-    //-- mesh export
+    } else if (paramName == L"use_hidden_light"){ vIsHiddenLight    = changed.GetValue();
+    
+    //-- mesh options
     } else if (paramName == L"smooth_mesh")     { vSmooth_mesh  = changed.GetValue();
     } else if (paramName == L"sharp_bound")     { vSharp_bound  = changed.GetValue();
-    } else if (paramName == L"bplymesh")        { vplymesh  = changed.GetValue();
-   
+    //- geometry
+    } else if (paramName == L"over_geo")        { overrGeometry = changed.GetValue();
+    } else if (paramName == L"bplymesh")
+    {
+        vplymesh = changed.GetValue();
+        dynamic_luxsi_UI(changed, paramName, ctxt);
+    
     //-- save images /----/ tga /--->
     } else if (paramName == L"tga_gamut")   { vTga_gamut    = changed.GetValue();
     } else if (paramName == L"mode_rtga")   { vRtga         = changed.GetValue();
@@ -1016,21 +982,22 @@ void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext
     vSurfaceInt  = prop.GetParameterValue(L"bsurfaceint");
     vsexpert = prop.GetParameterValue(L"bsexpert");
 
-    //--------------------------------
-        
-    const char *u_intgrator [66] = {/*bidirectional*/"blight_depth", "beye_depth", "beyerrthre", "blightrrthre",
-        /*path*/"blight_str", "binc_env", "brrstrategy", "bmaxdepth", "brrcon_prob",
-        /*ditributepath*/"bdirectsampleall", "bdirectsamples", "bindirectsampleall", "bindirectsamples", "bdiffusereflectdepth",
-        "bdiffusereflectsamples", "bdiffuserefractdepth", "bdiffuserefractsamples", "bdirectdiffuse", "bindirectdiffuse",
-        "bglossyreflectdepth", "bglossyreflectsamples", "bglossyrefractdepth", "bglossyrefractsamples", "bdirectglossy", 
-        "bindirectglossy", "bspecularreflectdepth", "bspecularrefractdepth", "bdiff_reflect_reject_thr", "bdiff_refract_reject_thr", 
-        "bglossy_reflect_reject_thr", "bglossy_refract_reject_thr", "bdiff_reflect_reject", "bdiff_refract_reject",
-        "bglossy_reflect_reject", "bglossy_refract_reject", /*IGI*/"bnsets", "bnlights", "bmindist",
-        /*exphotonmap*/"bstrategy", "bshadowraycount", "bmaxphotondepth", "bmaxeyedepth", "bmaxphotondist", "bnphotonsused",
-        "bindirectphotons", "bdirectphotons", "bcausticphotons", "bradiancephotons", "bfinalgather", "brenderingmode",
-        "bfinalgathersamples", "bgatherangle", "bdistancethreshold", "bdbg_enabledirect", "bdbg_enableradiancemap",
-        "bdbg_enableindircaustic", "bdbg_enableindirdiffuse", "bdbg_enableindirspecular",/*sppm 8*/"bmaxeyedepht",
-        "bmaxphoton", "bpointxpass", "bphotonsxpass", "bstartradius", "balpha", "bdlsampling", "bincenvironment" };
+    //--   
+    const char *u_intgrator [66] = {
+        /*ditributepath 26*/"bdirectsampleall", "bdirectsamples", "bindirectsampleall", "bindirectsamples",
+        "bdiffusereflectdepth", "bdiffusereflectsamples", "bdiffuserefractdepth", "bdiffuserefractsamples",
+        "bdirectdiffuse", "bindirectdiffuse", "bglossyreflectdepth", "bglossyreflectsamples", "bglossyrefractdepth",
+        "bglossyrefractsamples", "bdirectglossy", "bindirectglossy", "bspecularreflectdepth", "bspecularrefractdepth",
+        "bdiff_reflect_reject_thr", "bdiff_refract_reject_thr", "bglossy_reflect_reject_thr", "bglossy_refract_reject_thr",
+        "bdiff_reflect_reject", "bdiff_refract_reject", "bglossy_reflect_reject", "bglossy_refract_reject",
+        /*exphotonmap 20*/"bstrategy", "bshadowraycount", "bmaxphotondepth", "bmaxeyedepth", "bmaxphotondist",
+        "bnphotonsused", "bindirectphotons", "bdirectphotons", "bcausticphotons", "bradiancephotons", "bfinalgather",
+        "brenderingmode", "bfinalgathersamples", "bgatherangle", "bdistancethreshold", "bdbg_enabledirect", "bdbg_enableradiancemap",
+        "bdbg_enableindircaustic", "bdbg_enableindirdiffuse", "bdbg_enableindirspecular",
+        /*sppm 8*/"bmaxeyedepht", "bmaxphoton", "bpointxpass", "bphotonsxpass", "bstartradius", "balpha", "bdlsampling", "bincenvironment",
+        /*path 5*/"blight_str", "binc_env", "brrstrategy", "bmaxdepth", "brrcon_prob",
+        /*bidirectional 4*/"blight_depth", "beye_depth", "beyerrthre", "blightrrthre",
+        /*IGI 3*/"bnsets", "bnlights", "bmindist"};
        
     //--
     for ( long in = 0; in < 66;)
@@ -1062,7 +1029,7 @@ void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext
         {
             show_params(L"blight_str");
             show_params(L"blight_depth");
-            show_params(L"bshadowraycount"); // dude, revised
+            show_params(L"bshadowraycount"); //- revised
         }
         ctxt.PutAttribute(L"Refresh", true );
     }
@@ -1201,6 +1168,7 @@ void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext
 //--
 void dynamic_sampler_UI( Parameter changed, CString paramName, PPGEventContext ctxt)
 {
+    //-
     vSampler = prop.GetParameterValue(L"bsampler");
     vExpert = prop.GetParameterValue(L"bexpert");
     vbasampler = prop.GetParameterValue(L"bbasampler");
@@ -1358,42 +1326,51 @@ void dynamic_Accel_UI(Parameter changed, CString paramName, PPGEventContext ctxt
 //-
 void dynamic_luxsi_UI( Parameter changed, CString paramName, PPGEventContext ctxt) 
 {
-    //--------------------
-    // Status: for revised
-    //--------------------
-    
-    //------------------------------------
-    if ( changed.GetName() == L"save_tga")
-    //------------------------------------
+    //------------
+    // Status: OK
+    //------------
+
+    //- tga ------------------->
+    hide_params( L"mode_rtga" ); 
+    hide_params( L"tga_gamut" );
+    //--
+    if ( vTga )
     {
-        Parameter lmode_rtga = prop.GetParameters().GetItem( L"mode_rtga" );
-        Parameter ltga_gamut = prop.GetParameters().GetItem( L"tga_gamut" );
-        //--
-        lmode_rtga.PutCapabilityFlag( siNotInspectable, changed.GetValue() == false );
-        ltga_gamut.PutCapabilityFlag( siNotInspectable, changed.GetValue() == false );
-        ctxt.PutAttribute(L"Refresh", true);
+        show_params( L"mode_rtga" );
+        show_params( L"tga_gamut" );
+        //-
+        ctxt.PutAttribute( L"Refresh", true );
     }
-    //------------------------------------
-    if ( changed.GetName() == L"save_exr")
-    //------------------------------------
+    //-- exr ------------------->
+    hide_params( L"mode_Znorm" );
+    //-
+    if ( vExr )
     {
-        Parameter lmode_Znorm = prop.GetParameters().GetItem( L"mode_Znorm" );
+        show_params( L"mode_Znorm" );
         //--
-        lmode_Znorm.PutCapabilityFlag( siNotInspectable, changed.GetValue() == false );
-        ctxt.PutAttribute(L"Refresh", true);
+        ctxt.PutAttribute( L"Refresh", true );
     }
-    //------------------------------------
-    if ( changed.GetName() == L"save_png")
-    //------------------------------------
+    //- png -------------------->
+    hide_params( L"mode_rpng"   ); 
+    hide_params( L"save_png_16" ); 
+    hide_params( L"png_gamut"   );
+    //-
+    if ( vPng )
     {
-        Parameter lmode_rpng    = prop.GetParameters().GetItem( L"mode_rpng" ) ;
-        Parameter lsave_png_16  = prop.GetParameters().GetItem( L"save_png_16" ) ;
-        Parameter lpng_gamut    = prop.GetParameters().GetItem( L"png_gamut" ) ;
-        //--
-        lmode_rpng.PutCapabilityFlag( siNotInspectable,   changed.GetValue() == false ) ;
-        lsave_png_16.PutCapabilityFlag( siNotInspectable, changed.GetValue() == false ) ;
-        lpng_gamut.PutCapabilityFlag( siNotInspectable,   changed.GetValue() == false ) ;
-        ctxt.PutAttribute(L"Refresh", true);
+        show_params( L"mode_rpng"   );
+        show_params( L"save_png_16" );
+        show_params( L"png_gamut"   );
+        //-
+        ctxt.PutAttribute( L"Refresh", true );
+    }
+    //-- geometry --------->
+    no_read( L"over_geo" );
+    //-
+    if ( vplymesh )
+    {
+        si_read( L"over_geo" );
+        //-
+        ctxt.PutAttribute( L"Refresh", true );
     }
 }
 

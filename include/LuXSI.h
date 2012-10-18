@@ -50,14 +50,15 @@ bool vPng = true, vWpng_16 = false, vPng_gamut = false, vTga = false, vTga_gamut
 */
 bool lqueue = false;
 
-/* experimental override */
+/* override geometry ( wip ) 
+*/
 bool overrGeometry = false;
 
 /* time 
 */
 double ftime = DBL_MAX;
 
-/**/
+/*  define frame step */
 int vframestep = 1;
 
 /* Update UI values
@@ -84,6 +85,45 @@ void dynamic_filter_UI(Parameter changed, CString paramName, PPGEventContext ctx
 
 /**/
 void dynamic_Accel_UI(Parameter changed, CString paramName, PPGEventContext ctxt);
+
+/**/
+void writeLuxsiBasics();
+
+void writeLuxsiCam(X3DObject o);
+
+//-
+int writeLuxsiLight();
+
+CString writeLuxsiCloud(X3DObject o);
+
+CString writeLuxsiInstance(X3DObject o);
+
+CString writeLuxsiObj(X3DObject o);
+
+CString writeLuxsiShader();
+
+void luxsi_write(double ftime);
+
+void luxsi_preview(CString in_mat);
+
+//-
+void luxsi_execute();
+
+void luxsi_mat_preview();
+
+std::string luxsi_replace(string input);
+//--
+bool luxsi_find(CStringArray a, CString s);
+//--
+void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext ctxt);
+//--
+void luxsi_render_presets( PPGEventContext ctxt);
+//--
+void dynamic_luxsi_UI(Parameter changed, CString paramName, PPGEventContext ctxt);
+//-
+void dynamic_sampler_UI( Parameter changed, CString paramName, PPGEventContext ctxt);
+//-
+extern CString findInGroup(CString s);
 
 /**/
 std::map<CString, int> int_values;

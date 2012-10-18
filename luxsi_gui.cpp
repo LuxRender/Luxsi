@@ -98,17 +98,21 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.EndRow();
     lay.EndGroup(); //- export hidden..
 
-    lay.AddGroup(L"Mesh options"); // TODO:  to shader spdl file, per individuals flags?
+    lay.AddGroup(); //L"Mesh options"); // TODO:  to shader spdl file, per individuals flags?
         lay.AddItem(L"smooth_mesh", L"Export smooth meshes");
         lay.AddItem(L"sharp_bound", L"Preserve sharp edges");
-        lay.AddItem(L"bplymesh",	L"Export to PLY file");
-        lay.AddItem(L"over_geo",    L"Override geometry (exp.)");
+    lay.EndGroup();
+    lay.AddGroup(L"Geometry");
+        lay.AddRow();
+            lay.AddItem(L"bplymesh", L"Use PLY mesh");
+            lay.AddItem(L"over_geo", L"Override Geometry");
+        lay.EndRow();
     lay.EndGroup();
 
     
         lay.AddRow();
-            lay.AddButton(L"exe_luxsi",L"Export to file");
-            lay.AddButton(L"render_luxsi",L"Render scene");
+            lay.AddButton(L"exe_luxsi", L"Export to file");
+            lay.AddButton(L"render_luxsi", L"Render scene");
         lay.EndRow();
     
     //------------------------------// 
