@@ -79,6 +79,7 @@ CString writeLuxsiObj(X3DObject o)
     ga = PolygonMesh(g).GetGeometryAccessor();
     //-
     if ( ga.GetUVs().GetCount() > 0 && vText) have_UV = true;
+    
 
    //--
     if (int(g.GetTriangles().GetCount()) > 0 )
@@ -105,6 +106,7 @@ CString writeLuxsiObj(X3DObject o)
                 long arrayPos = index++;
                 allPoints[arrayPos] = pos;
                 allNormals[arrayPos] = normal;
+                allUV[arrayPos] = CVector3(uvs.u, uvs.v,0);
             }
         }
 
