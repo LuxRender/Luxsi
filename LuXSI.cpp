@@ -1,24 +1,25 @@
 /*
-LuXSI - Autodesk(c) Softimage(c) XSI Export addon for LuxRender  Renderer
-(http://www.luxrender.org)
+This file is part of LuXSI;
+LuXSI is a LuxRender Exporter for Autodesk(C) Softimage(C) ( ex-XSI )
+http://www.luxrender.net
 
-Copyright (C) 2010 - 2012  Michael Gangolf, 'miga'
-Code contributor ; Pedro Alcaide, 'povmaniaco'
+Copyright(C) 2007 - 2012  of all Authors:
+Michael Gangolf, 'miga', mailto:miga@migaweb.de                                               
+Pedro Alcaide, 'povmaniaco', mailto:p.alcaide@hotmail.com
+ 
+LuXSI is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published
+by the Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+LuXSI is distributed in the hope that it will be useful,              
+but WITHOUT ANY WARRANTY; without even the implied warranty of        
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         
+GNU General Public License for more details.                          
+                                                                           
+You should have received a copy of the GNU General Public License     
+along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 
 #pragma warning (disable : 4245) // signed/unsigned mismatch
 #pragma warning (disable : 4996) // strcpy/unsigned mismatch
@@ -27,15 +28,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "include\luxsi_values.h"
 #include "include\LuXSI.h"
 //#include "plymesh/rply.h"
-//--
-using namespace XSI;
-using namespace MATH;
-using namespace std;
-
-
-#define PI 3.14159265
-
-
 
 //--
 XSIPLUGINCALLBACK CStatus XSILoadPlugin( PluginRegistrar& in_reg )
@@ -44,7 +36,7 @@ XSIPLUGINCALLBACK CStatus XSILoadPlugin( PluginRegistrar& in_reg )
     in_reg.PutName(L"LuXSI");
     in_reg.PutEmail(L"miga@migaweb.de");
     in_reg.PutURL(L"http://www.migaweb.de");
-    in_reg.PutVersion(0,6);
+    in_reg.PutVersion(1,1);
     in_reg.RegisterProperty(L"LuXSI");
     in_reg.RegisterRenderer(L"LuxRender Renderer");
     in_reg.RegisterMenu(siMenuTbRenderRenderID,L"LuXSI_Menu",false,false);
@@ -65,9 +57,9 @@ XSIPLUGINCALLBACK CStatus XSIUnloadPlugin( const PluginRegistrar& in_reg )
 XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 {
     Context ctxt( in_ctxt ); 
-    // for save space
+    //-
     int sps = siPersistable;
-    CValue dft;  // change for CValue()
+    CValue dft;  //- default
 
     Parameter oParam;
     prop = ctxt.GetSource();
@@ -105,8 +97,8 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     
     //-- Surfaceint : bsurfaceint, eye_depth, blight_depth, blight_str, binc_env, brrstrategy, beyerrthre,
     //-- blightrrthre, bmax_depth
-    prop.AddParameter( L"bsurfaceint",  CValue::siInt4, sps,L"",L"",   vSurfaceInt,    0,10,0,10,      oParam );
-    prop.AddParameter( L"bsexpert",     CValue::siBool, sps,L"",L"",   vsexpert,      dft,dft,dft,dft, oParam);
+    prop.AddParameter( L"bsurfaceint",  CValue::siInt4, sps,L"",L"",   vSurfaceInt, 0,10,0,10,          oParam );
+    prop.AddParameter( L"bsexpert",     CValue::siBool, sps,L"",L"",   vsexpert,    dft,dft,dft,dft,    oParam);
 
     //-- bi-directional
     prop.AddParameter( L"beye_depth",   CValue::siInt4, sps,L"",L"",    vEye_depth,     0,2048,0,48,    oParam );
@@ -186,14 +178,14 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     //-- sppm items
     //-- "bmaxeyedepht", "bmaxphoton", "bpointxpass", "bphotonsxpass", "bstartradius", "balpha", "bdlsampling", "bincenvironment" };
     
-    prop.AddParameter( L"bmaxeyedepht",     CValue::siInt4, sps,L"",L"",  vbmaxeyedepht,    0,50,0,50,              oParam ); 
-    prop.AddParameter( L"bmaxphoton",       CValue::siInt4, sps,L"",L"",  vbmaxphoton,      0,50,0,50,              oParam ); 
-    prop.AddParameter( L"bpointxpass",      CValue::siInt4, sps,L"",L"",  vbpointxpass,     0,50,0,50,              oParam );      
-    prop.AddParameter( L"bphotonsxpass",    CValue::siInt4, sps,L"",L"",  vbphotonsxpass,   0,10000000,0,10000000,  oParam );
-    prop.AddParameter( L"bstartradius",     CValue::siFloat, sps,L"",L"", vbstartradius,    0.0f,100.0f,0.0f,100.0, oParam );
-    prop.AddParameter( L"balpha",           CValue::siFloat, sps,L"",L"", vbalpha,          0.0f,360.0f,0.0f,360.0, oParam );
-    prop.AddParameter( L"bdlsampling",      CValue::siBool, sps,L"",L"",  vbdlsampling,     dft,dft,dft,dft,        oParam );
-    prop.AddParameter( L"bincenvironment",  CValue::siBool, sps,L"",L"",  vbincenvironment, dft,dft,dft,dft,        oParam );
+    prop.AddParameter( L"bmaxeyedepht",     CValue::siInt4,  sps,L"",L"",  vbmaxeyedepht,    0,50,0,50,              oParam ); 
+    prop.AddParameter( L"bmaxphoton",       CValue::siInt4,  sps,L"",L"",  vbmaxphoton,      0,50,0,50,              oParam ); 
+    prop.AddParameter( L"bpointxpass",      CValue::siInt4,  sps,L"",L"",  vbpointxpass,     0,50,0,50,              oParam );      
+    prop.AddParameter( L"bphotonsxpass",    CValue::siInt4,  sps,L"",L"",  vbphotonsxpass,   0,10000000,0,10000000,  oParam );
+    prop.AddParameter( L"bstartradius",     CValue::siFloat, sps,L"",L"",  vbstartradius,    0.0f,100.0f,0.0f,100.0, oParam );
+    prop.AddParameter( L"balpha",           CValue::siFloat, sps,L"",L"",  vbalpha,          0.0f,360.0f,0.0f,360.0, oParam );
+    prop.AddParameter( L"bdlsampling",      CValue::siBool,  sps,L"",L"",  vbdlsampling,     dft,dft,dft,dft,        oParam );
+    prop.AddParameter( L"bincenvironment",  CValue::siBool,  sps,L"",L"",  vbincenvironment, dft,dft,dft,dft,        oParam );
 
     //-- Sampler: bsampler, bmutation, bmaxrej, buservarian, bchainlength, bpixsampler, pixelsamples, vbasampler
     prop.AddParameter( L"bsampler",     CValue::siInt4,  sps,L"",L"", vSampler,             0,10,0,10,              oParam );
@@ -217,7 +209,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     // unused--prop.AddParameter( L"AmbBack",  CValue::siBool, sps,L"",L"", vAmbBack,  dft,dft,dft,dft,    oParam);
 
     //- animation
-    prop.AddParameter( L"bframestep",   CValue::siInt4, sps,L"",L"", vframestep,    0,100,0,100,  oParam );
+    prop.AddParameter( L"bframestep",   CValue::siInt4, sps,L"",L"", vframestep,    1,100,1,100,  oParam );
     
     //--- save image options // 
     prop.AddParameter( L"save_png_16", CValue::siBool, sps,L"",L"", vWpng_16,   dft,dft,dft,dft, oParam);
@@ -295,44 +287,53 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
 
     if ( eventID == PPGEventContext::siOnInit )
     {
-        //CustomProperty 
+        //-
         prop = ctxt.GetSource() ;
         //app.LogMessage( L"OnInit called for " + prop.GetFullName() ) ;
 
         ctxt.PutAttribute(L"Refresh",true);
 
         params = prop.GetParameters();
-        for (int i=0;i<params.GetCount();i++)
+        /** Update values on init
+        */
+        for (int i=0; i < params.GetCount(); i++)
         {
-            // Update values on init
             Parameter param(params[i]);
             CString pname = param.GetScriptName();
-            update_LuXSI_values(param.GetScriptName(), param, ctxt);
+            //-
+            update_LuXSI_values(pname, param, ctxt);
         }
     }
     else if ( eventID == PPGEventContext::siButtonClicked )
     {
         CValue buttonPressed = ctxt.GetAttribute( L"Button" );
-
         //-
+        CString buttonOption = buttonPressed.GetAsText();
         is_preview = false;
-        //- bpreview
-        if (buttonPressed.GetAsText()==L"blpreview")
+        //- 
+        if ( buttonOption == L"bre_render" || buttonOption == L"blpreview" )
         {
             //--
-            is_preview = true;
-            luxsi_mat_preview();
+            if( buttonOption == L"blpreview" )
+            {
+                is_preview = true;
+                luxsi_mat_preview();
+            }
+            else
+            {
+                //-- its work...
+                luxsi_preview(vblxs_file);
+            }
         }
-        if (buttonPressed.GetAsText()==L"bre_render")
+        if ( buttonOption == L"export_luxsi" || buttonOption == L"render_luxsi")
         {
-            //-- en teoria funciona..
-            luxsi_preview(vblxs_file);
-        }
-        if (buttonPressed.GetAsText()==L"exe_luxsi")
-        {
+            //- always..
             luxsi_write(ftime);
+
+            //- depend..
+            if( buttonOption == L"render_luxsi" ) luxsi_execute();
         }
-        if (buttonPressed.GetAsText()==L"render_ani")
+        if ( buttonOption == L"export_ani" || buttonOption == L"render_ani" )
         {
             //-- test
             CRefArray projectProps = Application().GetActiveProject().GetProperties();
@@ -340,16 +341,14 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
             int time = playControl.GetParameterValue( L"Current" );
             int time_start = playControl.GetParameterValue( L"In" );
             int time_end = playControl.GetParameterValue( L"Out" );
-
-            //- Todo: create option menu for lqueue
+            //- 
             lqueue = true;
             //- reset queue_list
             queue_list.Clear();
             //-
             for ( int i = time_start; i < time_end; i += vframestep)
             {
-                //-
-                app.LogMessage(L" PLAY FRAME: "+ CString(i));
+                if( luxdebug ) app.LogMessage(L" PLAY FRAME: "+ CString(i));
                 
                 //- frame
                 ftime = i;
@@ -359,10 +358,6 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
                 //long st = 3;
                 //kit.MsgBox(L"Wait, render frame: "+ CString(time)+ L"in curse", siMsgOk, L"Warning!!", st);
             }
-            /** si deseamos lanzar el render de la animacion inmediatamente
-            *   aqui podriamos escribir el .lxq y llamar a luxsi_execute con el
-            *   parametro -L "file.lxq"
-            */
             int ext = int(vFileExport.ReverseFindString("."));
             //- for 'queue' files
             vFileQueue = vFileExport.GetSubString(0,ext) + L".lxq";
@@ -372,20 +367,8 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
             f << queue_list.GetAsciiString();
             f.close();
             //-
-            luxsi_execute();
+            if( buttonOption == L"render_ani") luxsi_execute();
         }
-        if (buttonPressed.GetAsText()==L"render_luxsi")
-        {
-            //-
-            if ( luxdebug ) app.LogMessage(L"[DEBUG]: Write data to file LuxRender files");
-            //-
-            luxsi_write(ftime);
-            //-
-            if ( luxdebug ) app.LogMessage(L"[DEBUG]: Execute LuxRender..");
-            //-
-            luxsi_execute();
-        }
-        ctxt.PutAttribute(L"Refresh",true);
     }
     else if ( eventID == PPGEventContext::siTabChange )
     {
@@ -949,7 +932,7 @@ void luxsi_render_presets( PPGEventContext ctxt)
          
     ctxt.PutArrayAttribute(L"Refresh", true);
     //-
-    app.LogMessage(L" Parameters for render presets 9; loaded.."+ CString(vpresets));
+    app.LogMessage(L" Parameters for render presets loaded: "+ CString(vpresets));
     
   
 //} //-- end cases...
@@ -1754,15 +1737,17 @@ void writeLuxsiCam(X3DObject o){
     int vdof_mode = 0;
 
     CRefArray cShaders = c.GetShaders();
-    for (int i=0;i<cShaders.GetCount();i++)
+    for (int i=0; i < cShaders.GetCount(); i++)
     {
-        CString vCSID((Shader(cShaders[i]).GetProgID()).Split(L".")[1]);
+        //-
+        Shader camShader(cShaders[i]);
+        CString vCSID((camShader.GetProgID()).Split(L".")[1]);
         if ( luxdebug ) app.LogMessage(L" Lens shader in use: "+ CString(vCSID));
         //-
         if (vCSID==L"sib_dof") 
         {
             //-- Depth_of_field shader found
-            vdof_mode = Shader(cShaders[i]).GetParameterValue(L"mode");
+            vdof_mode = camShader.GetParameterValue(L"mode");
             //--
             if ( vdof_mode = 0 ) //- custom
             {
@@ -1770,15 +1755,15 @@ void writeLuxsiCam(X3DObject o){
             }
             if ( vdof_mode = 1 ) //- auto
             {
-                vFdist = Shader(cShaders[i]).GetParameterValue(L"auto_focal_distance");
+                vFdist = camShader.GetParameterValue(L"auto_focal_distance");
             }
             if ( vdof_mode = 2 ) //- lens
             {
                 /* len_focal_distance, len_focal_lenght, len_fstop, len_coc */
-                vFdist = Shader(cShaders[i]).GetParameterValue(L"len_focal_distance");
+                vFdist = camShader.GetParameterValue(L"len_focal_distance");
             }
             //-- commons
-            vLensr = Shader(cShaders[i]).GetParameterValue(L"strenght");        
+            vLensr = camShader.GetParameterValue(L"strenght");        
         }
     }
 
@@ -1946,84 +1931,15 @@ CString writeLuxsiSurface(X3DObject o)
     //--
     return surfaceData;
 }
-//-
-CString writeLuxsiInstance(X3DObject o)
-{
-    //--------------------
-    // status: in progress
-    //--------------------
-    //-- instance
-    CString instanceData = L"";
-    //- write source object [won't be displayed]
-    Model vModel = Model(o).GetInstanceMaster();
-    CRefArray vGroup = X3DObject(vModel).GetChildren();
-    //-
-    if ( luxsi_find(aInstanceList, vModel.GetName() ) ) 
-    {
-        if ( luxdebug ) app.LogMessage(L"The instance already exists");
-    }
-    else
-    {
-        CString obj_instance = L"";
-        //-
-        instanceData = L"\nObjectBegin \""+ vModel.GetName() + L"\"";
-        //-
-        for (int i=0; i < vGroup.GetCount(); i++)
-        {
-            obj_instance = writeLuxsiObj(X3DObject(vGroup[i]));
-        }
-        //- test
-        instanceData += obj_instance;
-        //- end
-        instanceData += L"\nObjectEnd #"+ o.GetName() + L"\n";
-        aInstanceList.Add(vModel.GetName());// is correct?
-    }
-    //-
-    instanceData += L"\nAttributeBegin #"+ o.GetName();
-    //--
-    KinematicState global_state = o.GetKinematics().GetGlobal();
-    CTransformation global_transf = global_state.GetTransform(ftime);
-    CVector3 axis;
-    double rot = global_transf.GetRotationAxisAngle(axis); 
-    
-    //-
-    instanceData += L"\nTranslate "
-        + CString( global_transf.GetPosX() )  + L" "
-        + CString( -global_transf.GetPosZ())  + L" "
-        + CString( global_transf.GetPosY() )  + L"\n";
-    //--
-    if (rot!= 0)
-    {
-        instanceData += L"Rotate "
-            + CString( rot*180/PI) + L" "
-            + CString( axis[0] )   + L" "
-            + CString( -axis[2])   + L" "
-            + CString( axis[1] )   + L"\n";
-    }
-    /** changed && to ||, add support for not uniform scale 
-    */
-    if (global_transf.GetSclX()!=1 || global_transf.GetSclY()!=1 || global_transf.GetSclZ()!=1)
-    {
-        //- !WARNING! change 'Y' for 'Z', but not negative ( -z).
-        instanceData += L"Scale "
-            + CString(global_transf.GetSclX()) + L" "
-            + CString(global_transf.GetSclZ()) + L" "
-            + CString(global_transf.GetSclY()) + L"\n";
-    }
-
-    instanceData += L"ObjectInstance \""+ Model(o).GetInstanceMaster().GetName() + L"\"\n";
-    instanceData += L"AttributeEnd #"+ o.GetName() + L"\n\n";
-    //-
-    return instanceData;
-}
 //--
 CString write_header_files()
 {
     //-- commons header for files .lxm and .lxo
     CString _header = L"";
-    _header += L"\n# Created by LuXSI; Luxrender Exporter for Autodesk Softimage \n";
-    _header += L"# Copyright (C) 2010 - 2012 by Michael Gangolf aka Miga \n";
-    _header += L"# Code contributor;    P. Alcaide, aka povmaniaco. \n \n";
+    _header += L"\n# Created by LuXSI; Luxrender Exporter for Autodesk Softimage. \n";
+    _header += L"# Copyright (C) 2010 - 2012 of all Authors: \n";
+    _header += L"# Michael Gangolf \"miga\". \n";
+    _header += L"# Pedro Alcaide, \"povmaniaco\". \n \n";
     //-
     return _header;
 }
@@ -2209,13 +2125,11 @@ void luxsi_write(double ftime)
             
             //- use only for exporter animation -----------------------------------------//
             if ( luxdebug ) app.LogMessage(L"[DEBUG]: ftime is: "+ CString(ftime));
-            CString vtime = L"";
             //-
             if ( ftime != DBL_MAX )
             {
                 //- add frame number to outfile name
-                vtime = CString(ftime);
-                vFileLxs = vFileLxs.GetSubString(0, ext) + (L"_"+ vtime + L".lxs");
+                vFileLxs = vFileLxs.GetSubString(0, ext) + (L"_"+ CString(ftime) + L".lxs");
                 //-
                 if ( lqueue )
                 {
@@ -2231,7 +2145,7 @@ void luxsi_write(double ftime)
             CString path_base = luxsi_normalize_path(vFileLxs);
             CString inc_LXM = path_base + L"_mat.lxm";  // material definitions
             CString inc_LXO = path_base + L"_geo.lxo";  // geometry definitions
-            CString inc_LXV = path_base + L"_geo.lxv";  // volume definitions
+            CString inc_LXV = path_base + L"_vol.lxv";  // volume definitions
 
             /** For animation, reset ext value to new filename.
             *   The lenght of new filename as change (name + frame).
