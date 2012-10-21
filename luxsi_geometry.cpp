@@ -1,23 +1,24 @@
 /*
-LuXSI - Autodesk(c) Softimage(c) XSI Export addon for the LuxRender  Renderer
-(http://www.luxrender.org)
+This file is part of LuXSI;
+LuXSI is a LuxRender Exporter for Autodesk(C) Softimage(C) ( ex-XSI )
+http://www.luxrender.net
 
-Copyright (C) 2010 - 2012  Michael Gangolf, 'miga'
-Code contributor ; Pedro Alcaide, 'povmaniaco'
+Copyright(C) 2007 - 2012  of all Authors:
+Michael Gangolf, 'miga', mailto:miga@migaweb.de                                               
+Pedro Alcaide, 'povmaniaco', mailto:p.alcaide@hotmail.com
+ 
+LuXSI is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published
+by the Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+LuXSI is distributed in the hope that it will be useful,              
+but WITHOUT ANY WARRANTY; without even the implied warranty of        
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         
+GNU General Public License for more details.                          
+                                                                           
+You should have received a copy of the GNU General Public License     
+along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "include\luxsi_geometry.h"
@@ -52,16 +53,16 @@ CString writeLuxsiObj(X3DObject o)
 
     CGeometryAccessor ga;
     CString 
-        vUV = L"",      //- for UV data
-        vNormals = L"", //- for normals data
-        vTris = L"",    //- for faces
-        vPoints = L"";  //- for point poditions
+        vUV = L"",      //- for UV data.
+        vNormals = L"", //- for normals data.
+        vTris = L"",    //- for faces.
+        vPoints = L"";  //- for point poditions.
        
     //- test for ply ofrmat
     CString 
-        lxoData, 
-        plyData,
-        plyFaces;
+        lxoData,    //! for LuxRender native geometry format.
+        plyData,    //! for vertex, normal and UV data in PLY format.
+        plyFaces;   //! for faces data in PLY format.
 
     LONG subdLevel = 0;
     Property geopr = o.GetProperties().GetItem(L"Geometry Approximation");
@@ -183,7 +184,7 @@ CString writeLuxsiObj(X3DObject o)
         lxoData = L"\nAttributeBegin #"+ o.GetName();
         lxoData += L"\nNamedMaterial \""+ m.GetName() + L"\"\n";
 
-        /** Geometry associated to lights.
+        /** Geometry associated to light objects.
         *   Portal lights use a 'trick'..
         *   TODO; find better mode
         */
@@ -238,9 +239,9 @@ CString writeLuxsiObj(X3DObject o)
         
         //-- share
         lxoData += L"  \"integer nsubdivlevels\" ["+ CString( subdLevel ) + L"]\n";
-        lxoData += L"  \"string subdivscheme\" [\"loop\"] \n";
-        lxoData += L"  \"bool dmnormalsmooth\" [\""+ CString( MtBool[vSmooth_mesh] ) + L"\"]";
-        lxoData += L"  \"bool dmsharpboundary\" [\""+ CString( MtBool[vSharp_bound] ) + L"\"] \n";
+        lxoData += L"  \"string subdivscheme\" [\"loop\"]\n";
+        lxoData += L"  \"bool dmnormalsmooth\" [\""+ CString( MtBool[vSmooth_mesh] ) + L"\"]\n";
+        lxoData += L"  \"bool dmsharpboundary\" [\""+ CString( MtBool[vSharp_bound] ) + L"\"]\n";
         //f << "  \"string displacementmap\" [\"none\"]\n"; // here, place normalmap texture
         //f << "  \"float dmscale\" [\"0.0\"] \"float dmoffset\" [\"0.0\"]\n";
         //-

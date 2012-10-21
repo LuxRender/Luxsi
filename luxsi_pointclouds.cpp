@@ -1,23 +1,24 @@
 /*
-LuXSI - Autodesk(c) Softimage(c) XSI Export addon for LuxRender  Renderer
-(http://www.luxrender.org)
+This file is part of LuXSI;
+LuXSI is a LuxRender Exporter for Autodesk(C) Softimage(C) ( ex-XSI )
+http://www.luxrender.net
 
-Copyright (C) 2010 - 2012  Michael Gangolf, 'miga'
-Code contributor ; Pedro Alcaide, 'povmaniaco'
+Copyright(C) 2007 - 2012  of all Authors:
+Michael Gangolf, 'miga', mailto:miga@migaweb.de                                               
+Pedro Alcaide, 'povmaniaco', mailto:p.alcaide@hotmail.com
+ 
+LuXSI is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published
+by the Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+LuXSI is distributed in the hope that it will be useful,              
+but WITHOUT ANY WARRANTY; without even the implied warranty of        
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         
+GNU General Public License for more details.                          
+                                                                           
+You should have received a copy of the GNU General Public License     
+along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "include\luxsi_main.h"
@@ -26,14 +27,19 @@ using namespace std;
 using namespace XSI;
 using namespace MATH;
 
-//-
+/**/
 extern double ftime;
+
+/**/
 extern ofstream f;
 
+/**/
 extern Application app;
 
+/**/
 extern bool luxdebug;
-//-
+
+/**/
 CString strCloud;
 
 CString writeLuxsiCloud(X3DObject obj)
@@ -135,12 +141,12 @@ CString writeLuxsiCloud(X3DObject obj)
         strCloud += L"\nNamedMaterial \""+ m.GetName() + L"\"\n";
         strCloud += L"Translate "+ CString(cloud_pos[0]) + L" "+ CString(-cloud_pos[2]) + L" "+ CString(cloud_pos[1]) + L"\n";
         //-
-        strCloud += L"Shape \"sphere\"\n";              //- TODO; use other shapes from GUI options?
-        strCloud += L"  \"float radius\" ["+ _size + L"]\n";  //- if use float 'aSize', make a error; revised
-        strCloud += L"  \"float zmin\" [ -90 ]\n";      //- test; semi-sphere up =  -90
-        strCloud += L"  \"float zmax\" [ 90 ]\n";   //- test; semi-sphere down = 90
+        strCloud += L"Shape \"sphere\"\n";                      //- TODO; use other shapes from GUI options?
+        strCloud += L"  \"float radius\" ["+ _size + L"]\n";    //- if use float 'aSize', make a error; revised
+        strCloud += L"  \"float zmin\" [ -90 ]\n";              //- test; semi-sphere up =  -90
+        strCloud += L"  \"float zmax\" [ 90 ]\n";               //- test; semi-sphere down = 90
         strCloud += L"  \"float phimax\" [360]\n";
-        strCloud += L"AttributeEnd #"+ obj.GetName() + L"\n"; // CString(i)...     
+        strCloud += L"AttributeEnd #"+ obj.GetName() + L"\n";   //- CString(i)...     
     }
     return strCloud;
 }
