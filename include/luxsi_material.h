@@ -1,25 +1,25 @@
 /*
-LuXSI - Autodesk(c) Softimage(c) XSI Export addon for the LuxRender  Renderer
-(http://www.luxrender.org)
+This file is part of LuXSI;
+LuXSI is a LuxRender Exporter for Autodesk(C) Softimage(C) ( ex-XSI )
+http://www.luxrender.net
 
-Copyright (C) 2010 - 2012  Michael Gangolf, 'miga'
-Code contributor ; Pedro Alcaide, 'povmaniaco'
+Copyright(C) 2007 - 2012  of all Authors:
+Michael Gangolf, 'miga', mailto:miga@migaweb.de                                               
+Pedro Alcaide, 'povmaniaco', mailto:p.alcaide@hotmail.com
+ 
+LuXSI is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published
+by the Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+LuXSI is distributed in the hope that it will be useful,              
+but WITHOUT ANY WARRANTY; without even the implied warranty of        
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         
+GNU General Public License for more details.                          
+                                                                           
+You should have received a copy of the GNU General Public License     
+along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 
 #ifndef LUXSI_MATERIAL_H
 #define LUXSI_MATERIAL_H
@@ -79,7 +79,7 @@ Texture vTexture;
 /* generic string containers for shader definitions
 */
 CString
-    shaderStr,      //- container string for Shader.
+    shaderStr,      //- container string for Shader data.
     materialData,   //- for material data.
     texStr,         //- container string for Texture data.
     vChanel,        //- chanel texture type.
@@ -96,26 +96,26 @@ CString find_shader_used( Shader in_shader, CString in_string);
 
 /* Write LuxRender Glass shader
 */
-CString write_lux_glass(Shader in_shader, CString in_string, CString in_ID);
+CString write_lux_glass(Shader in_shader, CString in_ID);
 
 /* Write LuxRender Metal shader
 */
-CString write_lux_metal(Shader in_shader, CString in_string);
+CString write_lux_metal(Shader in_shader);
 
 /* Write LuxRender Car Paint shader
 */
-CString write_lux_car_paint(Shader in_shader, CString in_string);
+CString write_lux_car_paint(Shader in_shader);
 
 /* Write test to translate an generic mia_material_phen shader
 */
-CString write_mia_material_phen(Shader in_shader, CString in_string);
+CString write_mia_material_phen(Shader in_shader);
 
 /* Write LuxRender Shinymetal shader (deprecated?)
 */
-CString write_lux_shinymetal(Shader in_shader, CString in_string);
+CString write_lux_shinymetal(Shader in_shader);
 
 /**/
-CString write_lux_substrate(Shader in_shader, CString in_string);
+CString write_lux_substrate(Shader in_shader);
 
 /* Write LuxRender Matte and Matte Translucent shader
 */
