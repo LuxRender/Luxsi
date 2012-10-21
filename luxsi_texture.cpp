@@ -1,29 +1,31 @@
 /*
-LuXSI - Autodesk(c) Softimage(c) XSI Export addon for LuxRender Renderer
-(http://www.luxrender.org)
+This file is part of LuXSI;
+LuXSI is a LuxRender Exporter for Autodesk(C) Softimage(C) ( ex-XSI )
+http://www.luxrender.net
 
-Copyright (C) 2010 - 2012  Michael Gangolf, 'miga'
-Code contributor ; Pedro Alcaide, 'povmaniaco'
+Copyright(C) 2007 - 2012  of all Authors:
+Michael Gangolf, 'miga', mailto:miga@migaweb.de                                               
+Pedro Alcaide, 'povmaniaco', mailto:p.alcaide@hotmail.com
+ 
+LuXSI is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published
+by the Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+LuXSI is distributed in the hope that it will be useful,              
+but WITHOUT ANY WARRANTY; without even the implied warranty of        
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         
+GNU General Public License for more details.                          
+                                                                           
+You should have received a copy of the GNU General Public License     
+along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "include\luxsi_main.h"
 
 using namespace XSI;
 using namespace std;
+//using namespace luxsi;
 
 /**/
 extern Application app;
@@ -39,7 +41,8 @@ extern CString vChanel;
 */
 extern std::string luxsi_replace(string input);
 
-/**/
+/* Is 'normal' scene or 'Preview'
+*/
 extern bool is_preview;
 
 CString luxsi_texture(Material mat, Shader s)
@@ -87,17 +90,17 @@ CString luxsi_texture(Material mat, Shader s)
                     
             //----/ rewrite all /-------->
             texStr += L"\nTexture \"" + _tex_name + L"\" \""+ vChanType + L"\" \"imagemap\" \n";
-            texStr += L"  \"string wrap\" [\"repeat\"] \n";//TODO; create option at spdl file
+            texStr += L" \"string wrap\" [\"repeat\"] \n";//TODO; create option at spdl file
             //f << "    \"string chanel\" [\"mean\"] \n"; // not work??
-            texStr += L"  \"string filename\" [\""+ CString(luxsi_replace(vFileName.GetAsciiString()).c_str()) + L"\"] \n";
-            texStr += L"  \"float gamma\" ["+ CString( vContrast ) + L"]\n";
-            texStr += L"  \"float gain\" [1.000000]\n";
-            texStr += L"  \"string filtertype\" [\"bilinear\"] \n";// TODO; create option
-            texStr += L"  \"string mapping\" [\""+ uvmap +"\"] \n";
-            texStr += L"  \"float vscale\" [-1.0]\n";
-            texStr += L"  \"float uscale\" [1.0] \n";
-            texStr += L"  \"float udelta\" [0.000000] \n";
-            texStr += L"  \"float vdelta\" [1.000000] \n";                    
+            texStr += L" \"string filename\" [\""+ CString(luxsi_replace(vFileName.GetAsciiString()).c_str()) + L"\"] \n";
+            texStr += L" \"float gamma\" ["+ CString( vContrast ) + L"]\n";
+            texStr += L" \"float gain\" [1.000000]\n";
+            texStr += L" \"string filtertype\" [\"bilinear\"] \n";// TODO; create option
+            texStr += L" \"string mapping\" [\""+ uvmap +"\"] \n";
+            texStr += L" \"float vscale\" [-1.0]\n";
+            texStr += L" \"float uscale\" [1.0] \n";
+            texStr += L" \"float udelta\" [0.000000] \n";
+            texStr += L" \"float vdelta\" [1.000000] \n";                    
         }
     }
     return texStr;
