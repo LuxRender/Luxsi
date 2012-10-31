@@ -140,7 +140,7 @@ CString writeLuxsiCloud(X3DObject obj)
         strCloud += L"\nAttributeBegin \n";
         strCloud += L"\nNamedMaterial \""+ m.GetName() + L"\"\n";
         strCloud += L"Translate "+ CString(cloud_pos[0]) + L" "+ CString(-cloud_pos[2]) + L" "+ CString(cloud_pos[1]) + L"\n";
-        //-
+        //- TODO; use a a instance object
         strCloud += L"Shape \"sphere\"\n";                      //- TODO; use other shapes from GUI options?
         strCloud += L"  \"float radius\" ["+ _size + L"]\n";    //- if use float 'aSize', make a error; revised
         strCloud += L"  \"float zmin\" [ -90 ]\n";              //- test; semi-sphere up =  -90

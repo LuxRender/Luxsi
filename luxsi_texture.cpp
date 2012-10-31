@@ -25,7 +25,6 @@ along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace XSI;
 using namespace std;
-//using namespace luxsi;
 
 /**/
 extern Application app;
@@ -90,8 +89,8 @@ CString luxsi_texture(Material mat, Shader s)
                     
             //----/ rewrite all /-------->
             texStr += L"\nTexture \"" + _tex_name + L"\" \""+ vChanType + L"\" \"imagemap\" \n";
-            texStr += L" \"string wrap\" [\"repeat\"] \n";//TODO; create option at spdl file
-            //f << "    \"string chanel\" [\"mean\"] \n"; // not work??
+            texStr += L" \"string wrap\" [\"repeat\"] \n"; //TODO; create option at spdl file
+            //texStr += L" \"string chanel\" [\"mean\"] \n"; // not work??
             texStr += L" \"string filename\" [\""+ CString(luxsi_replace(vFileName.GetAsciiString()).c_str()) + L"\"] \n";
             texStr += L" \"float gamma\" ["+ CString( vContrast ) + L"]\n";
             texStr += L" \"float gain\" [1.000000]\n";

@@ -76,7 +76,7 @@ extern CString findInGroup(CString in_name);
 
 /* for math transform to 'light area' oobject 
 */
-CString luxsi_area_transf(X3DObject o, float in_sizeX, float in_sizeY);
+CString luxsi_area_light_transform(X3DObject o, float in_sizeX, float in_sizeY);
 
 /* Search IBL and HDRI files used
 */

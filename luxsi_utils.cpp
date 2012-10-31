@@ -182,3 +182,29 @@ bool find_crefarray_object( CRefArray in_ref, CString in_name )
     }
     return false;
 }
+
+//-
+CString luxsi_normalize_path(CString vFile)
+{
+    //-- normalize path name
+    CString normalized_path = luxsi_replace(vFile.GetAsciiString()).c_str();
+
+    //- extract folder base for use 'relative path'
+    int base = int(normalized_path.ReverseFindString("\\\\")); // .ext
+    CString folder_base = normalized_path.GetSubString(0, base+2);
+
+    //- extract filename
+    CString file_path = normalized_path.GetSubString(base+2, normalized_path.Length());
+    // file path is ==  file.ext
+    //-
+    if ( luxdebug )
+    {
+        app.LogMessage(L"Path normalized is: "+ folder_base + L" File name is: "+ file_path);
+    }
+    //- extract extension
+    int ext = int(file_path.ReverseFindString("."));
+
+    //- return only filename, without extension
+    return file_path.GetSubString(0, ext);
+
+}
