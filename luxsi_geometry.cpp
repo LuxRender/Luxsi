@@ -27,6 +27,7 @@ using namespace XSI;
 using namespace MATH;
 using namespace std;
 
+//--
 //-- 
 CString writeLuxsiObj(X3DObject o)
 {
@@ -45,6 +46,8 @@ CString writeLuxsiObj(X3DObject o)
 
     CRefArray shaderArray(m.GetShaders());
     Shader s(shaderArray[0]);
+    // test
+    CString vMatID(s.GetProgID().Split(L".")[1]);
 
     CRefArray vtexture(s.GetShaders());
     Texture tex(vtexture[0]);
@@ -53,16 +56,16 @@ CString writeLuxsiObj(X3DObject o)
 
     CGeometryAccessor ga;
     CString 
-        vUV = L"",      //- for UV data.
-        vNormals = L"", //- for normals data.
-        vTris = L"",    //- for faces.
-        vPoints = L"";  //- for point poditions.
+        vUV = L"",      //- for UV data
+        vNormals = L"", //- for normals data
+        vTris = L"",    //- for faces
+        vPoints = L"";  //- for point poditions
        
     //- test for ply ofrmat
     CString 
-        lxoData,    //! for LuxRender native geometry format.
-        plyData,    //! for vertex, normal and UV data in PLY format.
-        plyFaces;   //! for faces data in PLY format.
+        lxoData, 
+        plyData,
+        plyFaces;
 
     LONG subdLevel = 0;
     Property geopr = o.GetProperties().GetItem(L"Geometry Approximation");
@@ -184,20 +187,12 @@ CString writeLuxsiObj(X3DObject o)
         lxoData = L"\nAttributeBegin #"+ o.GetName();
         lxoData += L"\nNamedMaterial \""+ m.GetName() + L"\"\n";
 
-        /** Geometry associated to light objects.
+        /** Geometry associated to lights.
         *   Portal lights use a 'trick'..
         *   TODO; find better mode
         */
-        bool vIsPortal = false;
-        
-        //- test
-        // Returns 1 if "12" is found
-		//npos = str.FindString( CString("12") );
-        CString objName = o.GetName();
-        ULONG spos;
-        spos = objName.FindString(L"PORTAL");
-        if ( spos == 1) app.LogMessage(L"Object is type Portal");
-
+        bool vIsPortal = false;        
+        //- 
         string::size_type loc = string(CString(o.GetName()).GetAsciiString()).find( "PORTAL", 0 );
         if (loc != string::npos) vIsPortal = true;
 
@@ -205,7 +200,9 @@ CString writeLuxsiObj(X3DObject o)
         *   this way is only for XSI incandescence mode
         *   search better way for Luxsi.. or create light material, like YafXSI
         */
-        if (float(s.GetParameterValue(L"inc_inten"))> 0 ) vIsMeshLight = true;
+        // atm.. meslight not work!!
+        if ( vMatID == L"lux_emitter_mat" ) vIsMeshLight = true;
+        //if (float(s.GetParameterValue(L"inc_inten"))> 0 ) vIsMeshLight = true;
         //- mesh..
         CString type_mesh = L"mesh";
         if ( vplymesh ) type_mesh = L"plymesh";
@@ -219,27 +216,31 @@ CString writeLuxsiObj(X3DObject o)
         {
             //--
             float red, green, blue, alpha;
-            s.GetColorParameterValue(L"incandescence", red, green, blue, alpha );
-            float inc_inten(s.GetParameterValue(L"inc_inten"));
+            s.GetColorParameterValue(L"color", red, green, blue, alpha );
+            float emitt(s.GetParameterValue(L"power"));
             //--
             CString lName = findInGroup(o.GetName());
             if (lName == L"") lName = o.GetName();
             //--
             lxoData += L" LightGroup \""+ lName + L"\"\n";
+            //-
             lxoData += L"\nAreaLightSource \"area\" \n";
-            lxoData += L"  \"float importance\" [1.00] \n";
-            lxoData += L"  \"float gain\" ["+ CString(inc_inten) + L"] \n";
-            //f << "  \"float power\" [100.0]  \"float efficacy\" [17.0] \n";
+            lxoData += L"  \"float importance\" ["+ CString(s.GetParameterValue(L"importance")) + L"] \n";
+            lxoData += L"  \"float gain\" ["+ CString(s.GetParameterValue(L"gain")) + L"] \n";
+            lxoData += L"  \"float power\" ["+ CString(s.GetParameterValue(L"power")) + L"] \n";
+            lxoData += L"  \"float efficacy\" ["+ CString(s.GetParameterValue(L"efficacy")) + L"] \n";
+            lxoData += L"  \"integer nsamples\" ["+ CString(s.GetParameterValue(L"nsamples")) + L"] \n";
             lxoData += L"  \"color L\" ["
-                + CString(red * inc_inten) + L" "
-                + CString(green * inc_inten) + L" "
-                + CString(blue * inc_inten ) + L"]\n";
+                + CString(red * emitt) + L" "
+                + CString(green * emitt) + L" "
+                + CString(blue * emitt ) + L"]\n";
         }
-        lxoData += L"\n"+ type_shape + L" \""+ type_mesh + L"\" \n";
         
-        //-- share
+
+        //-- share for all types; PLY and LXO
+        lxoData += L"\n"+ type_shape + L" \""+ type_mesh + L"\" \n";        
         lxoData += L"  \"integer nsubdivlevels\" ["+ CString( subdLevel ) + L"]\n";
-        lxoData += L"  \"string subdivscheme\" [\"loop\"]\n";
+        lxoData += L"  \"string subdivscheme\" [\"loop\"] \n";
         lxoData += L"  \"bool dmnormalsmooth\" [\""+ CString( MtBool[vSmooth_mesh] ) + L"\"]\n";
         lxoData += L"  \"bool dmsharpboundary\" [\""+ CString( MtBool[vSharp_bound] ) + L"\"]\n";
         //f << "  \"string displacementmap\" [\"none\"]\n"; // here, place normalmap texture
@@ -265,35 +266,64 @@ CString writeLuxsiObj(X3DObject o)
             {
                 lxoData += L" \"float uv\" [\n"+ vUV + L"\n ]";
             }
+            lxoData += L"\nAttributeEnd #"+ o.GetName() + L"\n";
+            //- set extension lxo
+            CString lxo_ext = L"_"+ o.GetName() + L".lxo";
+        
+            //- set name for include, use path relative to export.
+            CString include_lxo_filename = luxsi_normalize_path(vFileGeo) + lxo_ext;
+
+            //- set path for write file
+            if ( !overrGeometry )
+            {
+                int next = vFileGeo.ReverseFindString(".");
+                CString write_lxo_filename = vFileGeo.GetSubString(0,next) + lxo_ext;
+                //-
+                write_lxoFile(lxoData, write_lxo_filename);
+            }
+            //-
+            lxoData.Clear();
+            lxoData = L"\nInclude \""+ include_lxo_filename + L"\"\n";
         }
         else
         {
             /** make link to .ply file
-            *   The vFilePLY value = full path + filename + framenumber + LXS extension. 
+            *   The vFileGeo value = full path + filename + framenumber + LXS extension. 
             *   luxsi_normalize_path(), returns alone the filename with the framenumber.
             *   Here we add the name of the object and the expension PLY.
             */
             CString ply_ext = L"_"+ o.GetName() + L".ply";
-            CString include_ply_filename = luxsi_normalize_path(vFilePLY) + ply_ext;
+            CString include_ply_filename = luxsi_normalize_path(vFileGeo) + ply_ext;
             //-
-            if (luxdebug ) app.LogMessage(L"File ply: "+ vFilePLY + L" Include ply: "+ include_ply_filename);
+            if (luxdebug ) app.LogMessage(L"File ply: "+ vFileGeo + L" Include ply: "+ include_ply_filename);
             //-
             lxoData += L"  \"string filename\" [\""+ include_ply_filename + L"\"]\n";
+            //-
+            lxoData += L"\nAttributeEnd #"+ o.GetName() + L"\n";
 
             /* if not override geometry, go to write ply file 
             */
             if ( !overrGeometry )
             {
-                int next = vFilePLY.ReverseFindString(".");
-                CString write_ply_filename = vFilePLY.GetSubString(0,next) + ply_ext;
+                int next = vFileGeo.ReverseFindString(".");
+                CString write_ply_filename = vFileGeo.GetSubString(0,next) + ply_ext;
                 //-
                 write_plyFile(plyData, plyFaces, write_ply_filename, vertCount, triCount);
             }
-        }
-        //--
-        lxoData += L"\nAttributeEnd #"+ o.GetName() + L"\n";
+        }        
     }
     return lxoData;
+}
+//-
+
+//-
+void write_lxoFile(CString lxoData, CString lxoFile)
+{
+    f.open(lxoFile.GetAsciiString());
+    //-
+    f << lxoData.GetAsciiString();
+    //-
+    f.close();
 }
 //-
 void write_plyFile(CString in_plyData, CString in_faceData, CString vfile, int vertCount, int triCount)

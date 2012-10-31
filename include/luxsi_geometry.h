@@ -32,6 +32,10 @@ using namespace MATH;
 using namespace std;
 
 /**/
+long vertCount;
+long triCount;
+
+/**/
 bool have_UV = false;
 
 /* for animation
@@ -51,7 +55,7 @@ extern CString vFileExport;
 
 /* The name of PLY file
 */
-extern CString vFilePLY;
+extern CString vFileGeo;
 
 /* Define on/off exported smoooth objects
 */
@@ -88,9 +92,12 @@ extern std::string luxsi_replace(string in_strInput);
 extern CString findInGroup(CString in_items);
 
 /**/
+extern CString luxsi_normalize_path(CString in_fileNamePath);
+
+/**/
 void write_plyFile(CString in_plyData, CString in_faces, CString in_plyFile, int vertexCount, int facesCount);
 
 /**/
-extern CString luxsi_normalize_path(CString in_fileNamePath);
+void write_lxoFile(CString in_lxoData, CString in_lxoFile);
 
 #endif // LUXSI_GEOMETRY_H
