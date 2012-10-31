@@ -44,12 +44,7 @@ using namespace std;
 */
 CString vFileLxs, vFileQueue, luxsiShaderData, queue_list, vblxs_file;
 
-//-- new test for values
-//-- save image options
-int vXRes = 640, vYRes = 480, vRpng = 3, vExr_Znorm = 2, vRtga = 1;
-bool vPng = true, vWpng_16 = false, vPng_gamut = false, vTga = false, vTga_gamut = false, vExr = false;
-
-/* for launch LuxRender with -L "queue.lxq" param 
+/* for launch LuxRender with -L "queue.lxq" parameter 
 */
 bool lqueue = false;
 
@@ -57,15 +52,14 @@ bool lqueue = false;
 */
 bool overrGeometry = false;
 
-/* time 
+/* Time 
 */
 double ftime = DBL_MAX;
 
-/*  define frame step */
+/*  Define frame step */
 int vframestep = 1;
 
-/* Update UI values
-*/
+/*  Update UI values */
 void update_general_values(CString paramName, Parameter changed, PPGEventContext ctxt);
 
 /**/
@@ -92,6 +86,7 @@ void dynamic_Accel_UI(Parameter changed, CString paramName, PPGEventContext ctxt
 /**/
 void writeLuxsiBasics();
 
+/**/
 void writeLuxsiCam(X3DObject o);
 
 //-
@@ -105,9 +100,9 @@ CString writeLuxsiObj(X3DObject o);
 
 CString writeLuxsiShader();
 
-void luxsi_write(double ftime);
+void writeLuxsiScene(double ftime);
 
-void luxsi_preview(CString in_mat);
+void luxsiRender(CString in_file);
 
 //-
 void luxsi_execute();
@@ -119,14 +114,22 @@ std::string luxsi_replace(string input);
 bool luxsi_find(CStringArray a, CString s);
 //--
 void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext ctxt);
-//--
+
+/* Pressets */
 void luxsi_render_presets( PPGEventContext ctxt);
 //--
 void dynamic_luxsi_UI(Parameter changed, CString paramName, PPGEventContext ctxt);
 //-
 void dynamic_sampler_UI( Parameter changed, CString paramName, PPGEventContext ctxt);
-//-
+
+/**/
+void loader(const char szArgs[]);
+
+/**/
 extern CString findInGroup(CString s);
+
+ /**/
+extern CString luxsi_normalize_path(CString in_Filepath);
 
 /**/
 std::map<CString, int> int_values;
