@@ -74,7 +74,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
                 vItrpng[2] = L"YA" ;    vItrpng[3] = 1;
                 vItrpng[4] = L"RGB" ;    vItrpng[5] = 2;
                 vItrpng[6] = L"RGBA" ;    vItrpng[7] = 3;
-            lay.AddEnumControl(L"mode_rpng",vItrpng,L"Mode",siControlCombo ) ;
+            lay.AddEnumControl(L"mode_rpng", vItrpng, L"Mode", siControlCombo ) ;
         lay.EndRow(); //----
         lay.AddRow(); //----
             lay.AddItem(L"png_gamut", L"Gamut Clamp");
@@ -82,8 +82,8 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.EndRow(); //----
     lay.EndGroup(); //- end png
 
-        lay.AddItem(L"fObjects",L"Out File", siControlFilePath);
-        PPGItem it = lay.GetItem( L"fObjects" );
+        lay.AddItem(L"fileExport",L"Out File", siControlFilePath);
+        PPGItem it = lay.GetItem( L"fileExport" );
         it.PutAttribute( siUIFileFilter, L"LuXSI Scenes|*.lxs" ) ;
     
     lay.EndGroup(); //- Image
@@ -349,6 +349,19 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddItem( L"bdlsampling", L"Direct Light Sampling").PutLabelPercentage(80);
             lay.AddItem( L"bincenvironment", L"Include env.").PutLabelPercentage(80);
         lay.EndRow();
+        // advanced mode
+            lay.AddItem( L"bstoreglossy", L""); // bool		
+            lay.AddItem( L"buseproba", L""); // bool
+            //integer(
+            lay.AddItem( L"bwavelengthstratificationpasses", L"");
+            //string(
+            lay.AddItem( L"blookupaccel", L"");
+            //float(
+            lay.AddItem( L"bparallelhashgridspare", L"");
+            //string(
+            lay.AddItem( L"bpixelsampler", L"");
+            //string(
+            lay.AddItem( L"bphotonsampler", L"");      
         
         lay.EndGroup(); //-- no label
         /********************************/
@@ -462,17 +475,11 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
     //---------------------------------------------------/
     lay.AddTab(L"Materials"); 
     //-----------------------/
-		lay.AddGroup(); // no label
+		lay.AddGroup();
             lay.AddSpacer(5,2);
             lay.AddRow();
-                //lay.AddItem(L"Width").PutAttribute(siUINoSlider,true);
-			    //lay.AddItem(L"Height").PutAttribute(siUINoSlider,true);
-            lay.EndRow();
-			//lay.AddSpacer(10,2);
-                //lay.AddRow();
                 lay.AddButton(L"blpreview", L"Preview Materials");
-                //lay.AddButton(L"bwritexml",L"Export LXM parameters");
-            //lay.EndRow();
+            lay.EndRow();
         lay.EndGroup();
         //---
         lay.AddSpacer(5,2);
@@ -484,7 +491,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
 			sel_item.PutAttribute( siUIFileMustExist, 1 ) ;
 			sel_item.PutAttribute( siControlFilePath , "test" ) ;
             sel_item.PutAttribute( siUIFileFilter, L"LuxRender Scene files|*.lxs" ) ;
-        lay.AddButton(L"bre_render",L"Render loaded file");
+        lay.AddButton(L"bre_render", L"Render loaded file");
             //--
             CValueArray prevItem(12);
 		        prevItem[0] = L" TIFF"; prevItem[1] = 0;
@@ -494,13 +501,12 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
 			    prevItem[8] = L" HDR";  prevItem[9] = 4;
 			    prevItem[10] = L" EXR"; prevItem[11] = 5;
 			lay.AddEnumControl(L"bsavefile", prevItem, L"Image Format", siControlCombo).PutLabelPercentage(60);
-            //lay.AddButton(L"bopen_image",L"View last render");
-		lay.EndGroup();
+        lay.EndGroup();
     
     //* About....
     lay.AddTab(L"About");
     lay.AddGroup();
-        lay.AddStaticText(L" LuXSI, a LuxRender Exporter for Autodesk Softimage.");
+        lay.AddStaticText(L" LuXSI; LuxRender Exporter for Autodesk Softimage.");
         lay.AddStaticText(L" Version v1.1 (Windows 32 and 64 bits).");
         lay.AddGroup();
         lay.AddStaticText(L" Copyright 2007 - 2012 of all Authors:");
