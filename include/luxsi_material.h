@@ -33,6 +33,9 @@ using namespace XSI;
 */
 extern bool is_preview;
 
+/**/
+extern const char *MtBool[];
+
 /* generic float for color
 */
 extern float red, green, blue, alpha;
@@ -66,7 +69,7 @@ float mRough;
 
 /* shader is defined
 */
-bool vIsSet=false;
+bool vIsSet = false;
 
 /* instance of Material Class
 */
@@ -84,7 +87,6 @@ CString
     texStr,         //- container string for Texture data.
     vChanel,        //- chanel texture type.
     shaderType;     //- shader type.
-
 
 /* Find texture connect to shader port
 */
@@ -120,6 +122,9 @@ CString write_lux_substrate(Shader in_shader);
 /* Write LuxRender Matte and Matte Translucent shader
 */
 CString write_lux_matte(Shader in_shader, CString in_string);
+
+/**/
+CString write_lux_glossy(Shader in_shader);
 
 /** Helper for search color of texture connect to each node port
 * @function mat_value,

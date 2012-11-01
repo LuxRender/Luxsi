@@ -27,6 +27,42 @@ using namespace std;
 using namespace XSI;
 using namespace MATH;
 
+/*
+mat_names = {
+	'matte': 'Matte',
+	'mattetranslucent': 'Matte Translucent',
+	'glossy': 'Glossy',
+	'glossycoating': 'Glossy Coating',
+	'glossytranslucent': 'Glossy Translucent',
+	'glass': 'Glass',
+	'glass2': 'Glass2',
+	'roughglass': 'Rough Glass',
+	'mirror': 'Mirror',
+	'carpaint': 'Car Paint',
+	'metal': 'Metal',
+	'metal2': 'Metal2',
+	'shinymetal': 'Shiny Metal',
+	'velvet': 'Velvet',
+	'scatter': 'Scatter',
+	'mix': 'Mix',
+	'layered': 'Layered',
+	'null': 'Null',
+}
+master_color_map = {
+		'carpaint': 'Kd',
+		'glass': 'Kt',
+		'roughglass': 'Kt',
+		'glossy': 'Kd',
+		'glossytranslucent': 'Kd',
+		'matte': 'Kd',
+		'mattetranslucent': 'Kr',
+		'metal2': 'Kr',
+		'shinymetal': 'Kr',
+		'mirror': 'Kr',
+		'scatter': 'Kd',
+		'velvet': 'Kd',
+	}
+*/
 //-
 CString writeLuxsiShader()
 {
@@ -86,7 +122,17 @@ CString writeLuxsiShader()
                 shaderType = L"metal";
                 vIsSet = true;
             }
-            //--
+            //-- metal 2
+            /*
+            Texture "Material_nk" "fresnel" "preset"
+	            "string name" ["aluminium"]
+
+            MakeNamedMaterial "Material"
+	            "float uroughness" [0.075000002980232]
+	            "float vroughness" [0.075000002980232]
+	            "texture fresnel" ["Material_nk"]
+	            "string type" ["metal2"]
+            */
             else if (vMatID == L"lux_shinymetal")
             {
                 shaderStr = write_lux_shinymetal(s);
@@ -102,14 +148,63 @@ CString writeLuxsiShader()
                 shaderType = L"substrate";
                 vIsSet = true;
             }
-            //--
+            else if (vMatID == L"lux_velvet")
+            {
+                //-- velvet
+                shaderStr = mat_value(s, L"Kd", L"Kd");
+	            shaderStr += L" \"float thickness\" ["+ CString(float(s.GetParameterValue(L"thickness"))) + L"]\n";
+                shaderStr += L" \"float p1\" ["+ CString(float(s.GetParameterValue(L"p1"))) + L"]\n";
+                shaderStr += L" \"float p2\" ["+ CString(float(s.GetParameterValue(L"p2"))) + L"]\n";
+	            shaderStr += L" \"float p3\" ["+ CString(float(s.GetParameterValue(L"p3"))) + L"]\n";
+	            shaderType = L"velvet";
+                vIsSet = true;                
+            }
+            else if (vMatID == L"lux_scatter")
+            {
+                //-- scatter
+                shaderStr = mat_value(s, L"Kd", L"Kd");
+                shaderStr += L" \"float g\" ["+ CString(float(s.GetParameterValue(L"g"))) + L"]\n";
+                shaderType = L"scatter";
+                vIsSet = true;
+            }
+            else if (vMatID == L"lux_glossy")
+            {
+                shaderStr = write_lux_glossy(s);
+                //-
+                vIsSet = true;                
+            }
+            /*
+            //-- glossycoated
+            MakeNamedMaterial "base"
+	            "color Kd" [0.63999999 0.08297527 0.13193677]
+	            "float sigma" [0.000000000000000]
+	            "string type" ["matte"]
+
+            MakeNamedMaterial "Material"
+	            "bool multibounce" ["false"]
+	            "color Ks" [0.04000000 0.04000000 0.04000000]
+	            "float index" [0.000000000000000]
+	            "float uroughness" [0.075000002980232]
+	            "float vroughness" [0.075000002980232]
+	            "string basematerial" ["base"]
+	            "string type" ["glossycoating"]
+
+            */
+
             else if ( vMatID == L"lux_matte" || vMatID == L"lux_mattetranslucent")
             {
                 shaderStr = write_lux_matte(s, vMatID);
                 //-
                 vIsSet = true;
             }
-            //--
+            //-- for meshlight test -------------------------
+            else if (vMatID == L"lux_emitter_mat")
+            {
+                shaderStr = mat_value(s, L"Kd", L"Kd");
+                shaderType = L"matte";
+                vIsSet = true;
+            }
+            //-----------------------------------------------
             else if (vMatID == L"lux_car_paint")
             {
                 shaderStr = write_lux_car_paint(s);
@@ -121,7 +216,9 @@ CString writeLuxsiShader()
             else if (vMatID==L"lux_mirror")
             {
                 shaderStr = mat_value(s, L"Kr", L"Kr");
-                //--
+                shaderStr += L" \"float film\" ["+ CString(s.GetParameterValue(L"film")) + L"]\n";
+                shaderStr += L" \"float filmindex\" ["+ CString(s.GetParameterValue(L"filmindex")) + L"]\n";
+                //-
                 shaderType = L"mirror";
                 vIsSet = true;
             }
@@ -278,18 +375,19 @@ CString writeLuxsiShader()
             else
             {
                 // fall back shader
-                app.LogMessage(L"Non valid shader for LuxRender: [ "+ vMatID + L" ]. Use the default shader values", siErrorMsg);
+                app.LogMessage(L"Non valid shader for LuxRender: ["+ vMatID + L"]. Use the default shader values", siErrorMsg);
                 //-
                 shaderType = L"matte"; 
                 shaderStr = L" \"color Kd\" [0.7 0.7 0.7]\n";
                 shaderStr += L" \"float sigma\" [0.1]\n";
             }
             
-            //-- if have texture data
-            if ( s.GetShaders().GetCount() > 0 )
-            {
-                texStr = luxsi_texture(mat, s); 
-            }
+            /** If have texture connected...
+            *   The cycle to process all the connected textures to the shader,
+            *   is executed inside the luxsi_texture() function.
+            */
+            if ( s.GetShaders().GetCount() > 0 ) texStr = luxsi_texture(mat, s); 
+            
 
         }//- process Preview Material ----------------------------------/
         if ( MatName == L"Preview" && is_preview )
@@ -304,7 +402,7 @@ CString writeLuxsiShader()
             //- shader component
             prev_material += L"\nMakeNamedMaterial \"sphere_mat\" \n";
             prev_material += L" \"string type\" [\""+ shaderType + L"\"]\n";
-            prev_material += L" "+ shaderStr + L"\n";
+            prev_material += shaderStr;
                         
             return prev_material;
             break; // placed here ?? Investigate about this option
@@ -337,8 +435,9 @@ CString mat_value(Shader s, CString in_texture, CString in_shader_port)
 {
     //-------------
     //- status: Ok
-    if ( luxdebug ) app.LogMessage(L"in texture: "+ in_texture + L" in node color: "+ in_shader_port);
     //-------------
+    if ( luxdebug ) app.LogMessage(L"in texture: "+ in_texture + L" in node color: "+ in_shader_port);
+    
     CString _component = L"";
     //--
     CString texName = find_shader_used(s, in_shader_port );
@@ -576,9 +675,7 @@ CString write_lux_matte(Shader s, CString vMatID)
         if( bool(s.GetParameterValue(L"use_bump")) == true )
         {
             CString _bump = mat_value(s, L"bumpmap", L"bump_data");
-            //string::size_type loc = string(_bump.GetAsciiString()).find( "texture bumpmap", 0 );
             //-
-            //if (loc != string::npos) 
             shStr += _bump; 
         }
     }
@@ -605,4 +702,36 @@ CString write_lux_matte(Shader s, CString vMatID)
     shStr += L" \"float sigma\" ["+ CString(float(s.GetParameterValue(L"sigma"))) + L"]\n";
 
     return shStr;
+}
+//--
+CString write_lux_glossy(Shader s)
+{
+    //-- for glossy and glossy translucent shaders.
+    CString glossyData;
+    //-
+    int bounce = s.GetParameterValue(L"multibounce");
+    //-
+    glossyData = mat_value(s, L"Kd", L"Kd");
+    glossyData += mat_value(s, L"Ks", L"Ks");
+    glossyData += L" \"bool multibounce\" [\""+ CString(MtBool[bounce]) + L"\"]\n";
+	glossyData += L" \"float index\" ["+ CString(float(s.GetParameterValue(L"index"))) + L"]\n";
+    glossyData += L" \"float uroughness\" ["+ CString(float(s.GetParameterValue(L"uroughness"))) + L"]\n";
+    glossyData += L" \"float vroughness\" ["+ CString(float(s.GetParameterValue(L"vroughness"))) + L"]\n";
+                
+    //-
+	shaderType = L"glossy";
+    //-
+    if ( bool(s.GetParameterValue(L"translucent"))== true)
+    {
+        bool onesided = s.GetParameterValue(L"onesided");
+        glossyData += mat_value(s, L"Kt", L"Kt");
+        glossyData += L" \"bool onesided\" [\""+ CString(MtBool[onesided]) + L"\"]\n";
+        //-
+        shaderType = L"glossytranslucent";
+    }
+    else
+    {
+        glossyData += L" \"float sigma\" ["+ CString(float(s.GetParameterValue(L"sigma"))) + L"]\n";
+    }
+    return glossyData;
 }
