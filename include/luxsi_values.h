@@ -44,8 +44,6 @@ ProgressBar pb = kit.GetProgressBar();
 //--
 CRefArray params;
 
-
-
 //-
 float red = 0.0f, green = 0.0f, blue = 0.0f, alpha = 0.0f;
 
@@ -125,7 +123,7 @@ bool vIsHiddenCam = true, vIsHiddenLight = true, vIsHiddenObj = true, vIsHiddenS
 //--
 bool vIsLinux = false;
 //bool vProg = true; // not used ??
-bool vExportDone = false, vResume = false; // unused ? , vExpOne = true;
+bool vExportDone = false, vResume = false;
 
 //-- export
 bool vSmooth_mesh = false, vSharp_bound = false, vplymesh = false;;
@@ -160,6 +158,11 @@ CRefArray aGroups;
 */
 CStringArray aMatList, aInstanceList;
 
-CString vSun = L"", vHDRI = L"", vFileExport = L"", vFilePLY = L"", vLuXSIPath = L"";
+CString vSun = L"", vHDRI = L"", vFileExport = L"", vFileGeo = L"", vLuXSIPath = L"";
+
+//-- new test for values
+//-- save image options
+int vXRes = 640, vYRes = 480, vRpng = 3, vExr_Znorm = 2, vRtga = 1;
+bool vPng = true, vWpng_16 = false, vPng_gamut = false, vTga = false, vTga_gamut = false, vExr = false;
 
 #endif //LUXSI_VALUES_H

@@ -37,7 +37,7 @@ int writeLuxsiLight()
     Alights.Clear();
 
     root = app.GetActiveSceneRoot();
-    //- creamos una array de objetos 'lights' presentes en la escena.
+    //- create an array objects with the 'lights' of the scene.
 
     sceneLight += root.FindChildren( L"", L"light", noneArray, true );
     
@@ -51,18 +51,15 @@ int writeLuxsiLight()
             Property visi = objLight.GetProperties().GetItem(L"Visibility");
             bool view_visbl = (bool)visi.GetParameterValue(L"viewvis");
             bool rend_visbl = (bool)visi.GetParameterValue(L"rendvis");
-            //- original: for add item
+            //- add visible objects and not visibles if 'vIsHiddenLight' is True.
             if ( vIsHiddenLight || ( !vIsHiddenLight && ( view_visbl && rend_visbl )))
             {
                 Alights.Add(objLight);
             }
-            //- now, revised.. 
-            //if (vIsHiddenLight == false && view_visbl == false && rend_visbl == false) continue;
         }
     }
     if ( Alights.GetCount() > 0 ) 
     {
-    
         for ( int i=0; i < Alights.GetCount(); i++ )
         {
             //-
@@ -95,8 +92,8 @@ int writeLuxsiLight()
 
             //--
             Shader s((Light(o).GetShaders())[0]);
-            /** same name for xsi and Lux shaders: 'color'
-            *   if no have shader, the color is black (0,0,0)
+            /** Same name for xsi and Lux shaders: 'color'
+            *   if no have any shader, the color is black (0,0,0).
             */
             s.GetColorParameterValue(L"color", red, green, blue, alpha);
 
@@ -118,12 +115,13 @@ int writeLuxsiLight()
             //-- search 'Programmatic Identification (ID)' for Light Shader Nodes
             Light_Shader_ID =s.GetProgID().Split(L".")[1];
             //--
-            app.LogMessage(L"Light shader used: "+ Light_Shader_ID);
+            if ( luxdebug ) app.LogMessage(L"Light shader used: "+ Light_Shader_ID);
             //-
             f << "\nLightGroup \""<< group_name.GetAsciiString() <<"\" \n";
 
             //- for use Image Based Light ( IBL )
-            app.LogMessage(L"XSI environment finded: "+ find_XSI_env(L""));
+            if ( luxdebug ) app.LogMessage(L"XSI environment finded: "+ find_XSI_env(L""));
+            
             //-
             if ( find_XSI_env(L"") != L"" )
             {
@@ -162,20 +160,14 @@ int writeLuxsiLight()
             }
             else // light type 0; point
             {
-                /* opciones:
-                1- independiente del shader conectado, puede ser;
-                    1.1- Area
-                        1.1.0- visible o invisible en render
-                            1.1.1- Square / rectangle.
-                            1.1.2- Sphere.
-                */
+                //-
                 luxsi_point_light( o, s, light_from);
             }
         }
     }
     else
     {
-        app.LogMessage(L"Any Lights for exporter",siFatalMsg);
+        app.LogMessage(L"Any Lights for exporter",siErrorMsg);
         return 1;
     }
     return 0;
@@ -240,13 +232,14 @@ void luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
             f << "  \"integer nsamples\" [4]\n";
         }
 
-        //- now,  the geometry..
-        //- 'hide geometry' only is used for not generate shadows with other light
+        /** now,  the geometry..
+        *   'hide geometry' only is used for not generate shadows with other light
+        */
         int vlight_geo = o.GetParameterValue(L"LightAreaGeom");
         //--
         if ( vlight_geo == 1 ) //-- square/rectangle
         {
-            CString aPoints = luxsi_area_transf(o, size_X, size_Y);
+            CString aPoints = luxsi_area_light_transform(o, size_X, size_Y);
             //--
             f << "\nShape \"trianglemesh\"\n";
             f << "  \"integer indices\" [0 1 2 0 2 3]\n";
@@ -254,8 +247,9 @@ void luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
         }
         else if ( vlight_geo == 3 )// sphere
         {
-            //- in LuxBlend this option is only for use in 'point light'??
-            //- really, sphere is an area light object, like XSI
+            /** in LuxBlend this option is only for use in 'point light'??
+            *   really, sphere is an area light object, like XSI
+            */
             f << "\nTransformBegin \n";
             f << "Translate "<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1] <<"\n";
 
@@ -269,10 +263,10 @@ void luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
             app.LogMessage(L"Not valid shape, use square or sphere", siWarningMsg);
         }
     }
-    else //- simple point light, no area
+    else
     {
-        //- basic point light, with 'node' by defaul to XSI( soft_light )
-        //-
+        /** Basic point light, with 'node' by defaul to XSI( soft_light )
+        */
         if ( Light_Shader_ID == L"soft_light")
         {
             f << "\nLightSource \"point\"\n";
@@ -328,7 +322,7 @@ void luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
     }
 }
 //--
-CString luxsi_area_transf(X3DObject o, float size_X, float size_Y)
+CString luxsi_area_light_transform(X3DObject o, float size_X, float size_Y)
 {
     //- initial state
     KinematicState area_state = o.GetKinematics().GetGlobal();
@@ -361,14 +355,15 @@ CString find_XSI_env(CString env_file)
     //- is need?
     env_file = L"";
 
-    /* /-- for search parameters..
-    CRefArray prop_pass = app.GetActiveProject().GetActiveScene().GetActivePass().GetParameters();
-    for (int pp=0; pp < prop_pass.GetCount(); pp++)
-    {
-        Parameter pname(prop_pass[pp]);
-        CString prop_pas_name = pname.GetName();
-       // app.LogMessage(L"Property name: "+ prop_pas_name);
-    }*/
+    /** for search parameters..
+    *   CRefArray prop_pass = app.GetActiveProject().GetActiveScene().GetActivePass().GetParameters();
+    *   for (int pp=0; pp < prop_pass.GetCount(); pp++)
+    *   {
+    *       Parameter pname(prop_pass[pp]);
+    *       CString prop_pas_name = pname.GetName();
+    *   // app.LogMessage(L"Property name: "+ prop_pas_name);
+    *   }
+    */
 
     CRefArray aEnv = app.GetActiveProject().GetActiveScene().GetActivePass().GetNestedObjects();
     //-
