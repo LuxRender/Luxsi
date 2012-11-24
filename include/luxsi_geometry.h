@@ -100,4 +100,7 @@ void write_plyFile(CString in_plyData, CString in_faces, CString in_plyFile, int
 /**/
 void write_lxoFile(CString in_lxoData, CString in_lxoFile);
 
+/**/
+extern CString luxsiTransformMatrix(X3DObject o);
+
 #endif // LUXSI_GEOMETRY_H

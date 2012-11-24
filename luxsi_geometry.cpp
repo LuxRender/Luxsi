@@ -141,7 +141,7 @@ CString writeLuxsiObj(X3DObject o)
                 if ( vSmooth_mesh )
                 {
                     CVector3 vNorm(allNormals[j][0], allNormals[j][1], allNormals[j][2]);
-                    //-
+                    //- test for transform by matrix
                     vNorm.MulByTransformationInPlace(global_trans);
                     /** for 'normals', change 'y' for 'z'(x, z, y), but not negative value (-z). TODO: more testing..
                     */
@@ -185,6 +185,13 @@ CString writeLuxsiObj(X3DObject o)
         }
         //--
         lxoData = L"\nAttributeBegin #"+ o.GetName();
+
+        /** Tes for use matrix transformations
+        *   change for MulByTransformationInPlace ----
+        *   CString transfMatrix = luxsiTransformMatrix(o);    
+        *   lxoData += L"\nTransform ["+ transfMatrix + L"]\n";
+        */
+
         lxoData += L"\nNamedMaterial \""+ m.GetName() + L"\"\n";
 
         /** Geometry associated to lights.
@@ -193,16 +200,15 @@ CString writeLuxsiObj(X3DObject o)
         */
         bool vIsPortal = false;        
         //- 
-        string::size_type loc = string(CString(o.GetName()).GetAsciiString()).find( "PORTAL", 0 );
+        string::size_type loc = string( CString( o.GetName()).GetAsciiString()).find( "PORTAL", 0 );
         if (loc != string::npos) vIsPortal = true;
 
-        /** Meshlight
-        *   this way is only for XSI incandescence mode
-        *   search better way for Luxsi.. or create light material, like YafXSI
+        /** Meshlight. 
+        *   Always, reset before asign.
         */
-        // atm.. meslight not work!!
+        vIsMeshLight = false;
+        /* Add XSI incandescence mode */
         if ( vMatID == L"lux_emitter_mat" ) vIsMeshLight = true;
-        //if (float(s.GetParameterValue(L"inc_inten"))> 0 ) vIsMeshLight = true;
         //- mesh..
         CString type_mesh = L"mesh";
         if ( vplymesh ) type_mesh = L"plymesh";
@@ -268,20 +274,20 @@ CString writeLuxsiObj(X3DObject o)
             }
             lxoData += L"\nAttributeEnd #"+ o.GetName() + L"\n";
             //- set extension lxo
-            CString lxo_ext = L"_"+ o.GetName() + L".lxo";
+            CString lxo_extension = L"_"+ o.GetName() + L".lxo";
         
             //- set name for include, use path relative to export.
-            CString include_lxo_filename = luxsi_normalize_path(vFileGeo) + lxo_ext;
+            CString include_lxo_filename = luxsi_normalize_path(vFileGeo) + lxo_extension;
 
             //- set path for write file
             if ( !overrGeometry )
             {
                 int next = vFileGeo.ReverseFindString(".");
-                CString write_lxo_filename = vFileGeo.GetSubString(0,next) + lxo_ext;
+                CString write_lxo_filename = vFileGeo.GetSubString(0,next) + lxo_extension;
                 //-
                 write_lxoFile(lxoData, write_lxo_filename);
             }
-            //-
+            //- 
             lxoData.Clear();
             lxoData = L"\nInclude \""+ include_lxo_filename + L"\"\n";
         }
@@ -368,3 +374,4 @@ void write_plyFile(CString in_plyData, CString in_faceData, CString vfile, int v
     f.close();
     //--
 }
+//-
