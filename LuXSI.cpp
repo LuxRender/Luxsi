@@ -1,5 +1,5 @@
 /*
-This file is part of LuXSI;
+This file is part of LuXSI.
 LuXSI is a LuxRender Exporter for Autodesk(C) Softimage(C) ( ex-XSI )
 http://www.luxrender.net
 
@@ -135,7 +135,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
                 
                 //- test MsgBox
                 //long st = 3;
-                //kit.MsgBox(L"Wait, render frame: "+ CString(time)+ L"in curse", siMsgOk, L"Warning!!", st);
+                //kit.MsgBox(L"Message text..", siMsgOk, L"Warning!!", st);
             }
             int ext = int(vFileExport.ReverseFindString("."));
             //- for 'queue' files
@@ -172,7 +172,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
 CVector3 convertMatrix(CVector3 v)
 {
     CMatrix3 m2(1.0,0.0,0.0,  0.0,0.0,1.0,   0.0,-1.0,0.0);
-    return v.MulByMatrix3InPlace (m2);
+    return v.MulByMatrix3InPlace(m2);
 }
 
 //--
