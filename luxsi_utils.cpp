@@ -34,6 +34,9 @@ extern Model root;
 /**/
 extern bool luxdebug;
 
+/**/
+extern double ftime;
+
 //-
 CString find_texlayer(Shader s)
 {
@@ -168,7 +171,7 @@ CString find_shader_used( Shader s, CString used_shader)
     }
     return used_shader;
 }
-//--
+//--+-
 bool find_crefarray_object( CRefArray in_ref, CString in_name )
 {
     //- test helper for find object in CRefArray
@@ -208,3 +211,59 @@ CString luxsi_normalize_path(CString vFile)
     return file_path.GetSubString(0, ext);
 
 }
+//-
+CString luxsiTransformMatrix(X3DObject o)
+{
+    /** Status
+    *   Work in progress
+    */
+    /*
+    (sx ) (0,1) (0,2) (0,3) 
+    (1,0) (sy ) (1,2) (1,3)
+    (2,0) (2,1) (sz ) (2,3)
+    ( tx) ( ty) ( tz) (3,3)
+
+    Si la scala es igual a x=(0,0) y=(1,1) z=(2,2) y luxsi necesita x -z y
+    hay que poner esto= (0,0) -(2,2) (1,1)
+    seguir siempre la norma de x -y z en todas las tranformaciones.
+
+    */
+    //--
+    CString transform;
+    //-
+    KinematicState global_state = o.GetKinematics().GetGlobal();
+    CTransformation global_transf = global_state.GetTransform(ftime);
+
+    //-
+    CMatrix4 iTrans = o.GetKinematics().GetGlobal().GetTransform(ftime).GetMatrix4();
+    /*  1 0 0 0  
+        0 1 0 0  
+        0 0 1 0  
+        0 0 0 1
+        
+        1 0 0
+        0 1 0
+        0 0 1
+        */
+
+    transform = CString(iTrans.GetValue(0,0)) + L" " // 0,0 -> scale X
+        + CString(-iTrans.GetValue(0,2))    + L" "
+        + CString(iTrans.GetValue(0,1))     + L" " // 0,2 -> swith YZ rot ( negative? )
+        + CString(iTrans.GetValue(0,3))     + L" "
+        + CString(-iTrans.GetValue(2,0))    + L" " // 1,0 -> swith YZ rot ( signe? )
+        + CString(iTrans.GetValue(2,2))     + L" "  // 1,1 -> scale Y ( negative? )
+        + CString(iTrans.GetValue(1,2))     + L" "
+        + CString(iTrans.GetValue(1,3))     + L" "
+        + CString(iTrans.GetValue(1,0))     + L" " // 2,0 -> swith YZ rot ( signo? )
+        + CString(iTrans.GetValue(2,1))     + L" "
+        + CString(iTrans.GetValue(1,1))     + L" " // 2,2 -> scale Z
+        + CString(iTrans.GetValue(2,3))     + L" "
+        + CString(iTrans.GetValue(3,0))     + L" " // translation, fixed, no touch
+        + CString(-iTrans.GetValue(3,2))    + L" " //
+        + CString(iTrans.GetValue(3,1))     + L" " //
+        + CString(iTrans.GetValue(3,3));
+    
+    //-
+    return transform;
+}
+//-
