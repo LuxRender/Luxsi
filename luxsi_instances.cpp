@@ -130,8 +130,7 @@ CString writeLuxsiInstance(X3DObject o)
     //-
     //CString transfMatrix = luxsiTransformMatrix(o); 
     //instanceData += L"\nTransform ["+ transfMatrix + L"]\n";
-
-    
+  
     /** Result from testing:
     *   The better order for transform is; Translate, Rotate and finally Scale.
     *   Usinng this method. Is more precise to matrix.. atm.

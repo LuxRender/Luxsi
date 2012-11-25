@@ -86,13 +86,22 @@ CString writeLuxsiShader()
 
         //------------------
         mat = materials[i];
-        //------------------
+
+        /* Write only materials in use.
+        */
         if ( int(mat.GetUsedBy().GetCount())== 0 ) continue;
 
         CString MatName(mat.GetName());
 
-        if ( !luxsi_find(aMatList, MatName ) ) aMatList.Add(MatName);
-        else continue;
+        /* Prevent to duplicate material definitions. */
+        if ( luxsi_find(aMatList, MatName )) continue;
+
+        // filter Preview material
+        if (is_preview && MatName != L"Preview") continue;
+
+        //if ( !luxsi_find(aMatList, MatName ) ) 
+        aMatList.Add(MatName);
+        //else continue;
         //--
         CRefArray shad(mat.GetShaders()); // Array of all shaders attached to the material [e.g. phong]
         //--
@@ -151,19 +160,19 @@ CString writeLuxsiShader()
             else if (vMatID == L"lux_velvet")
             {
                 //-- velvet
-                shaderStr = mat_value(s, L"Kd", L"Kd");
-	            shaderStr += L" \"float thickness\" ["+ CString(float(s.GetParameterValue(L"thickness"))) + L"]\n";
-                shaderStr += L" \"float p1\" ["+ CString(float(s.GetParameterValue(L"p1"))) + L"]\n";
-                shaderStr += L" \"float p2\" ["+ CString(float(s.GetParameterValue(L"p2"))) + L"]\n";
-	            shaderStr += L" \"float p3\" ["+ CString(float(s.GetParameterValue(L"p3"))) + L"]\n";
-	            shaderType = L"velvet";
+                shaderStr = mat_value(s, L"Kd", L"Kd")+
+                    floatToString(s, L"thickness")+
+                    floatToString(s, L"p1")+
+                    floatToString(s, L"p2")+
+                    floatToString(s, L"p3");
+                shaderType = L"velvet";
                 vIsSet = true;                
             }
             else if (vMatID == L"lux_scatter")
             {
                 //-- scatter
-                shaderStr = mat_value(s, L"Kd", L"Kd");
-                shaderStr += L" \"float g\" ["+ CString(float(s.GetParameterValue(L"g"))) + L"]\n";
+                shaderStr = mat_value(s, L"Kd", L"Kd")+
+                    floatToString(s, L"g");
                 shaderType = L"scatter";
                 vIsSet = true;
             }
@@ -215,9 +224,9 @@ CString writeLuxsiShader()
             //--
             else if (vMatID==L"lux_mirror")
             {
-                shaderStr = mat_value(s, L"Kr", L"Kr");
-                shaderStr += L" \"float film\" ["+ CString(s.GetParameterValue(L"film")) + L"]\n";
-                shaderStr += L" \"float filmindex\" ["+ CString(s.GetParameterValue(L"filmindex")) + L"]\n";
+                shaderStr = mat_value(s, L"Kr", L"Kr")+
+                    floatToString(s, L"film")+
+                    floatToString(s, L"filmindex");
                 //-
                 shaderType = L"mirror";
                 vIsSet = true;
@@ -422,14 +431,6 @@ CString writeLuxsiShader()
     }
     return materialData;
 }
-
-//-- procces_mat
-CValue _process(Shader s, CString vfloat)
-{
-    //- only for test..
-    return s.GetParameterValue(vfloat);
-}
-
 //--
 CString mat_value(Shader s, CString in_texture, CString in_shader_port)
 {
@@ -482,23 +483,23 @@ CString write_lux_glass(Shader s, CString vMatID)
     //-- transmitivity component
     shStr += mat_value(s, L"Kt", L"Kt");
     //-
-    shStr += L" \"float index\" ["+ CString(s.GetParameterValue(L"index")) + L"]\n";
-    shStr += L" \"float cauchyb\" ["+ CString(s.GetParameterValue(L"cauchyb")) + L"]\n";
+    shStr += floatToString(s, L"index")+
+        floatToString(s, L"cauchyb");
     //-
     shaderType = L"glass";
     //--
     if ( vMatID == L"lux_roughglass" )
     {
-        shStr += L" \"float uroughness\" ["+ CString(s.GetParameterValue(L"uroughness")) + L"]\n";
-        shStr += L" \"float vroughness\" ["+ CString(s.GetParameterValue(L"vroughness")) + L"]\n";
+        shStr += floatToString(s, L"uroughness")+
+            floatToString(s, L"vroughness");
         shStr += L" \"bool dispersion\" [\""+ CString(s.GetParameterValue(L"dispersion")) + L"\"]\n";
         //-
         shaderType = L"roughglass";
     }
     else
     {
-        shStr += L" \"float film\" ["+ CString(s.GetParameterValue(L"film")) + L"]\n";
-        shStr += L" \"float filmindex\" ["+ CString(s.GetParameterValue(L"filmindex")) + L"]\n";
+        shStr += floatToString(s, L"film")+
+            floatToString(s, L"filmindex");
         shStr += L" \"bool architectural\" [\""+ CString(s.GetParameterValue(L"architectural")) + L"\"]\n";
         //--
     }
@@ -516,8 +517,9 @@ CString write_lux_metal(Shader s)
     const char *ametal [5] = {"amorphous carbon", "silver", "gold", "copper", "aluminium"};
     int nmetal = s.GetParameterValue(L"mname");
     //--
-    shStr += L" \"float uroughness\" ["+ CString(float(s.GetParameterValue(L"uroughness"))) + L"]\n";
-    shStr += L" \"float vroughness\" ["+ CString(float(s.GetParameterValue(L"vroughness"))) + L"]\n";
+    shStr += floatToString(s, L"uroughness")+
+        floatToString(s, L"vroughness");
+    //-
     if (s.GetParameterValue(L"NKfile") == true )
     {
         //shaderStr += L"  \"string filename\" [\""+ /* NK file */ + L"\"]\n";
@@ -560,12 +562,12 @@ CString write_lux_car_paint(Shader s)
         shStr += L" \"color Ks1\" ["+ CString(spr) + L" "+ CString(spg) + L" "+ CString(spb) + L"] \n";
         shStr += L" \"color Ks2\" ["+ CString(spr2) + L" "+ CString(spg2) + L" "+ CString(spb2) + L"] \n";
         shStr += L" \"color Ks3\" ["+ CString(spr2) + L" "+ CString(spg2) + L" "+ CString(spb2) + L"] \n";
-        shStr += L" \"float M1\" ["+ CString(float(s.GetParameterValue(L"m1"))) + L"] \n";
-        shStr += L" \"float M2\" ["+ CString(float(s.GetParameterValue(L"m2"))) + L"] \n";
-        shStr += L" \"float M3\" ["+ CString(float(s.GetParameterValue(L"m3"))) + L"] \n";
-        shStr += L" \"float R1\" ["+ CString(float(s.GetParameterValue(L"r1"))) + L"] \n";
-        shStr += L" \"float R2\" ["+ CString(float(s.GetParameterValue(L"r2"))) + L"] \n";
-        shStr += L" \"float R3\" ["+ CString(float(s.GetParameterValue(L"r3"))) + L"] \n";
+        shStr += floatToString(s, L"M1", L"m1")+
+            floatToString(s, L"M2", L"m2")+
+            floatToString(s, L"M3", L"m3")+ 
+            floatToString(s, L"R1", L"r1")+
+            floatToString(s, L"R2", L"r2")+
+            floatToString(s, L"R3", L"r3");
     }
     else
     {
@@ -630,8 +632,8 @@ CString write_lux_shinymetal(Shader s)
     //-- reflection component
     shStr += mat_value(s, L"Kr", L"Kr");
     //--
-    shStr += L" \"float uroughness\" ["+ CString(s.GetParameterValue(L"uroughness")) + L"]\n";
-    shStr += L" \"float vroughness\" ["+ CString(s.GetParameterValue(L"vroughness")) + L"]\n";
+    shStr += floatToString(s, L"uroughness")+
+        floatToString(s, L"vroughness");
     //--
     return shStr;
 }
@@ -648,9 +650,8 @@ CString write_lux_substrate( Shader s)
     //-- specular component
     shStr += mat_value(s, L"Ks", L"Ks");
     //--
-    shStr += L" \"float uroughness\" ["+ CString(s.GetParameterValue(L"uroughness")) + L"]\n";
-    shStr += L" \"float vroughness\" ["+ CString(s.GetParameterValue(L"vroughness")) + L"]\n";
-
+    shStr += floatToString(s, L"uroughness")+
+        floatToString(s, L"vroughness");
     //--
     return shStr;
 }
@@ -699,7 +700,7 @@ CString write_lux_matte(Shader s, CString vMatID)
         shaderType = L"mattetranslucent";
     }
     //-
-    shStr += L" \"float sigma\" ["+ CString(float(s.GetParameterValue(L"sigma"))) + L"]\n";
+    shStr += floatToString(s, L"sigma");
 
     return shStr;
 }
@@ -714,10 +715,9 @@ CString write_lux_glossy(Shader s)
     glossyData = mat_value(s, L"Kd", L"Kd");
     glossyData += mat_value(s, L"Ks", L"Ks");
     glossyData += L" \"bool multibounce\" [\""+ CString(MtBool[bounce]) + L"\"]\n";
-	glossyData += L" \"float index\" ["+ CString(float(s.GetParameterValue(L"index"))) + L"]\n";
-    glossyData += L" \"float uroughness\" ["+ CString(float(s.GetParameterValue(L"uroughness"))) + L"]\n";
-    glossyData += L" \"float vroughness\" ["+ CString(float(s.GetParameterValue(L"vroughness"))) + L"]\n";
-                
+	glossyData += floatToString(s, L"index")+
+        floatToString(s, L"uroughness")+
+        floatToString(s, L"vroughness");                
     //-
 	shaderType = L"glossy";
     //-
@@ -731,7 +731,7 @@ CString write_lux_glossy(Shader s)
     }
     else
     {
-        glossyData += L" \"float sigma\" ["+ CString(float(s.GetParameterValue(L"sigma"))) + L"]\n";
+        glossyData += floatToString(s, L"sigma");
     }
     return glossyData;
 }

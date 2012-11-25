@@ -1499,6 +1499,14 @@ void writeLuxsiScene(double ftime)
                     aObj.Add(o); // for create link into LXO file
                 }
             }
+            if (o.GetType()==L"hair")
+            {
+                if (vIsHiddenObj || (!vIsHiddenObj && ( view_visbl && rend_visbl )))
+                {
+                    app.LogMessage(L"Object type [ Hair ], name: "+ o.GetName());
+                    aObj.Add(o); // for create link into LXO file
+                }
+            }
             if (o.GetType()==L"CameraRoot")
             {
                 if (vIsHiddenCam || ( !vIsHiddenCam && (view_visbl && rend_visbl )))

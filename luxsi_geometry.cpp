@@ -207,7 +207,7 @@ CString writeLuxsiObj(X3DObject o)
         *   Always, reset before asign.
         */
         vIsMeshLight = false;
-        /* Add XSI incandescence mode */
+        /* Use material */
         if ( vMatID == L"lux_emitter_mat" ) vIsMeshLight = true;
         //- mesh..
         CString type_mesh = L"mesh";
@@ -230,12 +230,12 @@ CString writeLuxsiObj(X3DObject o)
             //--
             lxoData += L" LightGroup \""+ lName + L"\"\n";
             //-
-            lxoData += L"\nAreaLightSource \"area\" \n";
-            lxoData += L"  \"float importance\" ["+ CString(s.GetParameterValue(L"importance")) + L"] \n";
-            lxoData += L"  \"float gain\" ["+ CString(s.GetParameterValue(L"gain")) + L"] \n";
-            lxoData += L"  \"float power\" ["+ CString(s.GetParameterValue(L"power")) + L"] \n";
-            lxoData += L"  \"float efficacy\" ["+ CString(s.GetParameterValue(L"efficacy")) + L"] \n";
-            lxoData += L"  \"integer nsamples\" ["+ CString(s.GetParameterValue(L"nsamples")) + L"] \n";
+            lxoData += L"\nAreaLightSource \"area\" \n"+ 
+                floatToString(s, L"importance")+
+                floatToString(s, L"gain")+
+                floatToString(s, L"power")+
+                floatToString(s, L"efficacy")+
+                integerToString(s, L"nsamples");
             lxoData += L"  \"color L\" ["
                 + CString(red * emitt) + L" "
                 + CString(green * emitt) + L" "
@@ -252,7 +252,8 @@ CString writeLuxsiObj(X3DObject o)
         //f << "  \"string displacementmap\" [\"none\"]\n"; // here, place normalmap texture
         //f << "  \"float dmscale\" [\"0.0\"] \"float dmoffset\" [\"0.0\"]\n";
         //-
-
+        lxoData += L"   \"bool dmnormalsmooth\" [\""+ CString( MtBool[vSmooth_mesh] ) + L"\"]\n";
+        
         long vertCount(allPoints.GetCount());
         long triCount(g.GetTriangles().GetCount());
         //--------------

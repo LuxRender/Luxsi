@@ -134,4 +134,17 @@ CString write_lux_glossy(Shader in_shader);
 */
 CString mat_value( Shader in_shader, CString in_texture, CString in_shader_port);
 
+/*Helpers for material definitions 
+*/
+extern CString floatToString(Shader s, CString in_item, CString in_definition);
+
+/**/
+extern CString floatToString(Shader s, CString in_item);
+
+/**/
+extern CString integerToString(Shader s, CString in_item, CString in_definition);
+
+/**/
+extern CString integerToString(Shader s, CString in_item);
+
 #endif //LUXSI_MATERIAL_H

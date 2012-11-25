@@ -103,4 +103,17 @@ void write_lxoFile(CString in_lxoData, CString in_lxoFile);
 /**/
 extern CString luxsiTransformMatrix(X3DObject o);
 
+/*Helpers for material definitions 
+*/
+extern CString floatToString(Shader s, CString in_item, CString in_definition);
+
+/**/
+extern CString floatToString(Shader s, CString in_item);
+
+/**/
+extern CString integerToString(Shader s, CString in_item, CString in_definition);
+
+/**/
+extern CString integerToString(Shader s, CString in_item);
+
 #endif // LUXSI_GEOMETRY_H

@@ -266,4 +266,31 @@ CString luxsiTransformMatrix(X3DObject o)
     //-
     return transform;
 }
+//- micro-functions
+CString floatToString(Shader s, CString item, CString definition)
+{
+    CString strData = L"  \"float "+ item + L"\" ["+ CString(s.GetParameterValue(definition)) + L"] \n";
+    //-
+    return strData;
+}
 //-
+CString floatToString(Shader s, CString item)
+{
+    CString strData = L"  \"float "+ item + L"\" ["+ CString(s.GetParameterValue(item)) + L"] \n";
+    //-
+    return strData;
+}
+//-
+CString integerToString(Shader s, CString item, CString definition)
+{
+    CString strData = L"  \"integer "+ item + L"\" ["+ CString(s.GetParameterValue(definition)) + L"] \n";
+    //-
+    return strData;            
+}
+//-
+CString integerToString(Shader s, CString item)
+{
+    CString strData = L"  \"integer "+ item + L"\" ["+ CString(s.GetParameterValue(item)) + L"] \n";
+    //-
+    return strData;            
+}
