@@ -42,7 +42,7 @@ using namespace std;
 *   queue_list      //- queue list data
 *   vblxs_file      //- name of reload .lxs file
 */
-CString vFileLxs, vFileQueue, luxsiShaderData, queue_list, vblxs_file;
+CString vFileLxs, vFileQueue, luxsiShaderData, queue_list, vblxs_file, vmatPreview;
 
 /* for launch LuxRender with -L "queue.lxq" parameter 
 */
@@ -52,6 +52,8 @@ bool lqueue = false;
 */
 bool overrGeometry = false;
 
+/* Export Material Preview definition.*/
+CString vluxMatExport;
 /* Time 
 */
 double ftime = DBL_MAX;
@@ -107,7 +109,7 @@ void luxsiRender(CString in_file);
 //-
 void luxsi_execute();
 
-void luxsi_mat_preview();
+void luxsi_mat_preview(bool onlyExport);
 
 std::string luxsi_replace(string input);
 //--

@@ -92,16 +92,16 @@ CString writeLuxsiShader()
         if ( int(mat.GetUsedBy().GetCount())== 0 ) continue;
 
         CString MatName(mat.GetName());
-
-        /* Prevent to duplicate material definitions. */
+        /*
+        * Prevent to duplicate material definitions.
+        */
         if ( luxsi_find(aMatList, MatName )) continue;
-
-        // filter Preview material
-        if (is_preview && MatName != L"Preview") continue;
-
-        //if ( !luxsi_find(aMatList, MatName ) ) 
+        /*
+        * filter Preview material name // MatName != L"Preview")
+        */        
+        if (is_preview && MatName != vmatPreview) continue;
+        //-
         aMatList.Add(MatName);
-        //else continue;
         //--
         CRefArray shad(mat.GetShaders()); // Array of all shaders attached to the material [e.g. phong]
         //--
@@ -159,6 +159,17 @@ CString writeLuxsiShader()
             }
             else if (vMatID == L"lux_velvet")
             {
+                /*
+                Material* Velvet::CreateMaterial(const Transform &xform,
+		        const ParamSet &mp) {
+	                boost::shared_ptr<Texture<SWCSpectrum> > Kd(mp.GetSWCSpectrumTexture("Kd", RGBColor(.3f)));
+	                boost::shared_ptr<Texture<float> > P1(mp.GetFloatTexture("p1", -2.f));
+	                boost::shared_ptr<Texture<float> > P2(mp.GetFloatTexture("p2", 20.f));
+	                boost::shared_ptr<Texture<float> > P3(mp.GetFloatTexture("p3", 2.f));
+	                boost::shared_ptr<Texture<float> > Thickness(mp.GetFloatTexture("thickness", 0.1f));
+	                return new Velvet(Kd, P1, P2, P3, Thickness, mp);
+                }
+                */
                 //-- velvet
                 shaderStr = mat_value(s, L"Kd", L"Kd")+
                     floatToString(s, L"thickness")+
@@ -399,7 +410,7 @@ CString writeLuxsiShader()
             
 
         }//- process Preview Material ----------------------------------/
-        if ( MatName == L"Preview" && is_preview )
+        if ( MatName == vmatPreview && is_preview )
         {
             CString prev_material;  //- for material preview data
             //-
@@ -512,13 +523,13 @@ CString write_lux_metal(Shader s)
     //-----------------------------
     //  Status: Add NK files option
     //-----------------------------
-    CString shStr = L"";
+    CString metalStr;
     //-
     const char *ametal [5] = {"amorphous carbon", "silver", "gold", "copper", "aluminium"};
     int nmetal = s.GetParameterValue(L"mname");
     //--
-    shStr += floatToString(s, L"uroughness")+
-        floatToString(s, L"vroughness");
+    //shStr += floatToString(s, L"uroughness")+
+    //    floatToString(s, L"vroughness");
     //-
     if (s.GetParameterValue(L"NKfile") == true )
     {
@@ -526,10 +537,10 @@ CString write_lux_metal(Shader s)
     }
     else
     {
-        shStr += L" \"string name\" [\""+ CString(ametal[nmetal]) + L"\"]\n";
+        metalStr += L" \"string name\" [\""+ CString(ametal[nmetal]) + L"\"]\n";
     }
     //--
-    return shStr;
+    return metalStr;
 }
 //--
 CString write_lux_car_paint(Shader s)

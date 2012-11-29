@@ -41,6 +41,9 @@ extern CustomProperty prop;
 /**/
 extern Application app;
 
+/**/
+extern CString vmatPreview;
+
 //-
 XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 {
@@ -253,8 +256,12 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
         vLuXSIPath += L"/LuXSI/Application/bin";
     #endif
     
-    //-- lxs files for re-render  
+    //-- lxs files for re-render  ,bmatPreview 
     prop.AddParameter( L"blxs_file",    CValue::siString, sps, L"",L"", vblxs_file,    oParam);
+    /* 
+    * name of Material for preview 
+    */
+    prop.AddParameter( L"bmatPreview",  CValue::siString, sps, L"",L"", vmatPreview,  oParam);
     
 	prop.AddParameter( L"fileExport",   CValue::siString, sps, L"", L"", vFileExport, oParam );
 

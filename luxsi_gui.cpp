@@ -473,13 +473,24 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
     lay.EndRow();
     
     //---------------------------------------------------/
-    lay.AddTab(L"Materials"); 
+    lay.AddTab(L"Material preview"); 
     //-----------------------/
 		lay.AddGroup();
             lay.AddSpacer(5,2);
             lay.AddRow();
-                lay.AddButton(L"blpreview", L"Preview Materials");
+                lay.AddItem(L"bmatPreview", L"Material for preview").PutLabelPercentage(60);
+                //lay.AddItem(L"", L"");
             lay.EndRow();
+            lay.AddRow();
+                lay.AddButton(L"blpreview", L"Render Preview");
+                lay.AddButton(L"bExportPrev", L"Export Mat. definition");
+            lay.EndRow();
+            //---
+            lay.AddItem(L"luxMatExport",L"Export to file", siControlFilePath);
+            PPGItem exportMat = lay.GetItem( L"luxMatExport" );
+            exportMat.PutAttribute( siUIFileFilter, L"LuxRender Material file|*.lxm" );
+            exportMat.PutLabelPercentage(60);
+            //------------------------------
         lay.EndGroup();
         //---
         lay.AddSpacer(5,2);
