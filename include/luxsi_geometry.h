@@ -95,7 +95,7 @@ extern CString findInGroup(CString in_items);
 extern CString luxsi_normalize_path(CString in_fileNamePath);
 
 /**/
-void write_plyFile(CString in_plyData, CString in_faces, CString in_plyFile, int vertexCount, int facesCount);
+void write_plyFile(CString in_plyData, CString in_plyFile, int vertexCount, int facesCount);
 
 /**/
 void write_lxoFile(CString in_lxoData, CString in_lxoFile);
