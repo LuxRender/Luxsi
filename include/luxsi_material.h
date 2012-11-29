@@ -147,4 +147,7 @@ extern CString integerToString(Shader s, CString in_item, CString in_definition)
 /**/
 extern CString integerToString(Shader s, CString in_item);
 
+/**/
+extern CString vmatPreview;
+
 #endif //LUXSI_MATERIAL_H

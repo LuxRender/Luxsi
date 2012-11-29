@@ -139,6 +139,7 @@ int vfilter = 2;
 bool vfexpert = false, vSupers = false;;
 
 //-- material preview
+
 int vlights = 0; //  UNUSED ??
 
 /* is 'preview' or normal scene

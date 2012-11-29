@@ -49,46 +49,8 @@ extern CString writeLuxsiObj(X3DObject o);
 /**/
 extern CString luxsiTransformMatrix(X3DObject o);
 
-//--
-CString luxsiGlobalTransformClasic(X3DObject o)
-{
-    //-
-    CString transformData;
-    //--
-    KinematicState global_state = o.GetKinematics().GetGlobal();
-    CTransformation global_transf = global_state.GetTransform(ftime);
-    //-
-    transformData += L"Translate "
-        + CString( global_transf.GetPosX())
-        + L" "+ CString( -global_transf.GetPosZ())
-        + L" "+ CString( global_transf.GetPosY()) + L"\n";
-
-    //- rotation
-    CVector3 axis;
-    double rot = global_transf.GetRotationAxisAngle(axis);
-    //-
-    if (rot != 0)
-    {
-        transformData += L"Rotate "
-            + CString( rot*180/PI )
-            + L" "+ CString( axis[0] ) 
-            + L" "+ CString( -axis[2] ) 
-            + L" "+ CString( axis[1] ) + L"\n";
-    }
-    /** Scale.
-    *   Add support for not uniform scale using "or". 
-    */
-    if (global_transf.GetSclX()!=1 || global_transf.GetSclY()!=1 || global_transf.GetSclZ()!=1)
-    {
-        /** WARNING! change 'Y' for 'Z', but not negative ( -z ).
-        */
-        transformData += L"Scale "
-            + CString(global_transf.GetSclX())
-            + L" "+ CString(global_transf.GetSclZ()) 
-            + L" "+ CString(global_transf.GetSclY()) + L"\n";
-    }
-    return transformData;
-}
+/**/
+extern CString luxsiTransformClasic(X3DObject o, CString pivotReference);
 
 //-
 CString writeLuxsiInstance(X3DObject o)
@@ -135,7 +97,7 @@ CString writeLuxsiInstance(X3DObject o)
     *   The better order for transform is; Translate, Rotate and finally Scale.
     *   Usinng this method. Is more precise to matrix.. atm.
     */
-    instanceData += luxsiGlobalTransformClasic(o);
+    instanceData += luxsiTransformClasic(o, L"");
     
     //-
     instanceData += L"ObjectInstance \""+ Model(o).GetInstanceMaster().GetName() + L"\"\n";

@@ -430,5 +430,3 @@ void dynamic_luxsi_UI( Parameter changed, CString paramName, PPGEventContext ctx
         ctxt.PutAttribute( L"Refresh", true );
     }
 }
-
-//--
