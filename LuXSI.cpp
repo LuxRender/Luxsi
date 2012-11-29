@@ -96,7 +96,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
             if( buttonOption == L"blpreview" )
             {
                 is_preview = true;
-                luxsi_mat_preview();
+                luxsi_mat_preview(false);
             }
             else
             {
@@ -151,17 +151,17 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
     }
     else if ( eventID == PPGEventContext::siTabChange )
     {
-        CValue tabLabel = ctxt.GetAttribute( L"Tab" ) ;
+        CValue tabLabel = ctxt.GetAttribute( L"Tab" );
         //app.LogMessage( L"Tab changed to: " + tabLabel .GetAsText() ) ;
     }
     else if ( eventID == PPGEventContext::siParameterChange )
     {
-        Parameter changed = ctxt.GetSource() ;
+        Parameter changed = ctxt.GetSource();
         //CustomProperty 
         prop = changed.GetParent() ;
-        CString paramName = changed.GetScriptName() ;
+        CString paramName = changed.GetScriptName();
 
-        app.LogMessage( L"Parameter Changed: " + paramName ) ;
+        app.LogMessage( L"Parameter Changed: " + paramName );
 
         update_LuXSI_values(paramName, changed, ctxt);         
     }
@@ -224,8 +224,11 @@ void update_main_values(CString paramName, Parameter changed, PPGEventContext ct
         dynamic_luxsi_UI(changed, paramName, ctxt);
 
     } else if (paramName == L"fileExport")  { vFileExport   = changed.GetValue();
+    //-
+    } else if (paramName == L"luxMatExport"){ vluxMatExport = changed.GetValue();
     
-    //- material preview
+    //- material preview // 
+    } else if (paramName == L"bmatPreview") { vmatPreview   = changed.GetValue();
     } else if (paramName == L"blxs_file")   { vblxs_file    = changed.GetValue();
     }
     else 
@@ -1399,7 +1402,7 @@ CString write_header_files()
     return _header;
 }
 //--
-void luxsi_mat_preview()
+void luxsi_mat_preview(bool onlyExport)
 {
     //--
     CString 
@@ -1418,7 +1421,7 @@ void luxsi_mat_preview()
     //-
     if ( luxdebug ) app.LogMessage(L"Data for Material Preview: "+ mat_data_preview);
     //--
-    if ( luxsi_find(aMatList, L"Preview" ) )
+    if ( luxsi_find(aMatList, vmatPreview ) )
     {
         std::ofstream fmat;
 		fmat.open(vFile_mat_preview.GetAsciiString());
@@ -1426,20 +1429,24 @@ void luxsi_mat_preview()
         fmat << mat_data_preview.GetAsciiString();
         fmat.close();
 
-        //- scene file
-        CString scenePreviewFile = vFile_scene_folder + L"/LuXSI/resources/scene.lxs";
+        // test
+        if ( !onlyExport )
+        {
+            //- scene file
+            CString scenePreviewFile = vFile_scene_folder + L"/LuXSI/resources/scene.lxs";
         
-        //- exe path
-        CString lux_bin = vLuXSIPath + L"/luxrender.exe";
+            //- exe path
+            CString lux_bin = vLuXSIPath + L"/luxrender.exe";
         
-        //- command line
-        CString exec = lux_bin + L" \""+ scenePreviewFile + L"\"";
+            //- command line
+            CString exec = lux_bin + L" \""+ scenePreviewFile + L"\"";
 
-        //- show commandline for debug...
-        if ( luxdebug ) app.LogMessage(exec);
+            //- show commandline for debug...
+            if ( luxdebug ) app.LogMessage(exec);
 
-        //- start render
-        loader(exec.GetAsciiString());   
+            //- start render
+            loader(exec.GetAsciiString()); 
+        }
     }
     else
     {

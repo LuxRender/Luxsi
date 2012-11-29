@@ -92,6 +92,7 @@ CString findInGroup(CString s)
     }
     return L"";
 }
+
 //--
 string luxsi_replace(string input)
 {
@@ -171,7 +172,7 @@ CString find_shader_used( Shader s, CString used_shader)
     }
     return used_shader;
 }
-//--+-
+//--
 bool find_crefarray_object( CRefArray in_ref, CString in_name )
 {
     //- test helper for find object in CRefArray
@@ -212,7 +213,7 @@ CString luxsi_normalize_path(CString vFile)
 
 }
 //-
-CString luxsiTransformMatrix(X3DObject o)
+CString luxsiTransformMatrix(X3DObject o, CString pivotReference)
 {
     /** Status
     *   Work in progress
@@ -229,43 +230,84 @@ CString luxsiTransformMatrix(X3DObject o)
 
     */
     //--
-    CString transform;
+    CString transfData;
+    KinematicState objectState;
     //-
-    KinematicState global_state = o.GetKinematics().GetGlobal();
-    CTransformation global_transf = global_state.GetTransform(ftime);
+    objectState = o.GetKinematics().GetGlobal();
+    if (pivotReference == L"local") objectState = o.GetKinematics().GetLocal();
+
+    CTransformation goTransform = objectState.GetTransform(ftime);
 
     //-
-    CMatrix4 iTrans = o.GetKinematics().GetGlobal().GetTransform(ftime).GetMatrix4();
-    /*  1 0 0 0  
-        0 1 0 0  
-        0 0 1 0  
-        0 0 0 1
-        
-        1 0 0
-        0 1 0
-        0 0 1
-        */
-
-    transform = CString(iTrans.GetValue(0,0)) + L" " // 0,0 -> scale X
-        + CString(-iTrans.GetValue(0,2))    + L" "
-        + CString(iTrans.GetValue(0,1))     + L" " // 0,2 -> swith YZ rot ( negative? )
-        + CString(iTrans.GetValue(0,3))     + L" "
-        + CString(-iTrans.GetValue(2,0))    + L" " // 1,0 -> swith YZ rot ( signe? )
-        + CString(iTrans.GetValue(2,2))     + L" "  // 1,1 -> scale Y ( negative? )
-        + CString(iTrans.GetValue(1,2))     + L" "
-        + CString(iTrans.GetValue(1,3))     + L" "
-        + CString(iTrans.GetValue(1,0))     + L" " // 2,0 -> swith YZ rot ( signo? )
-        + CString(iTrans.GetValue(2,1))     + L" "
-        + CString(iTrans.GetValue(1,1))     + L" " // 2,2 -> scale Z
-        + CString(iTrans.GetValue(2,3))     + L" "
-        + CString(iTrans.GetValue(3,0))     + L" " // translation, fixed, no touch
-        + CString(-iTrans.GetValue(3,2))    + L" " //
-        + CString(iTrans.GetValue(3,1))     + L" " //
-        + CString(iTrans.GetValue(3,3));
+    CMatrix4 mTransf = goTransform.GetMatrix4();
+    //iTrans = o.GetKinematics().GetGlobal().GetTransform(ftime).GetMatrix4();
+    /**/
+    transfData = CString(mTransf.GetValue(0,0)) + L" " // 0,0 -> scale X
+        + CString(-mTransf.GetValue(0,2))    + L" "
+        + CString(mTransf.GetValue(0,1))     + L" " // 0,2 -> swith YZ rot ( negative? )
+        + CString(mTransf.GetValue(0,3))     + L" "
+        + CString(-mTransf.GetValue(2,0))    + L" " // 1,0 -> swith YZ rot ( signe? )
+        + CString(mTransf.GetValue(2,2))     + L" "  // 1,1 -> scale Y ( negative? )
+        + CString(mTransf.GetValue(1,2))     + L" "
+        + CString(mTransf.GetValue(1,3))     + L" "
+        + CString(mTransf.GetValue(1,0))     + L" " // 2,0 -> swith YZ rot ( signo? )
+        + CString(mTransf.GetValue(2,1))     + L" "
+        + CString(mTransf.GetValue(1,1))     + L" " // 2,2 -> scale Z
+        + CString(mTransf.GetValue(2,3))     + L" "
+        + CString(mTransf.GetValue(3,0))     + L" " // translation, fixed, no touch
+        + CString(-mTransf.GetValue(3,2))    + L" " //
+        + CString(mTransf.GetValue(3,1))     + L" " //
+        + CString(mTransf.GetValue(3,3));
     
     //-
-    return transform;
+    return transfData;
 }
+//--
+CString luxsiTransformClasic(X3DObject o, CString pivotReference)
+{
+    //-
+    CString transformData;
+    KinematicState objectState;
+
+    /* Extend fuction for use in local and global transform.
+    */
+    objectState = o.GetKinematics().GetGlobal();
+    if (pivotReference == L"local") objectState = o.GetKinematics().GetLocal();
+    //-
+    CTransformation goTransform = objectState.GetTransform(ftime);
+    //-
+    transformData += L"Translate "
+        + CString( goTransform.GetPosX()) + L" "
+        + CString( -goTransform.GetPosZ()) + L" "
+        + CString( goTransform.GetPosY()) + L"\n";
+
+    //- rotation
+    CVector3 axis;
+    double rot = goTransform.GetRotationAxisAngle(axis);
+    //-
+    if (rot != 0)
+    {
+        transformData += L"Rotate "
+            + CString( rot*180/PI ) + L" "
+            + CString( axis[0] ) + L" "
+            + CString( -axis[2] ) + L" "
+            + CString( axis[1] ) + L"\n";
+    }
+    /** Scale.
+    *   Add support for not uniform scale using "or". 
+    */
+    if (goTransform.GetSclX()!=1 || goTransform.GetSclY()!=1 || goTransform.GetSclZ()!=1)
+    {
+        /** WARNING! change 'Y' for 'Z', but not negative ( -z ).
+        */
+        transformData += L"Scale "
+            + CString(goTransform.GetSclX()) + L" "
+            + CString(goTransform.GetSclZ()) + L" "
+            + CString(goTransform.GetSclY()) + L"\n";
+    }
+    return transformData;
+}
+
 //- micro-functions
 CString floatToString(Shader s, CString item, CString definition)
 {
