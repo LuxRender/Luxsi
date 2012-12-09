@@ -1453,107 +1453,78 @@ void luxsi_mat_preview(bool onlyExport)
         app.LogMessage(L"Not material named 'Preview'", siWarningMsg);
     }
 }
+//-
+void sceneCollectionsObjects()
+{
+    //--
+    itemsArray.Clear();
+    aObj.Clear();
+    aCam.Clear();
+    aSurfaces.Clear();
+    aClouds.Clear();
+    aInstance.Clear();
+    aHair.Clear();
+
+    //- cleaned global CStringArray  for instance list.
+    aInstanceList.Clear();
+    //--
+    if ( luxdebug ) app.LogMessage(L"[DEBUG]: Created and cleaned arrays..");
+
+    root = app.GetActiveSceneRoot();
+    //--
+    itemsArray += root.FindChildren( L"", L"", CStringArray(), true );
+    for ( int i=0; i < itemsArray.GetCount(); i++ )
+    {
+        X3DObject o(itemsArray[i]);
+        //- test for search all objects type.
+        app.LogMessage( L"\tObject Name: [" + o.GetName() + L"] Type: [" + o.GetType()
+            + L"] parent: "+ X3DObject(o.GetParent()).GetName());
+           
+        //-- Collection objects / visibilty check
+        if (o.GetType()==L"polymsh")
+        {
+            if ( is_visible(o, L"polymsh"))     aObj.Add(o);
+        }
+        else if (o.GetType()==L"hair")
+        {
+            if ( is_visible(o, L"polymsh"))     aHair.Add(o);// TODO: 
+        }
+        else if (o.GetType()==L"CameraRoot")
+        {
+            if ( is_visible(o, L"camera"))      aCam.Add(o);    
+        }
+        else if (o.GetType()==L"camera" && X3DObject(o.GetParent()).GetType()!=L"CameraRoot")
+        {
+            if ( is_visible(o, L"camera"))      aCam.Add(o); 
+        }
+        else if (o.GetType() == L"surfmsh" )
+        {
+            if ( is_visible(o, L"surfmsh"))     aSurfaces.Add(o);
+        }
+        else if (o.GetType()== L"pointcloud")
+        {
+            if ( is_visible(o, L"pointcloud"))  aClouds.Add(o); 
+        }
+        else if (o.GetType()==L"#model")
+        {
+            if ( is_visible(o, L"polymsh"))     aInstance.Add(o);                
+        }
+        else
+        {
+            app.LogMessage(L" Object type [ "+ o.GetType() + L" ] named [ "+ o.GetName() + L" ] not listed");
+        }
+    } 
+}
 //--
 void writeLuxsiScene(double ftime)
 {
     // write objects, materials, lights, cameras
     if (vFileExport != L"")
     {
-        CRefArray 
-            itemsArray, //- array for all scene items
-            aObj,       //- for objects( polygon mesh )
-            aCam,       //- for cams ( only export active camera ? )
-            aSurfaces,  //- for 'surface' primitives
-            aClouds,    //- for 'pointclouds' objects
-            aInstance;  //- for instance objects
-            
-        //--
-        CStringArray emptyArray;
-        //-
-        emptyArray.Clear();
-        //-
-        itemsArray.Clear();
-        aObj.Clear();
-        aCam.Clear();
-        aSurfaces.Clear();
-        aClouds.Clear();
-        aInstance.Clear();
-
-        //- cleaned global CStringArray  for instance list.
-        aInstanceList.Clear();
-        //--
-        if ( luxdebug ) app.LogMessage(L"[DEBUG]: Created and cleaned arrays..");
-
-        root = app.GetActiveSceneRoot();
-        //--
-        itemsArray += root.FindChildren( L"", L"", emptyArray, true );
-        for ( int i=0; i < itemsArray.GetCount(); i++ )
-        {
-            X3DObject o(itemsArray[i]);
-            //- test for search all objects type.
-            app.LogMessage( L"\tObject Name: " + o.GetName() + L" Type: " + o.GetType()
-                + L" parent: "+ X3DObject(o.GetParent()).GetType());
-            //--
-            Property visi = o.GetProperties().GetItem(L"Visibility");
-            bool view_visbl = (bool)visi.GetParameterValue(L"viewvis");
-            bool rend_visbl = (bool)visi.GetParameterValue(L"rendvis");
-
-            //-- Collection objects / visibilty check
-            if (o.GetType()==L"polymsh")
-            {
-                if (vIsHiddenObj || (!vIsHiddenObj && ( view_visbl && rend_visbl )))
-                {
-                    aObj.Add(o); // for create link into LXO file
-                }
-            }
-            if (o.GetType()==L"hair")
-            {
-                if (vIsHiddenObj || (!vIsHiddenObj && ( view_visbl && rend_visbl )))
-                {
-                    app.LogMessage(L"Object type [ Hair ], name: "+ o.GetName());
-                    aObj.Add(o); // for create link into LXO file
-                }
-            }
-            if (o.GetType()==L"CameraRoot")
-            {
-                if (vIsHiddenCam || ( !vIsHiddenCam && (view_visbl && rend_visbl )))
-                {
-                    aCam.Add(o);    
-                }
-            }
-            if (o.GetType()==L"camera" && X3DObject(o.GetParent()).GetType()!=L"CameraRoot")
-            {
-                if (vIsHiddenCam || (!vIsHiddenCam && (view_visbl && rend_visbl )))
-                {
-                    aCam.Add(o); 
-                }
-            }
-            if (o.GetType()==L"surfmsh")
-            {
-                if (vIsHiddenSurface || (!vIsHiddenSurface && (view_visbl && rend_visbl )))
-                {
-                    aSurfaces.Add(o);
-                }
-            }
-            if (o.GetType()==L"pointcloud")
-            {
-                if (vIsHiddenClouds || (!vIsHiddenClouds && (view_visbl && rend_visbl )))
-                {
-                    aClouds.Add(o); 
-                }
-            }
-            if (o.GetType()==L"#model")
-            {
-                //- instances
-                if (Model(o).GetModelKind()==2 )
-                {
-                    if (vIsHiddenObj || (!vIsHiddenObj && (view_visbl && rend_visbl )))
-                    {
-                        aInstance.Add(o);   
-                    }
-                }
-            }
-        } 
+        /* Add collections objects
+        */
+        sceneCollectionsObjects();
+        
         //-- end for visibility check
         if ( (aObj.GetCount() + aSurfaces.GetCount()) == 0 )
         {
@@ -1622,7 +1593,7 @@ void writeLuxsiScene(double ftime)
             
             //- init progress bar
             pb.PutValue(0);
-            pb.PutMaximum( aObj.GetCount()+ aInstance.GetCount() );
+            pb.PutMaximum( itemsArray.GetCount());
             pb.PutStep(1);
             pb.PutVisible( true );
             pb.PutCaption( L"Processing data for exporter.." );
@@ -1681,14 +1652,14 @@ void writeLuxsiScene(double ftime)
             f << luxsi_Shader_Data.GetAsciiString();
             
             //->
-            f.close(); //--< end lxm
+            f.close();
             //-
             if ( luxdebug ) app.LogMessage(L"[DEBUG]: Writed materials file: "+ vFileLXM);
 
            
             //- Ghatering geometry data -------------------------------#
             //--
-            CString geometryData = L"";
+            CString geometryData;
             for (int i = 0; i < aObj.GetCount(); i++) 
             {
                 geometryData += writeLuxsiObj(aObj[i]);
@@ -1696,15 +1667,13 @@ void writeLuxsiScene(double ftime)
                 pb.Increment();
             }
             //-- instance data
-            CString instanceData = L"";
-            for (int i=0; i < aInstance.GetCount(); i++) 
+            CString instanceData;
+            if (aInstance.GetCount() >0)
             {
-                instanceData += writeLuxsiInstance(aInstance[i]);
-                if (pb.IsCancelPressed() ) break;
-                pb.Increment();
+                instanceData += writeLuxsiInstance(aInstance);
             }
             //--
-            CString pointCloudData = L"";
+            CString pointCloudData;
             for (int i = 0; i < aClouds.GetCount(); i++) 
             {
                 pointCloudData += writeLuxsiCloud(aClouds[i]);
@@ -1712,13 +1681,23 @@ void writeLuxsiScene(double ftime)
                 pb.Increment();
             }
             //--
-            CString surfaceData = L"";
+            CString surfaceData;
             for (int i=0; i < aSurfaces.GetCount(); i++) 
             {
                 surfaceData += writeLuxsiSurface(aSurfaces[i]);
                 if (pb.IsCancelPressed() ) break;
                 pb.Increment();
             }
+            /* test for hair object */
+            CString hairData;
+            for ( int i = 0; i < aHair.GetCount(); i++)
+            {
+                hairData  += writeLuxsiHair(aHair[i]);
+                if (pb.IsCancelPressed() ) break;
+                pb.Increment();
+            }
+            //app.LogMessage(hairData);
+
             //- ready for write --------------------------------------------#
             if ( luxdebug ) app.LogMessage(L"[DEBUG]: Open file for geometry: "+ vFileLXO);
 
@@ -1739,6 +1718,12 @@ void writeLuxsiScene(double ftime)
 
             //-- ..add instances
             f << instanceData.GetAsciiString();
+
+            //-- ..add Hair ( add test for empty )
+            if (!hairData.IsEmpty())
+            {
+                f << hairData.GetAsciiString();
+            }
             
             //-- ..and close _geom file
             f.close();

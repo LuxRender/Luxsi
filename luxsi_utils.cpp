@@ -37,6 +37,33 @@ extern bool luxdebug;
 /**/
 extern double ftime;
 
+/**/
+extern bool vIsHiddenLight, vIsHiddenObj, vIsHiddenCam, vIsHiddenClouds, vIsHiddenSurface;
+
+
+//-
+bool is_visible(X3DObject o, CString objType)
+{
+    //- vIsHiddenLight = exporta objetos que hayamos ocultado en el visor
+    /* una parte controla las opciones del menu.
+    *  La otra, que el objeto lo hayamos ocultado en el display.
+    */  
+    bool itemHidden;
+    if ( objType == L"light")       itemHidden = vIsHiddenLight;
+    if ( objType == L"polymsh")     itemHidden = vIsHiddenObj;
+    if ( objType == L"camera")      itemHidden = vIsHiddenCam;
+    if ( objType == L"pointcloud")  itemHidden = vIsHiddenClouds;
+    if ( objType == L"surfmsh")     itemHidden = vIsHiddenSurface;   
+    //-
+    Property visi = o.GetProperties().GetItem(L"Visibility");
+    bool view_visbl = (bool)visi.GetParameterValue(L"viewvis");
+    bool rend_visbl = (bool)visi.GetParameterValue(L"rendvis");
+    
+    /*
+    * add visible objects and not visibles if 'vIsHidden..' is True.
+    */
+    return ( itemHidden || ( !itemHidden && ( view_visbl && rend_visbl )));   
+}
 //-
 CString find_texlayer(Shader s)
 {
@@ -308,7 +335,7 @@ CString luxsiTransformClasic(X3DObject o, CString pivotReference)
     return transformData;
 }
 
-//- micro-functions
+//- material micro-functions
 CString floatToString(Shader s, CString item, CString definition)
 {
     CString strData = L"  \"float "+ item + L"\" ["+ CString(s.GetParameterValue(definition)) + L"] \n";

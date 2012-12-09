@@ -96,7 +96,7 @@ int writeLuxsiLight();
 
 CString writeLuxsiCloud(X3DObject o);
 
-CString writeLuxsiInstance(X3DObject o);
+CString writeLuxsiInstance(CRefArray in_array);
 
 CString writeLuxsiObj(X3DObject o);
 
@@ -134,6 +134,24 @@ extern CString findInGroup(CString s);
 extern CString luxsi_normalize_path(CString in_Filepath);
 
 /**/
+extern bool is_visible(X3DObject o, CString objType);
+
+/**/
+extern CString writeLuxsiHair(X3DObject o);
+
+/**/
 std::map<CString, int> int_values;
+
+/**
+* Array references for scene elements..
+* itemsArray  //- array for all scene items
+* aObj        //- for objects( polygon mesh )
+* aCam        //- for cams ( only export active camera ? )
+* aSurfaces   //- for 'surface' primitives
+* aClouds     //- for 'pointclouds' objects
+* aInstance   //- for instance objects
+* aHair       //- for hair
+*/
+CRefArray itemsArray, aObj, aCam, aSurfaces, aClouds, aInstance, aHair;
 
 #endif //LUXSI_H
