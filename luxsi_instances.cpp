@@ -21,90 +21,82 @@ You should have received a copy of the GNU General Public License
 along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "include\luxsi_main.h"
+#include "include\luxsi_instances.h"
 
+//--
+CString writeInstances(X3DObject oInstance)
+{
+    CString instancesData;
+    //-
+    Model vModel = Model(oInstance).GetInstanceMaster();
+
+    //---------------------------------------------
+    instancesData += L"\nAttributeBegin # "+ vModel.GetName();    
+    //
+    instancesData += L"\nTransformBegin\n";
+    /** 
+    *   Result from testing:
+    *   The better order for transform is; Translate, Rotate and finally Scale.
+    *   Usinng this method. Is more precise to matrix.. atm.
+    */
+    instancesData += luxsiTransformClasic(oInstance, L"global");    
+    //-
+    instancesData += L"ObjectInstance \""+ vModel.GetName() + L"\"\n";
+    //-
+    instancesData += L"TransformEnd\n";
+    //-
+    instancesData += L"AttributeEnd\n";
+    //-
+    return instancesData;
+}
+//--
+CString writeModel(X3DObject oModel)
+{
+    CString modelData;
+    //-
+    CRefArray childModel = oModel.GetChildren();
+    //-
+    if ( !luxsi_find(aInstanceList, oModel.GetName() ) ) 
+    {
+        //-
+        modelData = L"\nObjectBegin \""+ oModel.GetName() + L"\"\n";
+        //-
+        for (int i=0; i < childModel.GetCount(); i++)
+        {
+            modelData += writeLuxsiObj(childModel[i]);
+        }
+        //- 
+        modelData += L"\nObjectEnd # "+ oModel.GetName() + L"\n";
+        //-
+        aInstanceList.Add(oModel.GetName());// is correct?
+    }   
+    //
+    return modelData;
+}
 //-
-using namespace XSI;
-using namespace MATH;
-using namespace std;
-
-//-
-extern CStringArray aInstanceList;
-
-/**/
-extern bool luxdebug;
-
-/**/
-extern double ftime;
-
-/**/
-extern Application app;
-
-/**/
-extern bool luxsi_find(CStringArray in_array, CString in_string);
-
-/**/
-extern CString writeLuxsiObj(X3DObject o);
-
-/**/
-extern CString luxsiTransformMatrix(X3DObject o);
-
-/**/
-extern CString luxsiTransformClasic(X3DObject o, CString pivotReference);
-
-//-
-CString writeLuxsiInstance(X3DObject o)
+CString writeLuxsiInstance(CRefArray models)
 {
     //--------------------
     // status: in progress
     //--------------------
     //-- instance
-    CString instanceData = L"";
-    //- write source object [won't be displayed]
-    Model vModel = Model(o).GetInstanceMaster();
-    CRefArray vGroup = X3DObject(vModel).GetChildren();
-    //-
-    if ( luxsi_find(aInstanceList, vModel.GetName() ) ) 
+    CString instanceData;
+    for ( int i=0; i < models.GetCount(); i++ )
     {
-        if ( luxdebug ) app.LogMessage(L"The instance already exists");
-    }
-    else
-    {
-        CString obj_instance = L"";
-        //-
-        instanceData = L"\nObjectBegin \""+ vModel.GetName() + L"\"\n";
-        //-
-        for (int i=0; i < vGroup.GetCount(); i++)
+        X3DObject obj(models[i]);
+
+        if ( Model(obj).GetModelKind() == 0 )// Model / master
         {
-            obj_instance = writeLuxsiObj(X3DObject(vGroup[i]));
+            instanceData += writeModel(obj);
         }
-        //- test
-        instanceData += obj_instance;
-        //- end
-        instanceData += L"\nObjectEnd # "+ o.GetName() + L"\n";
-        aInstanceList.Add(vModel.GetName());// is correct?
+        else if ( Model(obj).GetModelKind() == 2 ) // Model / instance
+        {
+            instanceData += writeInstances(obj);
+        }
+        else //if ( Model(obj).GetModelKind() == 1 ) 
+        {
+            app.LogMessage(L"Referenced Model");
+        }
     }
-    //-
-    instanceData += L"\nAttributeBegin # "+ o.GetName();
-    
-    //
-    instanceData += L"\nTransformBegin\n";
-    //-
-    //CString transfMatrix = luxsiTransformMatrix(o); 
-    //instanceData += L"\nTransform ["+ transfMatrix + L"]\n";
-  
-    /** Result from testing:
-    *   The better order for transform is; Translate, Rotate and finally Scale.
-    *   Usinng this method. Is more precise to matrix.. atm.
-    */
-    instanceData += luxsiTransformClasic(o, L"");
-    
-    //-
-    instanceData += L"ObjectInstance \""+ Model(o).GetInstanceMaster().GetName() + L"\"\n";
-    //-
-    instanceData += L"TransformEnd\n";
-    //-
-    instanceData += L"AttributeEnd\n";
-    //-
     return instanceData;
 }
