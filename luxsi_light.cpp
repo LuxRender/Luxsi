@@ -28,18 +28,19 @@ using namespace XSI;
 using namespace MATH;
 
 //--
+
 int writeLuxsiLight()
 {
     CRefArray sceneLight, Alights;
     sceneLight.Clear();
-    CStringArray noneArray;
-    noneArray.Clear();
+    //CStringArray noneArray;
+    //noneArray.Clear();
     Alights.Clear();
 
     root = app.GetActiveSceneRoot();
     //- create an array objects with the 'lights' of the scene.
 
-    sceneLight += root.FindChildren( L"", L"light", noneArray, true );
+    sceneLight += root.FindChildren( L"", L"light", CStringArray(), true );
     
     //-- check visibility
     if ( sceneLight.GetCount() >0) 
@@ -48,14 +49,13 @@ int writeLuxsiLight()
         {
             X3DObject objLight(sceneLight[j]);
             //- 
-            Property visi = objLight.GetProperties().GetItem(L"Visibility");
-            bool view_visbl = (bool)visi.GetParameterValue(L"viewvis");
-            bool rend_visbl = (bool)visi.GetParameterValue(L"rendvis");
+            //Property visi = objLight.GetProperties().GetItem(L"Visibility");
+            //bool view_visbl = (bool)visi.GetParameterValue(L"viewvis");
+            //bool rend_visbl = (bool)visi.GetParameterValue(L"rendvis");
             //- add visible objects and not visibles if 'vIsHiddenLight' is True.
-            if ( vIsHiddenLight || ( !vIsHiddenLight && ( view_visbl && rend_visbl )))
-            {
-                Alights.Add(objLight);
-            }
+            //if ( vIsHiddenLight || ( !vIsHiddenLight && ( view_visbl && rend_visbl )))
+
+            if (is_visible(objLight, L"light")) Alights.Add(objLight);           
         }
     }
     if ( Alights.GetCount() > 0 ) 

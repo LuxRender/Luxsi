@@ -28,6 +28,9 @@ using namespace XSI;
 using namespace MATH;
 
 /**/
+extern bool is_visible(X3DObject in_obj, CString in_type);
+
+/**/
 extern bool luxdebug;
 
 /**/
