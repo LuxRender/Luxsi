@@ -89,7 +89,9 @@ along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
 #include <xsi_renderercontext.h>
 #include <xsi_math.h> // problems ?
 
-//- end
+//- for hair
+#include <xsi_hairprimitive.h>
+#include <xsi_renderhairaccessor.h>
 
 
 #if defined(_WIN32) || defined(_WIN64)
