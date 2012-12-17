@@ -31,145 +31,120 @@ using namespace MATH;
 
 int writeLuxsiLight()
 {
-    CRefArray sceneLight, Alights;
     sceneLight.Clear();
-    //CStringArray noneArray;
-    //noneArray.Clear();
     Alights.Clear();
-
     root = app.GetActiveSceneRoot();
-    //- create an array objects with the 'lights' of the scene.
 
+    /* create an array objects with the 'lights' of the scene.
+    */
     sceneLight += root.FindChildren( L"", L"light", CStringArray(), true );
     
     //-- check visibility
-    if ( sceneLight.GetCount() >0) 
+    for ( int i=0; i < sceneLight.GetCount(); i++ )
     {
-        for ( int j=0; j < sceneLight.GetCount(); j++ )
-        {
-            X3DObject objLight(sceneLight[j]);
-            //- 
-            //Property visi = objLight.GetProperties().GetItem(L"Visibility");
-            //bool view_visbl = (bool)visi.GetParameterValue(L"viewvis");
-            //bool rend_visbl = (bool)visi.GetParameterValue(L"rendvis");
-            //- add visible objects and not visibles if 'vIsHiddenLight' is True.
-            //if ( vIsHiddenLight || ( !vIsHiddenLight && ( view_visbl && rend_visbl )))
-
-            if (is_visible(objLight, L"light")) Alights.Add(objLight);           
-        }
-    }
-    if ( Alights.GetCount() > 0 ) 
-    {
-        for ( int i=0; i < Alights.GetCount(); i++ )
-        {
-            //-
-            X3DObject o(Alights[i]);
-
-            //- light object
-            KinematicState  from_global_kinex_state;
-            CTransformation light_from_global_transf;
-            //- set state for 'point from'
-            from_global_kinex_state = o.GetKinematics().GetGlobal();
-            light_from_global_transf = from_global_kinex_state.GetTransform();
-
-            //- point from
-            CVector3 light_from;
-            light_from.MulByTransformationInPlace(light_from_global_transf);
-
-            //- light object interest. Target object for 'infinite' or 'spot' lights
-            X3DObject light_interest;
-            light_interest = X3DObject(o.GetParent()).GetChildren()[1];
-            //- set state for 'point to'
-            KinematicState  to_global_kinex_state;
-            CTransformation light_to_global_transf;
-            //-
-            to_global_kinex_state = light_interest.GetKinematics().GetGlobal();
-            light_to_global_transf = to_global_kinex_state.GetTransform();
-
-            //- point to
-            CVector3 light_to;
-            light_to.MulByTransformationInPlace(light_to_global_transf);
-
-            //--
-            Shader s((Light(o).GetShaders())[0]);
-            /** Same name for xsi and Lux shaders: 'color'
-            *   if no have any shader, the color is black (0,0,0).
-            */
-            s.GetColorParameterValue(L"color", red, green, blue, alpha);
-
-            //-- finding for light group name
-            CString group_name = o.GetName();
-            //-
-            if ( findInGroup(o.GetName()) != L"")
-            {
-                group_name = findInGroup(o.GetName());
-            }
-            //--
-            int lType = Light(o).GetParameterValue(L"Type");
-
-            //--
-            float vLightCone = o.GetParameterValue(L"LightCone");
-            vIntensity = s.GetParameterValue(L"intensity");
-            float vSpotblend = s.GetParameterValue(L"spread");
-
-            //-- search 'Programmatic Identification (ID)' for Light Shader Nodes
-            Light_Shader_ID =s.GetProgID().Split(L".")[1];
-            //--
-            if ( luxdebug ) app.LogMessage(L"Light shader used: "+ Light_Shader_ID);
-            //-
-            f << "\nLightGroup \""<< group_name.GetAsciiString() <<"\" \n";
-
-            //- for use Image Based Light ( IBL )
-            if ( luxdebug ) app.LogMessage(L"XSI environment finded: "+ find_XSI_env(L""));
+        X3DObject o(sceneLight[i]);
+        //-
+        if ( !is_visible(o, L"light")) continue;
             
-            //-
-            if ( find_XSI_env(L"") != L"" )
-            {
-                CString xsi_env = find_XSI_env(L"");
-                //
-                f << "LightSource \"infinite\"\n";
-                f << "  \"float gain\" [" << vIntensity << "]\n";
-                f << "  \"float importance\" [1.0]\n"; // TODO
-                f << "  \"string mapname\" [\"" << luxsi_replace(xsi_env.GetAsciiString()) << "\"]\n";
-                f << "  \"string mapping\" [\"latlong\"]\n"; // TODO
-                f << "  \"float gamma\" [1.0]\n";
-                f << "  \"integer nsamples\" [1]\n"; // TODO
-            }
-            //-
-            if (lType == 2) //-- spot
-            {
-                //-- values
-                f << "\nLightSource \"spot\"\n";
-                f << "  \"float gain\" ["<< vIntensity <<"]\n";
-                f << "  \"color L\" ["<< red <<"  "<< green <<"  "<< blue <<"]\n";
-                //--
-                f << "  \"point from\" ["<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1] <<"]\n";
-                f << "  \"point to\" ["<< light_to[0] <<" "<< -light_to[2] <<" "<< light_to[1] <<"]\n";
-                f << "  \"float coneangle\" ["<< vLightCone << "]\n";
-                f << "  \"float conedeltaangle\" ["<< vLightCone - vSpotblend <<"]\n";
-            }
-            else if  (lType == 1) //-- infinite
-            {
-                CMatrix4 sunTransMat = o.GetKinematics().GetLocal().GetTransform().GetMatrix4();
-                //-
-                f << "\nLightSource \"sunsky\"\n";
-                f << "  \"integer nsamples\" [4]\n";
-                f << "  \"vector sundir\" [ "<< sunTransMat.GetValue(2,0) <<" "<< -sunTransMat.GetValue(2,2) <<" "<< sunTransMat.GetValue(2,1) << " ]\n";
-                f << "  \"float gain\" ["<< vIntensity <<"]\n";
-                f << "  \"color L\" ["<< red <<"  "<< green <<"  "<< blue <<"]\n";
-            }
-            else // light type 0; point
-            {
-                //-
-                luxsi_point_light( o, s, light_from);
-            }
+        //- light object
+        KinematicState  from_global_kinex_state;
+        CTransformation light_from_global_transf;
+        //- set state for 'point from'
+        from_global_kinex_state = o.GetKinematics().GetGlobal();
+        light_from_global_transf = from_global_kinex_state.GetTransform();
+
+        //- point from
+        CVector3 light_from;
+        light_from.MulByTransformationInPlace(light_from_global_transf);
+
+        //- light object interest. Target object for 'infinite' or 'spot' lights
+        X3DObject light_interest = Light(o).GetInterest();
+            
+        //- set state for 'point to'
+        KinematicState  to_global_state;
+        CTransformation light_to_global_transf;
+        //-
+        to_global_state = light_interest.GetKinematics().GetGlobal();
+        light_to_global_transf = to_global_state.GetTransform();
+
+        //- point to
+        CVector3 light_to;
+        light_to.MulByTransformationInPlace(light_to_global_transf);
+
+        //--
+        Shader s((Light(o).GetShaders())[0]);
+        /** Same name for xsi and Lux shaders: 'color'
+        *   if no have any shader, the color is black (0,0,0).
+        */
+        s.GetColorParameterValue(L"color", red, green, blue, alpha);
+
+        //-- finding for light group name
+        CString group_name = o.GetName();
+        //-
+        if ( findInGroup(o.GetName()) != L"")
+        {
+            group_name = findInGroup(o.GetName());
         }
-    }
-    else
-    {
-        app.LogMessage(L"Any Lights for exporter",siErrorMsg);
-        return 1;
-    }
+        //--
+        int lType = Light(o).GetParameterValue(L"Type");
+
+        //--
+        float vLightCone = o.GetParameterValue(L"LightCone"); // is only for spot light??
+        vIntensity = s.GetParameterValue(L"intensity");
+        float vSpotblend = s.GetParameterValue(L"spread"); // move to spot light??
+
+        //-- search 'Programmatic Identification (ID)' for Light Shader Nodes
+        Light_Shader_ID =s.GetProgID().Split(L".")[1];
+        //--
+        if ( luxdebug ) app.LogMessage(L"Light shader used: "+ Light_Shader_ID);
+        //-
+        f << "\nLightGroup \""<< group_name.GetAsciiString() <<"\" \n";
+
+        //- for use Image Based Light ( IBL )
+        //if ( luxdebug ) app.LogMessage(L"XSI environment finded: "+ find_XSI_env());
+            
+        //-
+        CString xsi_env = find_XSI_env();
+        //-
+        if ( xsi_env != L"" )
+        {
+            f << "LightSource \"infinite\"\n";
+            f << "  \"float gain\" ["<< vIntensity <<"]\n";
+            f << "  \"float importance\" [1.0]\n"; // TODO
+            f << "  \"string mapname\" [\"" << luxsi_replace(xsi_env.GetAsciiString()) <<"\"]\n";
+            f << "  \"string mapping\" [\"latlong\"]\n"; // TODO
+            f << "  \"float gamma\" [1.0]\n";
+            f << "  \"integer nsamples\" [1]\n"; // TODO
+        }
+        //-
+        else if (lType == 2) //-- spot
+        {
+            //-- values
+            f << "\nLightSource \"spot\"\n";
+            f << "  \"float gain\" ["<< vIntensity <<"]\n";
+            f << "  \"color L\" ["<< red <<"  "<< green <<"  "<< blue <<"]\n";
+            //--
+            f << "  \"point from\" ["<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1] <<"]\n";
+            f << "  \"point to\" ["<< light_to[0] <<" "<< -light_to[2] <<" "<< light_to[1] <<"]\n";
+            f << "  \"float coneangle\" ["<< vLightCone << "]\n";
+            f << "  \"float conedeltaangle\" ["<< vLightCone - vSpotblend <<"]\n";
+        }
+        else if  (lType == 1) //-- infinite
+        {
+            CMatrix4 sunTransMat = o.GetKinematics().GetLocal().GetTransform().GetMatrix4();
+            //-
+            f << "\nLightSource \"sunsky\"\n";
+            f << "  \"integer nsamples\" [4]\n";
+            f << "  \"vector sundir\" [ "<< sunTransMat.GetValue(2,0) <<" "<< -sunTransMat.GetValue(2,2) <<" "<< sunTransMat.GetValue(2,1) <<" ]\n";
+            f << "  \"float gain\" ["<< vIntensity <<"]\n";
+            f << "  \"color L\" ["<< red <<"  "<< green <<"  "<< blue <<"]\n";
+        }
+        else // light type 0; point
+        {
+            //-
+            luxsi_point_light( o, s, light_from);
+        }
+    }    
     return 0;
 }
 //--
@@ -279,7 +254,7 @@ void luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
             //-
             bool usesphere = s.GetParameterValue(L"usesphere");
             CString ies_path = s.GetParameterValue(L"iesfile");
-
+            
             if ( !usesphere ) f << "\nLightSource \"point\"\n";
             if ( usesphere ) f << "\nAreaLightSource \"area\"\n";
             //-
@@ -349,11 +324,11 @@ CString luxsi_area_light_transform(X3DObject o, float size_X, float size_Y)
     return aPoints;
 }
 //--
-CString find_XSI_env(CString env_file)
+CString find_XSI_env()
 {
     CString vFile_env = L"";
     //- is need?
-    env_file = L"";
+    //env_file = L"";
 
     /** for search parameters..
     *   CRefArray prop_pass = app.GetActiveProject().GetActiveScene().GetActivePass().GetParameters();
@@ -387,29 +362,22 @@ CString find_XSI_env(CString env_file)
                         ImageClip2 vImgClip(aEnvImg[k]);
                         Source vImgClipSrc(vImgClip.GetSource());
                         //--
-                        vFile_env = vImgClipSrc.GetParameterValue( L"path");
+                        CString env_file = vImgClipSrc.GetParameterValue( L"path");
                         //--
-                        if (vFile_env !=L"")
+                        string::size_type hdr = string(CString(env_file).GetAsciiString()).find( ".hdr", 0 );
+                        string::size_type exr = string(CString(env_file).GetAsciiString()).find( ".exr", 0 );
+                        if ( hdr != string::npos || exr != string::npos )
                         {
-                            string::size_type hdr = string(CString(vFile_env).GetAsciiString()).find( ".hdr", 0 );
-                            string::size_type exr = string(CString(vFile_env).GetAsciiString()).find( ".exr", 0 );
-                            if ( hdr != string::npos || exr != string::npos )
-                            {
-                                env_file = vFile_env;
-                            }
-                            else
-                            {
-                                app.LogMessage(L" Not valid IBL file: "+ vFile_env, siWarningMsg);
-                            }
+                            vFile_env = env_file;
                         }
                         else
                         {
-                            app.LogMessage(L" None file selected for environment", siWarningMsg);
+                            app.LogMessage(L" Not valid IBL file: "+ env_file, siWarningMsg);
                         }
                     }
                 }
             }
         }
     }
-    return env_file;
+    return vFile_env;
 }

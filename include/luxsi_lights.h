@@ -83,8 +83,11 @@ CString luxsi_area_light_transform(X3DObject o, float in_sizeX, float in_sizeY);
 
 /* Search IBL and HDRI files used
 */
-CString find_XSI_env(CString env_file);
+CString find_XSI_env();
 
 /* Write specific 'point light' type
 */
 void luxsi_point_light(X3DObject in_obj, Shader in_shader, CVector3 in_vector);
+/**/
+CRefArray sceneLight, Alights;
+    
