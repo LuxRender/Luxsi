@@ -28,23 +28,49 @@ using namespace std;
 using namespace XSI;
 using namespace MATH;
 
+/**/
 extern Application app;
-
+/**/
 extern double ftime;
-
+/**/
+extern bool luxdebug;
 /**/
 extern Model root;
-
+/**/
+extern bool overrGeometry;
 /**/
 extern CString writeModel(X3DObject in_object);
+/**/
+extern CString writeLuxsiObj(X3DObject in_object);
 
-
+//-
+CString instantiateHair(CFloatArray posVals, CString objName, long jump)
+{
+    CString hairData;
+    //-
+    for(int j = 0; j < posVals.GetCount(); j += jump)
+    {
+        /* Use 'jump' for moved each object instanced to 'root' hair position
+        */
+        hairData += L"\nAttributeBegin # "+ objName;  
+        hairData += L"\nTransformBegin\n";                 
+        hairData += L"Translate "
+            + CString(posVals[j]) + L" "
+            + CString(-posVals[j+2]) + L" "
+            + CString(posVals[j+1]) + L"\n";   
+        //-
+        hairData += L"ObjectInstance \""+ objName + L"\"\n";
+        hairData += L"TransformEnd\n";
+        hairData += L"AttributeEnd\n";
+    }
+    return hairData;
+}
 //--
 CString writeLuxsiHair(X3DObject o)
 {
     //--
     CString hairData;
-    CVector3 hair_pos; 
+   
     Material m = o.GetMaterial();
     //-
     HairPrimitive myHairPrim( o.GetActivePrimitive());
@@ -52,23 +78,23 @@ CString writeLuxsiHair(X3DObject o)
     KinematicState  global_state = o.GetKinematics().GetGlobal();
     CTransformation global_trans = global_state.GetTransform(ftime);        
     /**
-    *   Use 'RenderPercentage' value for 'requesthaircount' ( is float, change to integer ?)
+    *   Use 'RenderPercentage' value for 'requesthaircount' ( is float, change to integer ?)\n
     *   Use 'TotalHairs' for 'chunksize.
     */
     int percentaje = o.GetParameterValue(L"RenderPercentage");
     int totalHairs = o.GetParameterValue(L"TotalHairs");
     LONG request = (totalHairs /100) * percentaje;
     /**
-    *   Notes: XSI generate... 
-    *   1 vector xyz por each 'hair root'.
-    *   1 vector xyz for each 'hair section'.
+    *   Notes: XSI generate...                      \n 
+    *   1 vector xyz por each 'hair root'.          \n
+    *   1 vector xyz for each 'hair section'.       \n
     *   1 float for each radius of 'hair section'.
     */
     int segment = o.GetParameterValue(L"Segments");
-    app.LogMessage(L"Segments: "+ CString(segment));
+    if (luxdebug) app.LogMessage(L"Segments: "+ CString(segment));
     //
     long jump = (segment + 1)*3;
-    app.LogMessage(L"Jump: "+ CString(jump));
+    if (luxdebug) app.LogMessage(L"Jump: "+ CString(jump));
                         
     //-
     bool is_instanced = o.GetParameterValue(L"InstanceEnabled");
@@ -76,24 +102,21 @@ CString writeLuxsiHair(X3DObject o)
     CRenderHairAccessor rha;
     rha = myHairPrim.GetRenderHairAccessor(request); 
     LONG nReqChunkSize = rha.GetRequestedChunkSize();
-    app.LogMessage( L"nReqChunkSize: " + CValue(nReqChunkSize).GetAsText() );
+    if (luxdebug) app.LogMessage( L"nReqChunkSize: " + CValue(nReqChunkSize).GetAsText() );
 
     LONG nReqHairCount = rha.GetRequestedHairCount();
-    app.LogMessage( L"nReqHairCount: " + CValue(nReqHairCount).GetAsText() );
+    if (luxdebug) app.LogMessage( L"nReqHairCount: " + CValue(nReqHairCount).GetAsText() );
 
-    LONG nUVs = rha.GetUVCount();
-    app.LogMessage( L"nUVs: " + CValue(nUVs).GetAsText() ); 
+    //LONG nUVs = rha.GetUVCount();
+    //if (luxdebug) app.LogMessage( L"nUVs: " + CValue(nUVs).GetAsText() ); 
    
     // get the values in chunks
-    LONG nChunk = 0;
-    LONG i=0;
     while( rha.Next() )
     {
-        app.LogMessage( L"Chunk: " + CValue(nChunk++).GetAsText() );
         /**
-        *   Get the number of vertices for each render hair
-        *    note: this array is used for iterating over the render hair position
-        *    and radius values
+        *   Get the number of vertices for each render hair \n
+        *   note: this array is used for iterating over the render hair position \n
+        *   and radius values
         */
         CLongArray verticesCountArray;
         rha.GetVerticesCount(verticesCountArray);
@@ -101,8 +124,6 @@ CString writeLuxsiHair(X3DObject o)
         // get the render hair positions
         CFloatArray posVals;
         rha.GetVertexPositions(posVals);
-
-        LONG k = 0;
         //-
         if ( !is_instanced )
         {
@@ -119,72 +140,71 @@ CString writeLuxsiHair(X3DObject o)
             hairData += L"AttributeEnd \n";
             //-
             hairData += L"\nObjectEnd \n";
-
-            //- instantiate object to each 'hair root'
+            
+            //- instantiate object to each 'hair segment'
             for(int j = 0; j < posVals.GetCount(); j +=3)
             {
-                //- get all points
                 hairData += L"\nAttributeBegin \n";
-                //-
-                hairData += L"TransformBegin\n";                 
+                hairData += L"TransformBegin\n";
                 hairData += L"Translate "
                     + CString(posVals[j])   + L" "
                     + CString(-posVals[j+2])+ L" "
                     + CString(posVals[j+1]) + L"\n";
-                //-
                 hairData += L"ObjectInstance \""+ o.GetName() + L"\"\n";
                 hairData += L"TransformEnd\n";
                 hairData += L"AttributeEnd #"+ o.GetName() + L"\n"; 
             }
         }
-        else
+        else //-- use instanced object
         {
-            //-- use instanced object
-            CString memberName;
-            X3DObject objInstance;
-            CRefArray gMembers;
+            X3DObject objInstance;            
             //--
             CRefArray grps = root.GetGroups();
             //-
             for (int i=0; i < grps.GetCount(); i++)
             {
-                app.LogMessage(L"Group name: "+ Group(grps[i]).GetName());
-                //-
-                gMembers = Group(grps[i]).GetMembers();
-                //-
-                for (int j = 0; j < gMembers.GetCount(); j++)
-                {
-                    objInstance = gMembers[j];
-                    memberName = objInstance.GetName();
-                    //--
-                    app.LogMessage(L"Member object name: "+ memberName);
-                }           
-            }            
-            //-
-            if (!memberName.IsEmpty())
-            {
-                /** */
-                hairData += writeModel(objInstance);
-                //-
-                for(int j = 0; j < posVals.GetCount(); j += jump)
-                {
-                    /* Use 'jump' for moved each object instanced to 'root' hair position
-                    */
-                    hairData += L"\nAttributeBegin # "+ o.GetName();  
-                    hairData += L"\nTransformBegin\n";                 
-                    hairData += L"Translate "
-                        + CString(posVals[j]) + L" "
-                        + CString(-posVals[j+2]) + L" "
-                        + CString(posVals[j+1]) + L"\n";   
+                if (luxdebug) app.LogMessage(L"Group name: "+ Group(grps[i]).GetName());
+                CString gName = Group(grps[i]).GetName();
+                //
+                string::size_type gpname = string(CString(gName).GetAsciiString()).find( "HAIR", 0 );
+                //--
+                if ( gpname != string::npos )
+                {               
+                    CRefArray groupMembers = Group(grps[i]).GetMembers();
                     //-
-                    hairData += L"ObjectInstance \""+ objInstance.GetName() + L"\"\n";
-                    hairData += L"TransformEnd\n";
-                    hairData += L"AttributeEnd\n";
+                    for (int j = 0; j < groupMembers.GetCount(); j++)
+                    {
+                        objInstance = groupMembers[j];
+                        CString oName = objInstance.GetName();
+                        //-
+                        if ( objInstance.GetType() == L"polymsh" ) 
+                        {
+                            overrGeometry = true;
+                            //-
+                            hairData += L"\nObjectBegin \""+ oName + L"\"\n";
+                            hairData += writeLuxsiObj(objInstance);
+                            hairData += L"\nObjectEnd # "+ oName + L"\n";
+                            //-
+                            overrGeometry = false;
+                            //-
+                            hairData += instantiateHair(posVals, oName, jump);                        
+                        }
+                        else if ( objInstance.GetType() == L"#model" ) 
+                        {
+                            hairData += writeModel(objInstance);
+                            //-
+                            hairData += instantiateHair(posVals, oName, jump);
+                        }
+                        else 
+                        {
+                            app.LogMessage(L"Object type not valid for hair instances", siErrorMsg);
+                        }
+                    }
                 }
-            }
-            else
-            {
-                app.LogMessage(L"Not object instanced", siErrorMsg);
+                else
+                {
+                    app.LogMessage(L"Not Group object with 'HAIR' string in your name", siErrorMsg);
+                }
             }
         }           
     }
