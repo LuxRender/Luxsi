@@ -746,7 +746,7 @@ XSIPLUGINCALLBACK CStatus OnLuXSI_MenuClicked( XSI::CRef& )
     addpropArgs[0] = L"LuXSI"; // Type of Property
     addpropArgs[3] = L"LuXSI"; // Name for the Property
     addpropArgs[1] = L"Scene_Root";
-    bool vAlreadyThere=false;
+    bool vAlreadyThere = false;
     CValue retVal ;
     CStatus st;
 
@@ -1301,94 +1301,6 @@ void writeLuxsiCam(X3DObject o){
     }
 }
 
-//-- work in progress
-CString writeLuxsiSurface(X3DObject o)
-{
-    //-- WIP: lack a lots of updates..
-    //- or use other methode (like Yafxsi :)
-    CString surfaceData;
-
-    Geometry g(o.GetActivePrimitive().GetGeometry(ftime)) ; // add time
-    CRefArray mats(o.GetMaterials()); // Array of all materials of the object
-    Material m = mats[0];
-    CRefArray shad(m.GetShaders()); // Array of all shaders attached to the material [e.g. phong]
-    Shader s(shad[0]);
-    //--
-    KinematicState  gs = o.GetKinematics().GetLocal(); 
-    CTransformation gt = gs.GetTransform(ftime); // add time
-    
-	//--
-    float vradius = o.GetParameterValue(L"radius");
-	//-	 
-    float start_u = o.GetParameterValue(L"startuangle");
-    float end_u = o.GetParameterValue(L"enduangle");
-	//
-	CVector3 axis(0.0f, 0.0f, 0.0f);
-	float vphimax = 360;
-	float rotar = 0.0;
-	//-
-	// el objeto a dibujar es la diferencia entre el mayor y el menor valor
-	if (start_u > end_u)
-	{
-		if (start_u == 180)
-		{
-			vphimax = start_u + end_u;
-		}
-		else //if (start_u != 180)
-		{
-			vphimax = (360 - start_u) + end_u;
-			rotar = end_u - start_u; // result negative
-			axis.Set(0,0,1);
-		}
-	}
-	else
-	{
-		vphimax = end_u - start_u;
-		rotar = -vphimax;
-		axis.Set(0,0,1);
-	}
-    //surfaceData.Clear();
-    //-
-    surfaceData = L"\nAttributeBegin\n";
-    //CVector3 axis;
-    //double rot = gt.GetRotationAxisAngle(axis);
-    //-- TODO; changed for matrix
-    surfaceData += L"\nTransformBegin\n";
-    surfaceData += L"\nTranslate "
-        + CString( gt.GetPosX() ) + L" "
-        + CString( gt.GetPosY() ) + L" "
-        + CString( gt.GetPosZ()) + L"\n";
-    //-
-    if (rotar != 0)
-    {
-        surfaceData += L"Rotate "
-            + CString( rotar )/*(rot*180/PI)*/ + L" "
-            + CString( axis[0]) + L" "
-            + CString( axis[1]) + L" "
-            + CString( axis[2]) + L"\n";
-    }
-    if (gt.GetSclX()!=1 || gt.GetSclY()!=1 || gt.GetSclZ()!=1) 
-    {
-        surfaceData += L"Scale "
-            + CString( gt.GetSclX() ) + L" "
-            + CString( gt.GetSclY() ) + L" "
-            + CString( gt.GetSclZ() ) + L"\n";
-    }    
-	//-
-    float end_v = o.GetParameterValue(L"endvangle");
-	float start_v = o.GetParameterValue(L"startvangle");	
-    //--
-    surfaceData += L" Shape  \"sphere\" \n";
-    surfaceData += L"  \"float radius\" ["+ CString( vradius ) + L"]\n";
-    surfaceData += L"  \"float zmin\" [ -90 ]\n";
-    surfaceData += L"  \"float zmax\" [ 90 ]\n";
-    surfaceData += L"  \"float phimax\" ["+ CString( vphimax ) + L"]\n";
-    //--
-    surfaceData += L"TransformEnd\n";
-    surfaceData += L"\nAttributeEnd\n";
-    //--
-    return surfaceData;
-}
 //--
 CString write_header_files()
 {
@@ -1462,7 +1374,7 @@ void sceneCollectionsObjects()
     aCam.Clear();
     aSurfaces.Clear();
     aClouds.Clear();
-    aInstance.Clear();
+    aModels.Clear();
     aHair.Clear();
 
     //- cleaned global CStringArray  for instance list.
@@ -1507,7 +1419,7 @@ void sceneCollectionsObjects()
         }
         else if (o.GetType()==L"#model")
         {
-            if ( is_visible(o, L"polymsh"))     aInstance.Add(o);                
+            if ( is_visible(o, L"polymsh"))     aModels.Add(o);                
         }
         else
         {
@@ -1518,8 +1430,9 @@ void sceneCollectionsObjects()
 //--
 void writeLuxsiScene(double ftime)
 {
-    // write objects, materials, lights, cameras
-    if (vFileExport != L"")
+    /*! write objects, materials, lights, cameras
+    */
+    if (!vFileExport.IsEmpty())
     {
         /* Add collections objects
         */
@@ -1564,7 +1477,7 @@ void writeLuxsiScene(double ftime)
                 if ( luxdebug ) app.LogMessage(L"OUT Filename: "+ inc_LXQ );
             }//--------------------------------------------------------------------------//
 
-            /** Setup name and extension for include files inside .lxs file.
+            /*! brief\ Setup name and extension for include files inside .lxs file.
             *   luxsi_normalize_path() return filename + framenumber if exist,
             *   but not include the extension.
             */
@@ -1668,9 +1581,9 @@ void writeLuxsiScene(double ftime)
             }
             //-- instance data
             CString instanceData;
-            if (aInstance.GetCount() >0)
+            if (aModels.GetCount() >0)
             {
-                instanceData += writeLuxsiInstance(aInstance);
+                instanceData += writeLuxsiInstance(aModels);
             }
             //--
             CString pointCloudData;
@@ -1688,7 +1601,7 @@ void writeLuxsiScene(double ftime)
                 if (pb.IsCancelPressed() ) break;
                 pb.Increment();
             }
-            /* test for hair object */
+            /* hair object */
             CString hairData;
             for ( int i = 0; i < aHair.GetCount(); i++)
             {
@@ -1696,12 +1609,14 @@ void writeLuxsiScene(double ftime)
                 if (pb.IsCancelPressed() ) break;
                 pb.Increment();
             }
-            //app.LogMessage(hairData);
-
+            
             //- ready for write --------------------------------------------#
             if ( luxdebug ) app.LogMessage(L"[DEBUG]: Open file for geometry: "+ vFileLXO);
 
-            //- open geometry file..
+            /**
+            *   Open geometry file..
+            *   Add 'empty' check for non frequenty objects..
+            */
             f.open(vFileLXO.GetAsciiString()); 
 
             //-- ..insert header
@@ -1709,18 +1624,24 @@ void writeLuxsiScene(double ftime)
 
             //-- ..add polymesh
             f << geometryData.GetAsciiString();
-
-            //-- ..add surfaces
-            f << surfaceData.GetAsciiString();
             
+            //-- ..add surfaces
+            if ( !surfaceData.IsEmpty() )
+            {
+                f << surfaceData.GetAsciiString();
+            }
             //-- ..add pointclouds
-            f << pointCloudData.GetAsciiString();
-
+            if ( !pointCloudData.IsEmpty() )
+            {
+                f << pointCloudData.GetAsciiString();
+            }
             //-- ..add instances
-            f << instanceData.GetAsciiString();
-
+            if ( !instanceData.IsEmpty() )
+            {
+                f << instanceData.GetAsciiString();
+            }
             //-- ..add Hair ( add test for empty )
-            if (!hairData.IsEmpty())
+            if ( !hairData.IsEmpty() )
             {
                 f << hairData.GetAsciiString();
             }

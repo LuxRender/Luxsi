@@ -35,12 +35,12 @@ using namespace std;
 
 #define PI 3.14159265
 
-/** CString containers 
-*   vFileLxs        //- lxs file name
-*   vFileQueue      //- lxq file name
-*   luxsiShaderData //- shader data
-*   queue_list      //- queue list data
-*   vblxs_file      //- name of reload .lxs file
+/** CString containers \n
+*   vFileLxs            lxs file name       \n
+*   vFileQueue          lxq file name       \n
+*   luxsiShaderData     shader data         \n
+*   queue_list          queue list data     \n
+*   vblxs_file          reload .lxs file    \n
 */
 CString vFileLxs, vFileQueue, luxsiShaderData, queue_list, vblxs_file, vmatPreview;
 
@@ -54,6 +54,7 @@ bool overrGeometry = false;
 
 /* Export Material Preview definition.*/
 CString vluxMatExport;
+
 /* Time 
 */
 double ftime = DBL_MAX;
@@ -140,18 +141,21 @@ extern bool is_visible(X3DObject o, CString objType);
 extern CString writeLuxsiHair(X3DObject o);
 
 /**/
+extern CString writeLuxsiSurface(X3DObject o);
+
+/**/
 std::map<CString, int> int_values;
 
 /**
-* Array references for scene elements..
-* itemsArray  //- array for all scene items
-* aObj        //- for objects( polygon mesh )
-* aCam        //- for cams ( only export active camera ? )
-* aSurfaces   //- for 'surface' primitives
-* aClouds     //- for 'pointclouds' objects
-* aInstance   //- for instance objects
-* aHair       //- for hair
+* Array references for scene elements..     \n
+* itemsArray    array for all scene items   \n
+* aObj          for objects( polygon mesh ) \n
+* aCam          for camera                  \n
+* aSurfaces     for 'surface' primitives    \n
+* aClouds       for 'pointclouds' objects   \n
+* aModels       for model objects           \n
+* aHair         for hair
 */
-CRefArray itemsArray, aObj, aCam, aSurfaces, aClouds, aInstance, aHair;
+CRefArray itemsArray, aObj, aCam, aSurfaces, aClouds, aModels, aHair;
 
 #endif //LUXSI_H
