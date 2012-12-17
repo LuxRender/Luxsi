@@ -24,7 +24,7 @@ along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef LUXSI_INSTANCES_H
 #define LUXSI_INSTANCES_H
 
-#include "include\luxsi_main.h"
+#include "luxsi_main.h"
 
 //-
 using namespace XSI;
@@ -54,5 +54,8 @@ extern CString luxsiTransformMatrix(X3DObject o);
 
 /**/
 extern CString luxsiTransformClasic(X3DObject o, CString pivotReference);
+
+/**/
+extern bool overrGeometry;
 
 #endif //LUXSI_INSTANCES_H

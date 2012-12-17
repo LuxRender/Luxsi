@@ -29,20 +29,12 @@ CString writeInstances(X3DObject oInstance)
     CString instancesData;
     //-
     Model vModel = Model(oInstance).GetInstanceMaster();
-
-    //---------------------------------------------
+    //--
     instancesData += L"\nAttributeBegin # "+ vModel.GetName();    
-    //
+    //-
     instancesData += L"\nTransformBegin\n";
-    /** 
-    *   Result from testing:
-    *   The better order for transform is; Translate, Rotate and finally Scale.
-    *   Usinng this method. Is more precise to matrix.. atm.
-    */
     instancesData += luxsiTransformClasic(oInstance, L"global");    
-    //-
     instancesData += L"ObjectInstance \""+ vModel.GetName() + L"\"\n";
-    //-
     instancesData += L"TransformEnd\n";
     //-
     instancesData += L"AttributeEnd\n";
@@ -58,6 +50,8 @@ CString writeModel(X3DObject oModel)
     //-
     if ( !luxsi_find(aInstanceList, oModel.GetName() ) ) 
     {
+        //- turn ON overrGeometry for not re-write geometry file in HD
+        overrGeometry = true;
         //-
         modelData = L"\nObjectBegin \""+ oModel.GetName() + L"\"\n";
         //-
@@ -65,22 +59,20 @@ CString writeModel(X3DObject oModel)
         {
             modelData += writeLuxsiObj(childModel[i]);
         }
-        //- 
         modelData += L"\nObjectEnd # "+ oModel.GetName() + L"\n";
+        //- reset..
+        overrGeometry = false;
         //-
-        aInstanceList.Add(oModel.GetName());// is correct?
+        aInstanceList.Add(oModel.GetName());
     }   
-    //
     return modelData;
 }
 //-
 CString writeLuxsiInstance(CRefArray models)
 {
-    //--------------------
-    // status: in progress
-    //--------------------
-    //-- instance
+    //--
     CString instanceData;
+    //-
     for ( int i=0; i < models.GetCount(); i++ )
     {
         X3DObject obj(models[i]);
