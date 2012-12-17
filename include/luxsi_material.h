@@ -127,14 +127,13 @@ CString write_lux_matte(Shader in_shader, CString in_string);
 CString write_lux_glossy(Shader in_shader);
 
 /** Helper for search color of texture connect to each node port
-* @function mat_value,
-* @param in_shader,      //- specific Shader Class
-* @param in_texture,     //- Lux texture component ( Kd, Ks, Kr...)
-* @param in_shader_port  //- Nodeport name ( diffuse, specular, Kd,,)
+* @param in_shader      Specific XSI::Shader Class
+* @param in_texture     LuxRender texture component ( Kd, Ks, Kr...)
+* @param in_shader_port Nodeport name ( diffuse, specular, Kd,,)
 */
 CString mat_value( Shader in_shader, CString in_texture, CString in_shader_port);
 
-/*Helpers for material definitions 
+/** Helpers for material definitions 
 */
 extern CString floatToString(Shader s, CString in_item, CString in_definition);
 

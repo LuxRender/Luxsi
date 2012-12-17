@@ -242,21 +242,25 @@ CString luxsi_normalize_path(CString vFile)
 //-
 CString luxsiTransformMatrix(X3DObject o, CString pivotReference)
 {
-    /** Status
+    /** 
+    *   Status:
     *   Work in progress
     */
-    /*
-    (sx ) (0,1) (0,2) (0,3) 
-    (1,0) (sy ) (1,2) (1,3)
-    (2,0) (2,1) (sz ) (2,3)
-    ( tx) ( ty) ( tz) (3,3)
+    /**
+        Use objecState variable for expand function.\n
+        Now, I can change to local or global pivot for transform.\n
+        @param o class XSI::X3DObject
+        @param pivotReference Global or Local reference for transform pivot
 
-    Si la scala es igual a x=(0,0) y=(1,1) z=(2,2) y luxsi necesita x -z y
-    hay que poner esto= (0,0) -(2,2) (1,1)
-    seguir siempre la norma de x -y z en todas las tranformaciones.
+        \code
+        KinematicState objectState;
+        // by default, use global pivot
+        objectState = o.GetKinematics().GetGlobal();
+        if (pivotReference == L"local") objectState = o.GetKinematics().GetLocal();
 
+        CTransformation goTransform = objectState.GetTransform(ftime);
+        \endcode
     */
-    //--
     CString transfData;
     KinematicState objectState;
     //-
@@ -267,7 +271,6 @@ CString luxsiTransformMatrix(X3DObject o, CString pivotReference)
 
     //-
     CMatrix4 mTransf = goTransform.GetMatrix4();
-    //iTrans = o.GetKinematics().GetGlobal().GetTransform(ftime).GetMatrix4();
     /**/
     transfData = CString(mTransf.GetValue(0,0)) + L" " // 0,0 -> scale X
         + CString(-mTransf.GetValue(0,2))    + L" "
@@ -292,7 +295,14 @@ CString luxsiTransformMatrix(X3DObject o, CString pivotReference)
 //--
 CString luxsiTransformClasic(X3DObject o, CString pivotReference)
 {
-    //-
+    /*!
+    *   Result from testing... \n
+    *   The better order for transform is; \n 
+    *   - Translate \n    
+    *   - Rotate    \n
+    *   - Scale     \n
+    *   Using this method. Is more precise to matrix.. atm.
+    */
     CString transformData;
     KinematicState objectState;
 
