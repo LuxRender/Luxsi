@@ -35,6 +35,18 @@ using namespace std;
 long vertCount;
 long triCount;
 
+/**
+*   CString containers for geometry     \n 
+*   vUV             for UV data         \n
+*   vNormals        for normals data    \n
+*   vTris           for faces           \n
+*   vPoints         for point poditions \n
+*   lxoGeometry     lxo format geometry \n
+*   lxoData \n         
+*   plyData 
+*/
+CString vUV, vNormals, vTris, vPoints, lxoGeometry, lxoData, plyData;
+
 /**/
 bool have_UV = false;
 

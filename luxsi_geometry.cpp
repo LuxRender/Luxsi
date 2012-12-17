@@ -213,11 +213,16 @@ CString writeGeometryPLY(
 CString writeLuxsiObj(X3DObject o)
 {
     // Writes objects
+    vUV.Clear();
+    vNormals.Clear();
+    vTris.Clear();
+    vPoints.Clear();
+    lxoGeometry.Clear();
+    lxoData.Clear();
+    plyData.Clear();
     //
-    bool vIsMeshLight=false;
     bool vText = false, vIsSubD = false;
-    long vertCount; //(allPoints.GetCount());
-    long triCount;  //(g.GetTriangles().GetCount());
+    long vertCount, triCount;
 
     Geometry g(o.GetActivePrimitive().GetGeometry(ftime));
 
@@ -235,17 +240,10 @@ CString writeLuxsiObj(X3DObject o)
     CRefArray vtexture(s.GetShaders());
     Texture tex(vtexture[0]);
     CString vTexID(tex.GetProgID().Split(L".")[1]);
-    if (vTexID == L"txt2d-image-explicit" || vTexID == L"Softimage.txt2d-image-explicit.1") vText = true;
+    if (vTexID == L"txt2d-image-explicit") vText = true;
 
     CGeometryAccessor ga;
-    CString 
-        vUV = L"",      //- for UV data
-        vNormals = L"", //- for normals data
-        vTris = L"",    //- for faces
-        vPoints = L"",  //- for point poditions
-        lxoGeometry,
-        lxoData, 
-        plyData;
+    
     //-
     LONG subdLevel = 0;
     Property geopr = o.GetProperties().GetItem(L"Geometry Approximation");
@@ -312,13 +310,6 @@ CString writeLuxsiObj(X3DObject o)
         }
         //--
         lxoData = L"\nAttributeBegin #"+ o.GetName();
-
-        /** Tes for use matrix transformations
-        *   change for MulByTransformationInPlace ----
-        *   CString transfMatrix = luxsiTransformMatrix(o);    
-        *   lxoData += L"\nTransform ["+ transfMatrix + L"]\n";
-        */
-
         lxoData += L"\nNamedMaterial \""+ m.GetName() + L"\"\n";
 
         /** Geometry associated to lights.
@@ -330,12 +321,6 @@ CString writeLuxsiObj(X3DObject o)
         string::size_type loc = string( CString( o.GetName()).GetAsciiString()).find( "PORTAL", 0 );
         if (loc != string::npos) vIsPortal = true;
 
-        /** Meshlight. 
-        *   Always, reset before asign.
-        */
-        vIsMeshLight = false;
-        /* Use material */
-        if ( vMatID == L"lux_emitter_mat" ) vIsMeshLight = true;
         //- mesh..
         CString type_mesh = L"mesh";
         if ( vplymesh ) type_mesh = L"plymesh";
@@ -344,7 +329,7 @@ CString writeLuxsiObj(X3DObject o)
         if ( vIsPortal ) type_shape = L"PortalShape";
 
         //-----------------
-        if ( vIsMeshLight )
+        if ( vMatID == L"lux_emitter_mat" )
         //-----------------
         {
             //--
@@ -383,8 +368,7 @@ CString writeLuxsiObj(X3DObject o)
         //--------------
         if ( !vplymesh )
         //--------------
-        {
-            
+        {            
             lxoData += L"  \"string acceltype\" [\""+ CString( MtAccel[vAccel] ) + L"\"]\n";
             lxoData += L"  \"string tritype\" [\"auto\"] \n";//TODO
             //-
@@ -412,9 +396,9 @@ CString writeLuxsiObj(X3DObject o)
         }
         else
         {
-            /** make link to .ply file
-            *   The vFileGeo value = full path + filename + framenumber + LXS extension. 
-            *   luxsi_normalize_path(), returns alone the filename with the framenumber.
+            /** Make link to .ply file \n
+            *   The vFileGeo value = full path + filename + framenumber + LXS extension. \n 
+            *   luxsi_normalize_path(), returns alone the filename with the framenumber. \n
             *   Here we add the name of the object and the expension PLY.
             */
             CString ply_ext = L"_"+ o.GetName() + L".ply";
@@ -483,10 +467,8 @@ void write_plyFile(CString plyGeometryData, CString vfile, int vertCount, int tr
     f << "property list uchar uint vertex_indices\n";
     f << "end_header\n";
 
-    //-- vertex, normals and UV, if exist
+    //-- write all geometry data
     f << plyGeometryData.GetAsciiString();
-    //-- faces
-    //f << in_faceData.GetAsciiString();
     //->
     f.close();
     //--
