@@ -373,3 +373,8 @@ CString integerToString(Shader s, CString item)
     //-
     return strData;            
 }
+float floatValue(Shader s, CString item)
+{
+    return float(s.GetParameterValue(item));
+}
+//-

@@ -43,6 +43,33 @@ extern CString writeModel(X3DObject in_object);
 /**/
 extern CString writeLuxsiObj(X3DObject in_object);
 
+/**/
+CString luxNativeHair(X3DObject o, CFloatArray posVals)
+{
+    Material m = o.GetMaterial();
+    CString hairData;
+    
+    //- write object 'base'
+    hairData = L"\nObjectBegin \""+ o.GetName() + L"\"\n";
+    //-
+    hairData += L"NamedMaterial \""+ m.GetName() + L"\"\n";
+    hairData += L"Shape \"sphere\"\n";
+    hairData += L"  \"float radius\" [ 0.2 ]\n";
+    hairData += L"\nObjectEnd \n";
+      
+    //- instantiate object to each 'hair segment'
+    for(int j = 0; j < posVals.GetCount(); j +=3)
+    {
+        hairData += L"\nAttributeBegin \n";
+        hairData += L"Translate "
+            + CString(posVals[j])   + L" "
+            + CString(-posVals[j+2])+ L" "
+            + CString(posVals[j+1]) + L"\n";
+        hairData += L"ObjectInstance \""+ o.GetName() + L"\"\n";
+        hairData += L"AttributeEnd #"+ o.GetName() + L"\n"; 
+    }
+    return hairData;
+}
 //-
 CString instantiateHair(CFloatArray posVals, CString objName, long jump)
 {
@@ -107,20 +134,9 @@ CString writeLuxsiHair(X3DObject o)
     LONG nReqHairCount = rha.GetRequestedHairCount();
     if (luxdebug) app.LogMessage( L"nReqHairCount: " + CValue(nReqHairCount).GetAsText() );
 
-    //LONG nUVs = rha.GetUVCount();
-    //if (luxdebug) app.LogMessage( L"nUVs: " + CValue(nUVs).GetAsText() ); 
-   
-    // get the values in chunks
+    // get the values
     while( rha.Next() )
     {
-        /**
-        *   Get the number of vertices for each render hair \n
-        *   note: this array is used for iterating over the render hair position \n
-        *   and radius values
-        */
-        CLongArray verticesCountArray;
-        rha.GetVerticesCount(verticesCountArray);
-
         // get the render hair positions
         CFloatArray posVals;
         rha.GetVertexPositions(posVals);
@@ -129,31 +145,24 @@ CString writeLuxsiHair(X3DObject o)
         {
             //- write object 'base'
             hairData = L"\nObjectBegin \""+ o.GetName() + L"\"\n";
-            //-
-            hairData += L"\nAttributeBegin \n";
-            hairData += L"NamedMaterial \""+ m.GetName() + L"\"\n";
             hairData += L"Shape \"sphere\"\n";
-            hairData += L"  \"float radius\" [ 0.2 ]\n";
-            hairData += L"  \"float zmin\" [ -90 ]\n";
-            hairData += L"  \"float zmax\" [ 90 ]\n";
-            hairData += L"  \"float phimax\" [360]\n";
-            hairData += L"AttributeEnd \n";
-            //-
+            hairData += L"  \"float radius\" [ 0.02 ]\n";
             hairData += L"\nObjectEnd \n";
             
             //- instantiate object to each 'hair segment'
             for(int j = 0; j < posVals.GetCount(); j +=3)
             {
                 hairData += L"\nAttributeBegin \n";
-                hairData += L"TransformBegin\n";
                 hairData += L"Translate "
                     + CString(posVals[j])   + L" "
                     + CString(-posVals[j+2])+ L" "
                     + CString(posVals[j+1]) + L"\n";
+                //-
+                hairData += L"NamedMaterial \""+ m.GetName() + L"\"\n";
                 hairData += L"ObjectInstance \""+ o.GetName() + L"\"\n";
-                hairData += L"TransformEnd\n";
                 hairData += L"AttributeEnd #"+ o.GetName() + L"\n"; 
             }
+            
         }
         else //-- use instanced object
         {

@@ -63,20 +63,44 @@ master_color_map = {
 		'velvet': 'Kd',
 	}
 */
+
+//- Search materials library.
+CRefArray sceneCollectionMaterials()
+{
+    //- clear Arrays..
+    sceneMatLibraries.Clear();
+    aMats.Clear();
+    //-
+    Scene scene = app.GetActiveProject().GetActiveScene();
+    sceneMatLibraries = scene.GetMaterialLibraries();
+
+    //- Acces to all material libraries into a scene;
+    for (long lib = 0; lib < sceneMatLibraries.GetCount(); lib++)
+    {
+        Library matLibrary(sceneMatLibraries[lib]);
+        materialLibs  = matLibrary.GetItems();
+        //-
+        for ( long ml = 0; ml < materialLibs.GetCount(); ml++)
+        {
+            Material libMat(materialLibs[ml]);
+            aMats.Add(libMat);
+        }
+    }
+    return aMats;
+}
 //-
 CString writeLuxsiShader()
 {
+    //- create all Materials Collection.
+    CRefArray sceneMats = sceneCollectionMaterials();
+
     //-first of all..
     aMatList.Clear();
     //- clear data
     materialData.Clear();
 
-    //- Search materials library.
-    Scene scene = app.GetActiveProject().GetActiveScene();
-    Library matlib = scene.GetActiveMaterialLibrary();
-    CRefArray materials = matlib.GetItems();
     //-
-    for ( LONG i=0; i < materials.GetCount(); i++ )
+    for ( LONG i=0; i < sceneMats.GetCount(); i++ )
     {
         //- clear shader containers..
         shaderStr.Clear();
@@ -85,7 +109,7 @@ CString writeLuxsiShader()
         shaderType.Clear();
 
         //------------------
-        mat = materials[i];
+        mat = sceneMats[i];
 
         /* Write only materials in use.
         */
@@ -300,7 +324,8 @@ CString writeLuxsiShader()
                 shaderType = L"matte";
                 vIsSet = true;
             }
-            /*else if (vMatID == L"XSINormalMap2")
+            /*
+            else if (vMatID == L"XSINormalMap2")
             {
                 //--
                 app.LogMessage(L"XSINormalMap2 node connected. Write texture 'normalmap'");
@@ -309,89 +334,7 @@ CString writeLuxsiShader()
             {
                 app.LogMessage(L"'sib_zbump'(Bumpmap) node connected. Write texture 'bumpmap'");
             }
-
-             //-- if any vMatID is defined......
-            else if (!vIsSet)
-            {
-                if (s.GetParameterValue(L"refract_inuse")=="-1")
-                {
-                    //check if material is transparent: phong/lamber/blin/constant/cooktorrance/strauss
-                    float ior=0.0f;
-                    s.GetColorParameterValue(L"transparency",red,green,blue,alpha );
-                    if (red>0 || green>0 || blue>0)
-                    {
-                        shaderType=L"glass";
-                        shaderStr += L"  \"color Kt\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-                        s.GetColorParameterValue(L"reflectivity",sp_red,sp_green,sp_blue,sp_alpha );
-                        shaderStr += L"  \"color Kr\" [" + CString(sp_red) + L" "  + CString(sp_green) +  L" "  + CString(sp_blue) + L"]\n";
-                        shaderStr += L"  \"float index\" [" + CString((float)s.GetParameterValue(L"index_of_refraction")) + L"]\n";
-                        shaderStr += L"  \"float cauchyb\" [0]\n";
-                        //--
-                        if ((float)s.GetParameterValue(L"trans_glossy")>0 )
-                        {
-                            shaderType=L"roughglass";
-                            shaderStr += L"  \"float uroughness\" ["+ CString((float)s.GetParameterValue(L"trans_glossy"))+ L"]";
-                            shaderStr += L"  \"float vroughness\" ["+ CString((float)s.GetParameterValue(L"trans_glossy"))+ L"]\n";
-                        }
-                    }
-                }
-            }
-            else if (!vIsSet)
-            {
-                if ( (float)s.GetParameterValue(L"transparency") > 0.0f )
-                {
-                    float ior=0.0f;
-                    // glass mia-arch shader
-                    s.GetColorParameterValue(L"refr_color",red,green,blue,alpha );
-                    s.GetColorParameterValue(L"refl_color",sp_red,sp_green,sp_blue,sp_alpha );
-                    shaderStr += L"  \"color Kt\" [" + CString(red) + L" " + CString(green) + L" " + CString(blue) + L"]\n";
-                    shaderStr += L"  \"color Kr\" [" + CString(sp_red) + L" "  + CString(sp_green) +  L" "  + CString(sp_blue) + L"]\n";
-                    shaderStr += L"  \"float index\" [" + CString((float)s.GetParameterValue(L"refr_ior")) + L"]\n";
-                    shaderStr += L"  \"float cauchyb\" [0]\n";
-                    shaderType=L"glass";
-                    if ((float)s.GetParameter(L"refr_gloss").GetValue()<1 )
-                    {
-                        shaderType=L"roughglass";
-                        shaderStr += L"  \"float uroughness\" ["+ CString(1.0f - float(s.GetParameterValue(L"refr_gloss"))) + L"]";
-                        shaderStr += L"  \"float vroughness\" ["+ CString(1.0f - float(s.GetParameterValue(L"refr_gloss"))) + L"]\n";
-                    }
-                }
-                vIsSet=true;
-            }
-            else if (!vIsSet)
-            {
-                // check if its a reflecting material
-                float a,b,c,d;
-                s.GetColorParameterValue(L"diffuse",a,b,c,d );
-                if (s.GetParameterValue(L"reflect_inuse")== "-1" )
-                {
-                    if (vMatID==L"mia_material_phen")
-                    {
-                        s.GetColorParameterValue(L"refl_color",red,green,blue,alpha );
-                        mRough = 1 - float(s.GetParameterValue(L"refl_gloss"));
-                        red = red*a;
-                        green = green*b;
-                        blue = blue*c;
-                    }
-                    else
-                    {
-                        s.GetColorParameterValue(L"reflectivity",red,green,blue,alpha );
-                        mRough = (float)s.GetParameterValue(L"reflect_glossy");
-                    }
-                    if (red>0 || green>0 || blue>0)
-                    {
-                        shaderType=L"shinymetal";
-                        shaderStr += L" \"color Kr\" ["+ CString(a) + L" "+ CString(b) + L" "+ CString(c) + L"] ";
-                        shaderStr += L" \"float uroughness\" ["+ CString(mRough/10) + L"]\n";
-                        shaderStr += L" \"float vroughness\" ["+ CString(mRough/10)+ L"]\n";
-                        shaderStr += L" \"color Ks\" ["+ CString(red) + L" "+ CString(green) + L" "+ CString(blue) + L"]\n";
-                        vIsSet=true;
-                    }
-                }
-            }*/
-
-            //----------------------------
-
+            */
             else
             {
                 // fall back shader
@@ -410,7 +353,7 @@ CString writeLuxsiShader()
             
 
         }//- process Preview Material ----------------------------------/
-        if ( MatName == vmatPreview && is_preview )
+        if ( is_preview && MatName == vmatPreview )
         {
             CString prev_material;  //- for material preview data
             //-

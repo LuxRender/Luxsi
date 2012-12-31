@@ -28,12 +28,24 @@ using namespace XSI;
 using namespace MATH;
 
 //--
+void sceneCollectionLights()
+{
+    //-
+    Model root = app.GetActiveSceneRoot();
+    CRefArray sceneObjectLights = root.FindChildren( L"", L"light", CStringArray(), true);
+    for( long i = 0; i < sceneObjectLights.GetCount(); i++)
+    {
+        X3DObject o(sceneObjectLights[i]);
+    }
+}
+//-
 
-int writeLuxsiLight()
+CString writeLuxsiLight()
 {
     sceneLight.Clear();
     Alights.Clear();
     root = app.GetActiveSceneRoot();
+    CString lightData;
 
     /* create an array objects with the 'lights' of the scene.
     */
@@ -98,7 +110,7 @@ int writeLuxsiLight()
         //--
         if ( luxdebug ) app.LogMessage(L"Light shader used: "+ Light_Shader_ID);
         //-
-        f << "\nLightGroup \""<< group_name.GetAsciiString() <<"\" \n";
+        lightData += L"\nLightGroup \""+ group_name + L"\" \n";
 
         //- for use Image Based Light ( IBL )
         //if ( luxdebug ) app.LogMessage(L"XSI environment finded: "+ find_XSI_env());
@@ -108,48 +120,65 @@ int writeLuxsiLight()
         //-
         if ( xsi_env != L"" )
         {
-            f << "LightSource \"infinite\"\n";
-            f << "  \"float gain\" ["<< vIntensity <<"]\n";
-            f << "  \"float importance\" [1.0]\n"; // TODO
-            f << "  \"string mapname\" [\"" << luxsi_replace(xsi_env.GetAsciiString()) <<"\"]\n";
-            f << "  \"string mapping\" [\"latlong\"]\n"; // TODO
-            f << "  \"float gamma\" [1.0]\n";
-            f << "  \"integer nsamples\" [1]\n"; // TODO
+            lightData += L"LightSource \"infinite\"\n";
+            lightData += L"  \"float gain\" ["+ CString( vIntensity ) + L"]\n";
+            lightData += L"  \"float importance\" [1.0]\n"; // TODO
+            lightData += L"  \"string mapname\" [\""+ CString( luxsi_replace(xsi_env.GetAsciiString()).c_str() ) + L"\"]\n";
+            lightData += L"  \"string mapping\" [\"latlong\"]\n"; // TODO
+            lightData += L"  \"float gamma\" [1.0]\n";
+            lightData += L"  \"integer nsamples\" [1]\n"; // TODO
         }
         //-
         else if (lType == 2) //-- spot
         {
             //-- values
-            f << "\nLightSource \"spot\"\n";
-            f << "  \"float gain\" ["<< vIntensity <<"]\n";
-            f << "  \"color L\" ["<< red <<"  "<< green <<"  "<< blue <<"]\n";
+            lightData += L"\nLightSource \"spot\"\n";
+            lightData += L"  \"float gain\" ["+ CString( vIntensity ) + L"]\n";
+            lightData += L"  \"color L\" ["
+                + CString( red )    + L" "
+                + CString( green )  + L" "
+                + CString( blue )   + L"]\n";
             //--
-            f << "  \"point from\" ["<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1] <<"]\n";
-            f << "  \"point to\" ["<< light_to[0] <<" "<< -light_to[2] <<" "<< light_to[1] <<"]\n";
-            f << "  \"float coneangle\" ["<< vLightCone << "]\n";
-            f << "  \"float conedeltaangle\" ["<< vLightCone - vSpotblend <<"]\n";
+            lightData += L"  \"point from\" ["
+                + CString( light_from[0] )  + L" "
+                + CString( -light_from[2] ) + L" "
+                + CString( light_from[1] )  + L"]\n";
+            lightData += L"  \"point to\" ["
+                + CString( light_to[0] )    + L" "
+                + CString( -light_to[2] )   + L" "
+                + CString( light_to[1] )    + L"]\n";
+            lightData += L"  \"float coneangle\" ["+ CString( vLightCone ) + L"]\n";
+            lightData += L"  \"float conedeltaangle\" ["+ CString( vLightCone - vSpotblend ) + L"]\n";
         }
         else if  (lType == 1) //-- infinite
         {
             CMatrix4 sunTransMat = o.GetKinematics().GetLocal().GetTransform().GetMatrix4();
             //-
-            f << "\nLightSource \"sunsky\"\n";
-            f << "  \"integer nsamples\" [4]\n";
-            f << "  \"vector sundir\" [ "<< sunTransMat.GetValue(2,0) <<" "<< -sunTransMat.GetValue(2,2) <<" "<< sunTransMat.GetValue(2,1) <<" ]\n";
-            f << "  \"float gain\" ["<< vIntensity <<"]\n";
-            f << "  \"color L\" ["<< red <<"  "<< green <<"  "<< blue <<"]\n";
+            lightData += L"\nLightSource \"sunsky\"\n";
+            lightData += L"  \"integer nsamples\" [4]\n";
+            lightData += L"  \"vector sundir\" ["
+                + CString( sunTransMat.GetValue(2,0) )  + L" "
+                + CString( -sunTransMat.GetValue(2,2) ) + L" "
+                + CString( sunTransMat.GetValue(2,1) )  + L"]\n";
+            //-
+            lightData += L"  \"float gain\" ["+ CString( vIntensity ) + L"]\n";
+            lightData += L"  \"color L\" ["
+                + CString( red )    + L" "
+                + CString( green )  + L" "
+                + CString( blue )   + L"]\n";
         }
         else // light type 0; point
         {
             //-
-            luxsi_point_light( o, s, light_from);
+            lightData += luxsi_point_light( o, s, light_from);
         }
     }    
-    return 0;
+    return lightData;
 }
 //--
-void luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
+CString luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
 {
+    CString pLightData;
     /** For Softimage light area; only work into 'point' or 'spot' lights
     *   first check all type shaders connects
     *   if have a LuxRender type I can config the light with the node options
@@ -166,36 +195,35 @@ void luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
         float size_X = o.GetParameterValue(L"LightAreaXformSX");
         float size_Y = o.GetParameterValue(L"LightAreaXformSY");
         //-
-        f << "\nAreaLightSource \"area\"\n";
+        pLightData += L"\nAreaLightSource \"area\"\n";
         //-
         if ( Light_Shader_ID == L"soft_light")
         {
             //-
-            f << "  \"float gain\" [1.00]\n";
-            f << "  \"float importance\" [1.0]\n"; // TODO
-            f << "  \"float power\" ["<< float(s.GetParameterValue(L"intensity"))*10 <<"]\n";
-            f << "  \"float efficacy\" [17.0]\n"; //TODO
-            f << "  \"color L\" ["<< red <<" "<< green <<" "<< blue <<"]\n";
-            //str = L"  \"color L\" ["+ CString(red) + L" "+ CString(red) + L" "+ CString(red) + L"]\n";
-
+            pLightData += L"  \"float gain\" [1.00]\n";
+            pLightData += L"  \"float importance\" [1.0]\n"; // TODO
+            pLightData += L"  \"float power\" ["+ CString( float(s.GetParameterValue(L"intensity"))*10 ) + L"]\n";
+            pLightData += L"  \"float efficacy\" [17.0]\n"; //TODO
+            pLightData += L"  \"color L\" ["+ CString( red ) + L" "+ CString( green ) + L" "+ CString( blue ) + L"]\n";
+        
         }
         else if ( Light_Shader_ID == L"lux_point_light")
         {
             /** if is arealight with the 'lux' node connect..
             *   use only the appropiates values from node?
             */
-            f << "  \"float gain\" ["<< float(s.GetParameterValue(L"gain")) <<"]\n";
-            f << "  \"float importance\" ["<< float(s.GetParameterValue(L"importance")) <<"]\n"; // TODO
-            f << "  \"float power\" ["<< float(s.GetParameterValue(L"power")) <<"]\n";
-            f << "  \"float efficacy\" ["<< float(s.GetParameterValue(L"efficacy")) <<"]\n";
-            f << "  \"color L\" ["<< red <<" "<< green <<" "<< blue <<"]\n";
+            pLightData += L"  \"float gain\" ["+ CString( float(s.GetParameterValue(L"gain")) ) + L"]\n";
+            pLightData += L"  \"float importance\" ["+ CString( float(s.GetParameterValue(L"importance")) ) + L"]\n"; // TODO
+            pLightData += L"  \"float power\" ["+ CString( float(s.GetParameterValue(L"power")) ) + L"]\n";
+            pLightData += L"  \"float efficacy\" ["+ CString( float(s.GetParameterValue(L"efficacy")) ) + L"]\n";
+            pLightData += L"  \"color L\" ["+ CString( red ) + L" "+ CString( green ) + L" "+ CString( blue ) + L"]\n";
 
             //- IES file seems not work fine into area spherical light
             CString ies_path = s.GetParameterValue(L"iesfile");
             //-
             if (ies_path != L"")
             {
-                f << "  \"string iesname\" [\""<< luxsi_replace(ies_path.GetAsciiString()) <<"\"]\n";
+                pLightData += L"  \"string iesname\" [\""+ CString( luxsi_replace(ies_path.GetAsciiString()).c_str() ) + L"\"]\n";
             }
         }
         else
@@ -203,8 +231,8 @@ void luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
             //-- log error and use default values.
             app.LogMessage(L"Not valid 'node' connect. Default values in use..", siWarningMsg);
             //-
-            f << "  \"color L\" [.91 .91 .91]\n";
-            f << "  \"integer nsamples\" [4]\n";
+            pLightData += L"  \"color L\" [.91 .91 .91]\n";
+            pLightData += L"  \"integer nsamples\" [4]\n";
         }
 
         /** now,  the geometry..
@@ -216,22 +244,22 @@ void luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
         {
             CString aPoints = luxsi_area_light_transform(o, size_X, size_Y);
             //--
-            f << "\nShape \"trianglemesh\"\n";
-            f << "  \"integer indices\" [0 1 2 0 2 3]\n";
-            f << "  \"point P\" ["<< aPoints.GetAsciiString() <<"]\n";
+            pLightData += L"\nShape \"trianglemesh\"\n";
+            pLightData += L"  \"integer indices\" [0 1 2 0 2 3]\n";
+            pLightData += L"  \"point P\" ["+ CString( aPoints.GetAsciiString() ) + L"]\n";
         }
         else if ( vlight_geo == 3 )// sphere
         {
             /** in LuxBlend this option is only for use in 'point light'??
             *   really, sphere is an area light object, like XSI
             */
-            f << "\nTransformBegin \n";
-            f << "Translate "<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1] <<"\n";
+            pLightData += L"\nTransformBegin \n";
+            pLightData += L"Translate "+ CString( light_from[0] ) + L" "+ CString( -light_from[2] ) + L" "+ CString( light_from[1] ) + L"\n";
 
-            f << "\nShape \"sphere\"\n";
-            f << "  \"float radius\" ["<< size_X <<"]\n";
+            pLightData += L"\nShape \"sphere\"\n";
+            pLightData += L"  \"float radius\" ["+ CString( size_X ) + L"]\n";
             //-
-            f << "\nTransformEnd \n";
+            pLightData += L"\nTransformEnd \n";
         }
         else
         {
@@ -244,10 +272,16 @@ void luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
         */
         if ( Light_Shader_ID == L"soft_light")
         {
-            f << "\nLightSource \"point\"\n";
-            f << "  \"float gain\" ["<< vIntensity * 10 <<"]\n";
-            f << "  \"color L\" ["<< red <<"  "<< green <<"  "<< blue <<"]\n";
-            f << "  \"point from\" ["<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1] <<"]\n";
+            pLightData += L"\nLightSource \"point\"\n";
+            pLightData += L"  \"float gain\" ["+ CString( vIntensity * 10 ) + L"]\n";
+            pLightData += L"  \"color L\" ["
+                + CString( red ) + L" "
+                + CString( green ) + L" "
+                + CString( blue ) + L"]\n";
+            pLightData += L"  \"point from\" ["
+                + CString( light_from[0] ) + L" "
+                + CString( -light_from[2] ) + L" "
+                + CString( light_from[1] ) + L"]\n";
         }
         else if ( Light_Shader_ID == L"lux_point_light")
         {
@@ -255,38 +289,44 @@ void luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
             bool usesphere = s.GetParameterValue(L"usesphere");
             CString ies_path = s.GetParameterValue(L"iesfile");
             
-            if ( !usesphere ) f << "\nLightSource \"point\"\n";
-            if ( usesphere ) f << "\nAreaLightSource \"area\"\n";
+            if ( !usesphere ) pLightData += L"\nLightSource \"point\"\n";
+            if ( usesphere ) pLightData += L"\nAreaLightSource \"area\"\n"; 
             //-
-            f << "  \"float gain\" ["<< float(s.GetParameterValue(L"gain")) <<"]\n";
-            f << "  \"float importance\" ["<< float(s.GetParameterValue(L"importance")) <<"]\n"; // TODO
-            f << "  \"float power\" ["<< float(s.GetParameterValue(L"power")) <<"]\n";
-            f << "  \"float efficacy\" ["<< float(s.GetParameterValue(L"efficacy")) <<"]\n";
-            f << "  \"color L\" ["<< red <<" "<< green <<" "<< blue <<"]\n";
+            pLightData += L"  \"float gain\" ["+ CString( float(s.GetParameterValue(L"gain")) ) + L"]\n";
+            pLightData += L"  \"float importance\" ["+ CString( float(s.GetParameterValue(L"importance")) ) + L"]\n"; // TODO
+            pLightData += L"  \"float power\" ["+ CString( float(s.GetParameterValue(L"power")) ) + L"]\n";
+            pLightData += L"  \"float efficacy\" ["+ CString( float(s.GetParameterValue(L"efficacy")) ) + L"]\n";
+            pLightData += L"  \"color L\" ["+ CString( red ) + L" "+ CString( green ) + L" "+ CString( blue ) + L"]\n";
             if (!usesphere)
             {
-                f << "  \"point from\" ["<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1] <<"]\n";
+                pLightData += L"  \"point from\" ["
+                    + CString( light_from[0] )  + L" "
+                    + CString( -light_from[2] ) + L" "
+                    + CString( light_from[1] )  + L"]\n";
             }
             else
             {
-                f << "  \"integer nsamples\" ["<< float(s.GetParameterValue(L"shadowray")) <<"]\n";
+                pLightData += L"  \"integer nsamples\" ["+ CString( float(s.GetParameterValue(L"shadowray")) ) + L"]\n";
             }
             if ( ies_path != L"")
             {
-                f << "  \"bool flipz\" [\""<< MtBool[(s.GetParameterValue(L"flipz"))] <<"\"]\n";
-                f << "  \"string iesname\" [\""<< luxsi_replace(ies_path.GetAsciiString()) <<"\"]\n";
+                pLightData += L"  \"bool flipz\" [\""+ CString( MtBool[(s.GetParameterValue(L"flipz"))] ) + L"\"]\n";
+                pLightData += L"  \"string iesname\" [\""+ CString( luxsi_replace(ies_path.GetAsciiString()).c_str() ) + L"\"]\n";
             }
             //-
             if ( usesphere )
             {
                 //-
-                f << "\nTransformBegin \n";
-                f << "Translate "<< light_from[0] <<" "<< -light_from[2] <<" "<< light_from[1] <<"\n";
+                pLightData += L"\nTransformBegin \n";
+                pLightData += L"Translate "
+                    + CString( light_from[0] )  + L" "
+                    + CString( -light_from[2] ) + L" "
+                    + CString( light_from[1] )  + L"\n";
 
-                f << "\nShape \"sphere\"\n";
-                f << "  \"float radius\" ["<< float (s.GetParameterValue(L"radius")) <<"]\n";
+                pLightData += L"\nShape \"sphere\"\n";
+                pLightData += L"  \"float radius\" ["+ CString( float (s.GetParameterValue(L"radius")) ) + L"]\n";
                 //-
-                f << "\nTransformEnd \n";
+                pLightData += L"\nTransformEnd \n";
             }
         }
         else
@@ -295,6 +335,7 @@ void luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
             app.LogMessage(L"Not valid Node connect", siWarningMsg);
         }
     }
+    return pLightData;
 }
 //--
 CString luxsi_area_light_transform(X3DObject o, float size_X, float size_Y)

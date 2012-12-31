@@ -26,7 +26,12 @@ along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
 
 //#define __forceinline inline
 #pragma once // it is need?
-//--
+//-- test from S. Caron
+#include <stdio.h>
+#include <assert.h>
+//#include <string.h>
+//-- end test
+
 #include <math.h>
 #include <string.h>
 #include <sstream>

@@ -35,14 +35,22 @@ using namespace std;
 
 #define PI 3.14159265
 
-/** CString containers \n
-*   vFileLxs            lxs file name       \n
-*   vFileQueue          lxq file name       \n
-*   luxsiShaderData     shader data         \n
-*   queue_list          queue list data     \n
-*   vblxs_file          reload .lxs file    \n
+/* CString containers */
+/*  Scene file name */
+CString vFileLxs;
+/*
+* Name for Queue file used in animation */
+CString vFileQueue;          
+/**/
+CString luxsiShaderData;
+/* 
+*  for list of .lxs filenames writed inside Queue file.
 */
-CString vFileLxs, vFileQueue, luxsiShaderData, queue_list, vblxs_file, vmatPreview;
+CString queue_list;
+/**/
+CString vblxs_file;
+/**/
+CString vmatPreview;
 
 /* for launch LuxRender with -L "queue.lxq" parameter 
 */
@@ -62,38 +70,39 @@ double ftime = DBL_MAX;
 /*  Define frame step */
 int vframestep = 1;
 
-/*  Update UI values */
+/* Real-time update UI values*/
+void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext ctxt);
+/**/
 void update_general_values(CString paramName, Parameter changed, PPGEventContext ctxt);
-
 /**/
 void update_surfaceInt_values(CString paramName, Parameter changed, PPGEventContext ctxt);
-
 /**/
 void update_sampler_values(CString paramName, Parameter changed, PPGEventContext ctxt);
-
 /**/
 void update_filter_values(CString paramName, Parameter changed, PPGEventContext ctxt);
-
 /**/
 void update_accelerator_values(CString paramName, Parameter changed, PPGEventContext ctxt);
-
+/* 
+* Show or hide UI elements
+*/
+void dynamic_luxsi_UI(Parameter changed, CString paramName, PPGEventContext ctxt);
+/**/
+void dynamic_sampler_UI( Parameter changed, CString paramName, PPGEventContext ctxt);
 /**/
 void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext ctxt);
-
 /**/
 void dynamic_filter_UI(Parameter changed, CString paramName, PPGEventContext ctxt);
-
 /**/
 void dynamic_Accel_UI(Parameter changed, CString paramName, PPGEventContext ctxt);
 
 /**/
-void writeLuxsiBasics();
+CString writeLuxsiBasics();
 
 /**/
-void writeLuxsiCam(X3DObject o);
+CString writeLuxsiCam(X3DObject o);
 
 //-
-int writeLuxsiLight();
+CString writeLuxsiLight();
 
 CString writeLuxsiCloud(X3DObject o);
 
@@ -115,15 +124,9 @@ void luxsi_mat_preview(bool onlyExport);
 std::string luxsi_replace(string input);
 //--
 bool luxsi_find(CStringArray a, CString s);
-//--
-void update_LuXSI_values(CString paramName, Parameter changed, PPGEventContext ctxt);
 
 /* Pressets */
 void luxsi_render_presets( PPGEventContext ctxt);
-//--
-void dynamic_luxsi_UI(Parameter changed, CString paramName, PPGEventContext ctxt);
-//-
-void dynamic_sampler_UI( Parameter changed, CString paramName, PPGEventContext ctxt);
 
 /**/
 void loader(const char szArgs[]);
@@ -143,19 +146,34 @@ extern CString writeLuxsiHair(X3DObject o);
 /**/
 extern CString writeLuxsiSurface(X3DObject o);
 
-/**/
-std::map<CString, int> int_values;
-
 /**
 * Array references for scene elements..     \n
-* itemsArray    array for all scene items   \n
-* aObj          for objects( polygon mesh ) \n
-* aCam          for camera                  \n
+* sceneItemsArray   array for all scene items   \n
+* aObj              for objects( polygon mesh ) \n
+* aCam              for camera                  \n
 * aSurfaces     for 'surface' primitives    \n
 * aClouds       for 'pointclouds' objects   \n
 * aModels       for model objects           \n
-* aHair         for hair
+* aHair         for hair 'emitter' object.
 */
-CRefArray itemsArray, aObj, aCam, aSurfaces, aClouds, aModels, aHair;
+CRefArray sceneItemsArray, aObj, aCam, aSurfaces, aClouds, aModels, aHair;
+
+/**/
+extern CRefArray sceneCollectionMaterials();
+
+// test
+//-- distributepath
+bool vdirectdiffuse = true, vdirectglossy = true, vindirectsampleall = false, vindirectdiffuse = true;
+bool vindirectglossy = true, vdirectsampleall = true, vdiff_reflect_reject = false;
+bool vdiff_refract_reject = false, vglossy_reflect_reject = false, vglossy_refract_reject = false;
+
+int vdirectsamples = 1, vindirectsamples = 1, vdiffusereflectdepth = 3, vdiffusereflectsamples = 1;
+int vdiffuserefractdepth = 5, vdiffuserefractsamples = 1, vglossyreflectdepth = 2, vglossyreflectsamples = 1;
+int vglossyrefractdepth = 5, vglossyrefractsamples = 1,  vspecularreflectdepth = 3, vspecularrefractdepth = 5;
+
+float vdiff_reflect_reject_thr = 10.0f, vdiff_refract_reject_thr = 10.0f, vglossy_reflect_reject_thr = 10.0f;
+float vglossy_refract_reject_thr = 10.0f;
+
+//-- end
 
 #endif //LUXSI_H

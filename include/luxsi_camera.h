@@ -21,73 +21,27 @@ You should have received a copy of the GNU General Public License
 along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef LUXSI_CAMERA_H
+#define LUXSI_CAMERA_H
+
+
 #include "luxsi_main.h"
 
-using namespace std;
 using namespace XSI;
 using namespace MATH;
+using namespace std;
 
 /**/
-extern bool is_visible(X3DObject in_obj, CString in_type);
-
+extern Application app;
+/**/
+extern double ftime;
 /**/
 extern bool luxdebug;
-
 /**/
-extern Model root;
-
-/* for test MsgBox
-*/
-extern UIToolkit kit;
-
+extern CString floatToString(Shader in_shader, CString in_item);
 /**/
-extern bool vIsHiddenLight;
-
+extern CString floatToString(Shader in_shader, CString in_item, CString in_definition);
 /**/
-extern ofstream f;
+extern CString integerToString(Shader s, CString item);
 
-/* convert  0 and 1 value bool to string
-*/
-extern const char *MtBool[];
-
-/* float color values 
-*/
-extern float red, green, blue, alpha;
-
-/* search name of light nodes
-*/
-CString Light_Shader_ID;
-
-/**/
-float vIntensity;
-
-/* IES file path
-*/
-extern CString ies_file;
-
-/* generic XSI Application 
-*/
-extern XSI::Application app;
-
-/* replace  '/' and  '\' chars into path files
-*/
-extern std::string luxsi_replace(string input);
-
-/* find name object into a group 
-*/
-extern CString findInGroup(CString in_name);
-
-/* for math transform to 'light area' oobject 
-*/
-CString luxsi_area_light_transform(X3DObject o, float in_sizeX, float in_sizeY);
-
-/* Search IBL and HDRI files used
-*/
-CString find_XSI_env();
-
-/* Write specific 'point light' type
-*/
-CString luxsi_point_light(X3DObject in_obj, Shader in_shader, CVector3 in_vector);
-/**/
-CRefArray sceneLight, Alights;
-    
+#endif // LUXSI_CAMERA_H

@@ -48,9 +48,10 @@ CRefArray params;
 float red = 0.0f, green = 0.0f, blue = 0.0f, alpha = 0.0f;
 
 //-- distributepath
-bool vdirectdiffuse = true, vdirectglossy = true, vindirectsampleall = false, vindirectdiffuse = true, vindirectglossy = true;
-bool vdirectsampleall = true;
-bool vdiff_reflect_reject = false, vdiff_refract_reject = false, vglossy_reflect_reject = false, vglossy_refract_reject = false;
+/*
+bool vdirectdiffuse = true, vdirectglossy = true, vindirectsampleall = false, vindirectdiffuse = true;
+bool vindirectglossy = true, vdirectsampleall = true, vdiff_reflect_reject = false;
+bool vdiff_refract_reject = false, vglossy_reflect_reject = false, vglossy_refract_reject = false;
 
 int vdirectsamples = 1, vindirectsamples = 1, vdiffusereflectdepth = 3, vdiffusereflectsamples = 1;
 int vdiffuserefractdepth = 5, vdiffuserefractsamples = 1, vglossyreflectdepth = 2, vglossyreflectsamples = 1;
@@ -58,7 +59,7 @@ int vglossyrefractdepth = 5, vglossyrefractsamples = 1,  vspecularreflectdepth =
 
 float vdiff_reflect_reject_thr = 10.0f, vdiff_refract_reject_thr = 10.0f, vglossy_reflect_reject_thr = 10.0f;
 float vglossy_refract_reject_thr = 10.0f;
-
+*/
 
 //-- photonmap --------
 int vmaxeyedepth = 8, vmaxphotondepth = 10, vshadowraycount = 0, vdirectphotons = 1000000, vcausticphotons = 20000;
@@ -72,6 +73,18 @@ CString bphotonmaps = L"";
 int vbmaxeyedepht = 48, vbmaxphoton = 48, vbpointxpass = 0, vbphotonsxpass = 1000000;
 float vbstartradius= 2.0f, vbalpha = 0.70f;
 bool vbdlsampling = false, vbincenvironment = false;
+
+// expert
+bool vstoreglossy = false, vuseproba = true;
+int vwavelengthstratificationpasses = 8;
+float vparallelhashgridspare= 1.0f;
+	    
+ /*
+ //--- expert
+ "string lookupaccel" ["kdtree"]
+ "string pixelsampler" ["hilbert"]
+ "string photonsampler" ["halton"]
+ */
 
 
 //-- surface integrator

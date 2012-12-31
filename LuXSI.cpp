@@ -60,7 +60,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
     ftime = DBL_MAX;
     //-
     PPGEventContext ctxt( in_ctxt ) ;
-    PPGLayout lay = Context(in_ctxt).GetSource() ; // UNUSED
+    //PPGLayout lay = Context(in_ctxt).GetSource() ; // UNUSED
 
     PPGEventContext::PPGEvent eventID = ctxt.GetEventID() ;
 
@@ -141,10 +141,11 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
             //- for 'queue' files
             vFileQueue = vFileExport.GetSubString(0,ext) + L".lxq";
             //-
-            f.open(vFileQueue.GetAsciiString());
+            std::ofstream flxq;
+            flxq.open(vFileQueue.GetAsciiString());
             //-
-            f << queue_list.GetAsciiString();
-            f.close();
+            flxq << queue_list.GetAsciiString();
+            flxq.close();
             //-
             if( buttonOption == L"render_ani") luxsi_execute();
         }
@@ -784,7 +785,7 @@ XSIPLUGINCALLBACK CStatus OnLuXSI_MenuClicked( XSI::CRef& )
 
 
 //--
-void luxsi_SurfaceIntegrator()
+CString luxsi_SurfaceIntegrator()
 {
     //-
     const char *MtSurf [7] = { "bidirectional", "path", "directlighting",
@@ -794,9 +795,9 @@ void luxsi_SurfaceIntegrator()
     //-
     const char *MtlightST [7] = { "one", "all", "auto", "importance", 
         "powerimp", "allpowerimp", "logpowerimp"};
-    
+    CString surfData;
     //-------------------------------------------------------------
-    f << "\nSurfaceIntegrator \""<< MtSurf[ vSurfaceInt ] <<"\"\n";
+    surfData = L"\nSurfaceIntegrator \""+ CString( MtSurf[ vSurfaceInt ] ) + L"\"\n";
     //-------------------------------------------------------------
     if ( vSurfaceInt == 0 )  //-- bidi
     {
@@ -808,124 +809,124 @@ void luxsi_SurfaceIntegrator()
 	    "string lightpathstrategy" ["auto"]
 	    "string lightstrategy" ["auto"]
         */
-        f << "  \"integer eyedepth\" ["<< vEye_depth <<"]\n";
-        f << "  \"integer lightdepth\" ["<< vLight_depth <<"]\n";
+        surfData += L"  \"integer eyedepth\" ["+ CString( vEye_depth ) + L"]\n";
+        surfData += L"  \"integer lightdepth\" ["+ CString( vLight_depth ) + L"]\n";
         if ( vsexpert )
         {
-            f << "  \"float eyerrthreshold\" ["<< vEyeRRthre <<"]\n"; 
-            f << "  \"float lightrrthreshold\" ["<< vLightRRthre <<"]\n";
+            surfData += L"  \"float eyerrthreshold\" ["+ CString( vEyeRRthre ) + L"]\n"; 
+            surfData += L"  \"float lightrrthreshold\" ["+ CString( vLightRRthre ) + L"]\n";
         }
     }
     else if ( vSurfaceInt == 1 )//-- path
     {
-        f << "  \"integer maxdepth\" ["<< vmaxdepth <<"]\n";
-        f << "  \"float rrcontinueprob\" [0.649999976158142]\n"; // TODO:
-        f << "  \"string rrstrategy\" [\""<< MtRRst[ vRRstrategy ] <<"\"]\n";
-        f << "  \"bool includeenvironment\" [\""<< MtBool[ vInc_env ] <<"\"]\n";
+        surfData += L"  \"integer maxdepth\" ["+ CString( vmaxdepth ) + L"]\n";
+        surfData += L"  \"float rrcontinueprob\" [0.649999976158142]\n"; // TODO:
+        surfData += L"  \"string rrstrategy\" [\""+ CString( MtRRst[ vRRstrategy ] ) + L"\"]\n";
+        surfData += L"  \"bool includeenvironment\" [\""+ CString( MtBool[ vInc_env ] ) + L"\"]\n";
         //-
         if ( vsexpert )
         {
-            f << "  \"integer shadowraycount\" [" << vshadowraycount << "]\n";
+            surfData += L"  \"integer shadowraycount\" ["+ CString( vshadowraycount ) + L"]\n";
         }
     }
     else if ( vSurfaceInt == 2 ) //-- directlighting
     {
-        f << "  \"integer maxdepth\" ["<< vmaxdepth <<"]\n";
+        surfData += L"  \"integer maxdepth\" ["+ CString( vmaxdepth ) + L"]\n";
         //-
         if ( vsexpert )
         {
-            //f << "  \"string lightstrategy\" [\""<< MtlightST[vLight_str] <<"\"]\n";
-            f << "  \"integer shadowraycount\" [" << vshadowraycount << "]\n";
+            //surfData += L"  \"string lightstrategy\" [\""<< MtlightST[vLight_str] <<"\"]\n";
+            surfData += L"  \"integer shadowraycount\" ["+ CString( vshadowraycount ) + L"]\n";
         }
     }
     else if ( vSurfaceInt == 3 ) //-- distributedpath
     {
-        f << "  \"integer directsamples\" ["<< vdirectsamples <<"]\n";
-        f << "  \"integer indirectsamples\" ["<< vindirectsamples <<"]\n";
-        f << "  \"integer diffusereflectdepth\" ["<< vdiffusereflectdepth <<"]\n";
-        f << "  \"integer diffusereflectsamples\" ["<< vdiffusereflectsamples <<"]\n";
-        f << "  \"integer diffuserefractdepth\" ["<< vdiffuserefractdepth <<"]\n";
-        f << "  \"integer diffuserefractsamples\" ["<< vdiffuserefractsamples <<"]\n";
-        f << "  \"integer glossyreflectdepth\" ["<< vglossyreflectdepth <<"]\n";
-        f << "  \"integer glossyreflectsamples\" ["<< vglossyreflectsamples <<"]\n";
-        f << "  \"integer glossyrefractdepth\" ["<< vglossyrefractdepth <<"]\n";
-        f << "  \"integer glossyrefractsamples\" ["<< vglossyrefractsamples <<"]\n";
-        f << "  \"integer specularreflectdepth\" ["<< vspecularreflectdepth <<"]\n";
-        f << "  \"integer specularrefractdepth\" ["<< vspecularrefractdepth <<"]\n";
+        surfData += L"  \"integer directsamples\" ["+ CString( vdirectsamples ) + L"]\n";
+        surfData += L"  \"integer indirectsamples\" ["+ CString( vindirectsamples ) + L"]\n";
+        surfData += L"  \"integer diffusereflectdepth\" ["+ CString( vdiffusereflectdepth ) + L"]\n";
+        surfData += L"  \"integer diffusereflectsamples\" ["+ CString( vdiffusereflectsamples ) + L"]\n";
+        surfData += L"  \"integer diffuserefractdepth\" ["+ CString( vdiffuserefractdepth ) + L"]\n";
+        surfData += L"  \"integer diffuserefractsamples\" ["+ CString( vdiffuserefractsamples ) + L"]\n";
+        surfData += L"  \"integer glossyreflectdepth\" ["+ CString( vglossyreflectdepth ) + L"]\n";
+        surfData += L"  \"integer glossyreflectsamples\" ["+ CString( vglossyreflectsamples ) + L"]\n";
+        surfData += L"  \"integer glossyrefractdepth\" ["+ CString( vglossyrefractdepth ) + L"]\n";
+        surfData += L"  \"integer glossyrefractsamples\" ["+ CString( vglossyrefractsamples ) + L"]\n";
+        surfData += L"  \"integer specularreflectdepth\" ["+ CString( vspecularreflectdepth ) + L"]\n";
+        surfData += L"  \"integer specularrefractdepth\" ["+ CString( vspecularrefractdepth ) + L"]\n";
         // 
         if ( vsexpert )
         {
-            f << "  \"bool directsampleall\" [\""<< MtBool[ vdirectsampleall ] <<"\"]\n";
-            f << "  \"bool directdiffuse\" [\""<< MtBool[ vdirectdiffuse ] <<"\"]\n";
-            f << "  \"bool directglossy\" [\""<< MtBool[vdirectglossy] <<"\"]\n";
+            surfData += L"  \"bool directsampleall\" [\""+ CString( MtBool[ vdirectsampleall ] ) + L"\"]\n";
+            surfData += L"  \"bool directdiffuse\" [\""+ CString( MtBool[ vdirectdiffuse ] ) + L"\"]\n";
+            surfData += L"  \"bool directglossy\" [\""+ CString( MtBool[vdirectglossy] ) + L"\"]\n";
         
-            f << "  \"bool indirectsampleall\" [\""<< MtBool[ vindirectsampleall ] <<"\"]\n";
-            f << "  \"bool indirectdiffuse\" [\""<< MtBool[ vindirectdiffuse ] <<"\"]\n";
-            f << "  \"bool indirectglossy\" [\""<< MtBool[ vindirectglossy ] <<"\"]\n";
-            f << "  \"bool diffusereflectreject\" [\""<< MtBool[0] <<"\"]\n"; // TODO
-            f << "  \"float diffusereflectreject_threshold\" ["<< vdiff_reflect_reject_thr <<"]\n";
-            f << "  \"bool diffuserefractreject\" [\""<< MtBool[0] <<"\"]\n";
-            f << "  \"float diffuserefractreject_threshold\" ["<< vdiff_refract_reject_thr <<"]\n";
-            f << "  \"bool glossyreflectreject\" [\""<< MtBool[0] <<"\"]\n";
-            f << "  \"float glossyreflectreject_threshold\" ["<< vglossy_reflect_reject_thr <<"]\n";
-            f << "  \"bool glossyrefractreject\" [\""<< MtBool[0] <<"\"]\n";
-            f << "  \"float glossyrefractreject_threshold\" ["<< vglossy_refract_reject_thr <<"]\n";
+            surfData += L"  \"bool indirectsampleall\" [\""+ CString( MtBool[ vindirectsampleall ] ) + L"\"]\n";
+            surfData += L"  \"bool indirectdiffuse\" [\""+ CString( MtBool[ vindirectdiffuse ] ) + L"\"]\n";
+            surfData += L"  \"bool indirectglossy\" [\""+ CString( MtBool[ vindirectglossy ] ) + L"\"]\n";
+            surfData += L"  \"bool diffusereflectreject\" [\""+ CString( MtBool[0] ) + L"\"]\n"; // TODO
+            surfData += L"  \"float diffusereflectreject_threshold\" ["+ CString( vdiff_reflect_reject_thr ) + L"]\n";
+            surfData += L"  \"bool diffuserefractreject\" [\""+ CString( MtBool[0] ) + L"\"]\n";
+            surfData += L"  \"float diffuserefractreject_threshold\" ["+ CString( vdiff_refract_reject_thr ) + L"]\n";
+            surfData += L"  \"bool glossyreflectreject\" [\""+ CString( MtBool[0] ) + L"\"]\n";
+            surfData += L"  \"float glossyreflectreject_threshold\" ["+ CString( vglossy_reflect_reject_thr ) + L"]\n";
+            surfData += L"  \"bool glossyrefractreject\" [\""+ CString( MtBool[0] ) + L"\"]\n";
+            surfData += L"  \"float glossyrefractreject_threshold\" ["+ CString( vglossy_refract_reject_thr ) + L"]\n";
             //--
-            //f << "  \"string lightstrategy\" [\""<< MtlightST[vLight_str] <<"\"]\n";
+            //surfData += L"  \"string lightstrategy\" [\""<< MtlightST[vLight_str] <<"\"]\n";
         }
     }
     else if ( vSurfaceInt == 4 ) //-- igi
     {
-        f << "  \"integer nsets\" ["<< vnsets <<"]\n";
-        f << "  \"integer nlights\" ["<< vnlights <<"]\n";
-        f << "  \"integer maxdepth\" ["<< vmaxdepth <<"]\n";
-        f << "  \"float mindist\" ["<< vmindist <<"]\n";
+        surfData += L"  \"integer nsets\" ["+ CString( vnsets ) + L"]\n";
+        surfData += L"  \"integer nlights\" ["+ CString( vnlights ) + L"]\n";
+        surfData += L"  \"integer maxdepth\" ["+ CString( vmaxdepth ) + L"]\n";
+        surfData += L"  \"float mindist\" ["+ CString( vmindist ) + L"]\n";
     }
     else if ( vSurfaceInt == 5 ) //-- exphotonmap
     {
-        f << "  \"integer maxdepth\" ["<< vmaxeyedepth <<"]\n"; // vmax eye depth ?
-        f << "  \"integer maxphotondepth\" ["<< vmaxphotondepth <<"]\n";
-        f << "  \"integer directphotons\" ["<< vdirectphotons <<"] \n";
-        f << "  \"integer causticphotons\" ["<< vcausticphotons <<"] \n";
-        f << "  \"integer indirectphotons\" ["<< vindirectphotons <<"] \n";
-        f << "  \"integer radiancephotons\" ["<< vradiancephotons <<"] \n";
-        f << "  \"integer nphotonsused\" ["<< vnphotonsused <<"] \n";
-        f << "  \"float maxphotondist\" ["<< vmaxphotondist <<"]\n";
-        f << "  \"bool finalgather\" [\""<< MtBool[ vfinalgather ] <<"\"]\n";
+        surfData += L"  \"integer maxdepth\" ["+ CString( vmaxeyedepth ) + L"]\n"; // vmax eye depth ?
+        surfData += L"  \"integer maxphotondepth\" ["+ CString( vmaxphotondepth ) + L"]\n";
+        surfData += L"  \"integer directphotons\" ["+ CString( vdirectphotons ) + L"] \n";
+        surfData += L"  \"integer causticphotons\" ["+ CString( vcausticphotons ) + L"] \n";
+        surfData += L"  \"integer indirectphotons\" ["+ CString( vindirectphotons ) + L"] \n";
+        surfData += L"  \"integer radiancephotons\" ["+ CString( vradiancephotons ) + L"] \n";
+        surfData += L"  \"integer nphotonsused\" ["+ CString( vnphotonsused ) + L"] \n";
+        surfData += L"  \"float maxphotondist\" ["+ CString( vmaxphotondist ) + L"]\n";
+        surfData += L"  \"bool finalgather\" [\""+ CString( MtBool[ vfinalgather ] ) + L"\"]\n";
         //-
         if ( vfinalgather )
         {
-            f << "  \"integer finalgathersamples\" ["<< vfinalgathersamples <<"] \n";
-            f << "  \"float gatherangle\" ["<< vgatherangle <<"] \n";
+            surfData += L"  \"integer finalgathersamples\" ["+ CString( vfinalgathersamples ) + L"] \n";
+            surfData += L"  \"float gatherangle\" ["+ CString( vgatherangle ) + L"] \n";
         }
         if ( vsexpert )
         {
             //-- test
             const char *MtRendering [] = { "path", "directlighting" };
             //--
-            f << "  \"integer shadowraycount\" [\""<< vshadowraycount <<"\"]\n"; 
-            f << "  \"string renderingmode\" [\""<< MtRendering[ vrenderingmode ] <<"\"]\n";
-            f << "  \"string rrstrategy\" [\""<< MtRRst[vRRstrategy] <<"\"]\n"; 
-            f << "  \"float distancethreshold\" [\""<< vdistancethreshold <<"\"]\n"; 
-            f << "  \"bool dbg_enabledirect\" [\""<< MtBool[vdbg_direct] <<"\"]\n";
-            f << "  \"bool dbg_enableradiancemap\" [\""<< MtBool[vdbg_radiancemap] <<"\"]\n";
-            f << "  \"bool dbg_enableindircaustic\" [\""<< MtBool[vdbg_indircaustic] <<"\"]\n";
-            f << "  \"bool dbg_enableindirdiffuse\" [\""<< MtBool[vdbg_indirdiffuse] <<"\"]\n";
-            f << "  \"bool dbg_enableindirspecular\" [\""<< MtBool[vdbg_indirspecular] <<"\"]\n";
+            surfData += L"  \"integer shadowraycount\" [\""+ CString( vshadowraycount ) + L"\"]\n"; 
+            surfData += L"  \"string renderingmode\" [\""+ CString( MtRendering[ vrenderingmode ] ) + L"\"]\n";
+            surfData += L"  \"string rrstrategy\" [\""+ CString( MtRRst[vRRstrategy] ) + L"\"]\n"; 
+            surfData += L"  \"float distancethreshold\" [\""+ CString( vdistancethreshold ) + L"\"]\n"; 
+            surfData += L"  \"bool dbg_enabledirect\" [\""+ CString( MtBool[vdbg_direct] ) + L"\"]\n";
+            surfData += L"  \"bool dbg_enableradiancemap\" [\""+ CString( MtBool[vdbg_radiancemap] ) + L"\"]\n";
+            surfData += L"  \"bool dbg_enableindircaustic\" [\""+ CString( MtBool[vdbg_indircaustic] ) + L"\"]\n";
+            surfData += L"  \"bool dbg_enableindirdiffuse\" [\""+ CString( MtBool[vdbg_indirdiffuse] ) + L"\"]\n";
+            surfData += L"  \"bool dbg_enableindirspecular\" [\""+ CString( MtBool[vdbg_indirspecular] ) + L"\"]\n";
         }
         
     }
     else // sppm
     {
         //- use default values.. atm!
-        f << "  \"integer maxeyedepth\" ["<< vbmaxeyedepht <<"]\n"; 
-	    f << "  \"integer maxphotondepth\" ["<< vbmaxphoton <<"]\n";
-	    f << "  \"integer photonperpass\" ["<< vbphotonsxpass <<"]\n";
-	    f << "  \"integer hitpointperpass\" ["<< vbpointxpass <<"]\n"; 
-	    f << "  \"float startradius\" ["<< vbstartradius <<"]\n";
-	    f << "  \"float alpha\" ["<< vbalpha <<"]\n";
-	    f << "  \"bool includeenvironment\" [\""<< MtBool[vbincenvironment] <<"\"]\n";
-	    f << "  \"bool directlightsampling\" [\""<< MtBool[vbdlsampling] <<"\"]\n"; 
+        surfData += L"  \"integer maxeyedepth\" ["+ CString( vbmaxeyedepht ) + L"]\n"; 
+	    surfData += L"  \"integer maxphotondepth\" ["+ CString( vbmaxphoton ) + L"]\n";
+	    surfData += L"  \"integer photonperpass\" ["+ CString( vbphotonsxpass ) + L"]\n";
+	    surfData += L"  \"integer hitpointperpass\" ["+ CString( vbpointxpass ) + L"]\n"; 
+	    surfData += L"  \"float startradius\" ["+ CString( vbstartradius ) + L"]\n";
+	    surfData += L"  \"float alpha\" ["+ CString( vbalpha ) + L"]\n";
+	    surfData += L"  \"bool includeenvironment\" [\""+ CString( MtBool[vbincenvironment] ) + L"\"]\n";
+	    surfData += L"  \"bool directlightsampling\" [\""+ CString( MtBool[vbdlsampling] ) + L"\"]\n"; 
         //-
         /*
         SurfaceIntegrator "sppm"
@@ -948,20 +949,21 @@ void luxsi_SurfaceIntegrator()
         */
         if ( vsexpert )
         {
-	        f << "  \"bool storeglossy\" [\"false\"]\n";
-	        f << "  \"bool useproba\" [\"true\"]\n";
-	        f << "  \"integer wavelengthstratificationpasses\" [8]\n";
-	        f << "  \"string lookupaccel\" [\"kdtree\"]\n";
-	        f << "  \"float parallelhashgridspare\" [1.000000000000000]\n";
-	        f << "  \"string pixelsampler\" [\"hilbert\"]\n";
-	        f << "  \"string photonsampler\" [\"halton\"]\n";
+	        surfData += L"  \"bool storeglossy\" [\"false\"]\n";
+	        surfData += L"  \"bool useproba\" [\"true\"]\n";
+	        surfData += L"  \"integer wavelengthstratificationpasses\" [8]\n";
+	        surfData += L"  \"string lookupaccel\" [\"kdtree\"]\n";
+	        surfData += L"  \"float parallelhashgridspare\" [1.000000000000000]\n";
+	        surfData += L"  \"string pixelsampler\" [\"hilbert\"]\n";
+	        surfData += L"  \"string photonsampler\" [\"halton\"]\n";
         }
     }
     //- light strategy for all, except sppm
     if ( vSurfaceInt < 6 )
     {
-        f << "  \"string lightstrategy\" [\""<< MtlightST[vLight_str] <<"\"]\n";
+        surfData += L"  \"string lightstrategy\" [\""+ CString( MtlightST[vLight_str] ) + L"\"]\n";
     }
+    return surfData;
 }
 
 //--
@@ -1086,7 +1088,7 @@ CString luxsi_Filter()
     return filterStr;
 }
 //--
-void writeLuxsiBasics()
+CString writeLuxsiBasics()
 {
     /** write basic scene description */
     //--
@@ -1094,224 +1096,113 @@ void writeLuxsiBasics()
     const char *Aengine [2] = { "classic", "hybrid" };
     const char *ArgbT [3] = { "Y", "RGB", "RGBA" }; // iterator  vRtga
     const char *AZb_norm [3] = { "Camera Start/End clip", "Min/Max", "None" }; //exr
-    
+    /* 
+	Film "fleximage"
+	"integer xresolution" [960]
+	"integer yresolution" [540]
+	"float gamma" [2.200000000000000]
+	"float colorspace_white" [0.314275000000000 0.329411000000000]
+	"float colorspace_red" [0.630000000000000 0.340000000000000]
+	"float colorspace_green" [0.310000000000000 0.595000000000000]
+	"float colorspace_blue" [0.155000000000000 0.070000000000000]
+	"string filename" ["probas.Scene.00001"]
+	"bool write_resume_flm" ["false"]
+	"bool restart_resume_flm" ["false"]
+	"bool write_flm_direct" ["false"]
+	"bool write_exr_halftype" ["true"]
+	"bool write_exr_applyimaging" ["true"]
+	"bool write_exr_ZBuf" ["false"]
+	"string write_exr_compressiontype" ["PIZ (lossless)"]
+	"string write_exr_zbuf_normalizationtype" ["None"]
+	"bool write_exr" ["false"]
+	"bool write_png" ["true"]
+	"string write_png_channels" ["RGB"]
+	"bool write_png_16bit" ["false"]
+	"bool write_tga" ["false"]
+	"string ldr_clamp_method" ["cut"]
+	"integer displayinterval" [10]
+	"integer writeinterval" [180]
+	"integer flmwriteinterval" [900]
+	"integer tilecount" [0]
+	"string tonemapkernel" ["autolinear"]
+	*/
     //--
+    CString basicData;
     CString imageFile = luxsi_normalize_path(vFileLxs);
     
-    f << "\nFilm \"fleximage\"\n"; //----
-    f << "  \"integer xresolution\" ["<< vXRes <<"]\n  \"integer yresolution\" ["<< vYRes <<"]\n";
-    f << "  \"string filename\" [\""<< imageFile.GetAsciiString() <<"\"]\n";
+    basicData = L"\nFilm \"fleximage\"\n"; //----
+    basicData += L"  \"integer xresolution\" ["+ CString( vXRes ) + L"]\n";
+    basicData += L"  \"integer yresolution\" ["+ CString( vYRes ) + L"]\n";
+    basicData += L"  \"string filename\" [\""+ imageFile + L"\"]\n";
     
-    f << "  \"integer writeinterval\" ["<< vSave <<"]\n";
-    f << "  \"integer displayinterval\" ["<< vDis <<"]\n";
+    basicData += L"  \"integer writeinterval\" ["+ CString( vSave ) + L"]\n";
+    basicData += L"  \"integer displayinterval\" ["+ CString( vDis ) + L"]\n";
 
-    f << "  \"bool write_exr\" [\""<< MtBool[vExr] <<"\"]\n";
+    basicData += L"  \"bool write_exr\" [\""+ CString( MtBool[vExr] ) + L"\"]\n";
     if (vExr)
     {
-        f << "  \"string write_exr_zbuf_normalizationtype\" [\""<< AZb_norm[vExr_Znorm] <<"\"]\n";
+        basicData += L"  \"string write_exr_zbuf_normalizationtype\" [\""+ CString( AZb_norm[vExr_Znorm] ) + L"\"]\n";
     } //----/ TODO: more options for Exr /------>
     
     /** write image render  to png format*/
-    f << "  \"bool write_png\" [\""<< MtBool[vPng] <<"\"]\n";
+    basicData += L"  \"bool write_png\" [\""+ CString( MtBool[vPng] ) + L"\"]\n";
     //-
     const char *ArgbP [4] = { "Y", "YA", "RGB", "RGBA" };
     
     if (vPng)
     {
-        f << "  \"string write_png_channels\" [\""<< ArgbP[vRpng] <<"\"]\n";
-        f << "  \"bool write_png_16bit\" [\""<< MtBool[vWpng_16] <<"\"]\n";
-        f << "  \"bool write_png_gamutclamp\" [\""<< MtBool[vPng_gamut] <<"\"]\n";
+        basicData += L"  \"string write_png_channels\" [\""+ CString( ArgbP[vRpng] ) + L"\"]\n";
+        basicData += L"  \"bool write_png_16bit\" [\""+ CString( MtBool[vWpng_16] ) + L"\"]\n";
+        basicData += L"  \"bool write_png_gamutclamp\" [\""+ CString( MtBool[vPng_gamut] ) + L"\"]\n";
     }
 
     /**  write image render to tga format */
-    f << "  \"bool write_tga\" [\""<< MtBool[vTga] <<"\"]\n";
+    basicData += L"  \"bool write_tga\" [\""+ CString( MtBool[vTga] ) + L"\"]\n";
     if (vTga)
     {
-        f << "  \"string write_tga_channels\" [\""<< ArgbT[vRtga] <<"\"]\n";
-        f << "  \"bool write_tga_gamutclamp\" [\""<< MtBool[vTga_gamut] <<"\"]\n";
+        basicData += L"  \"string write_tga_channels\" [\""+ CString( ArgbT[vRtga] ) + L"\"]\n";
+        basicData += L"  \"bool write_tga_gamutclamp\" [\""+ CString( MtBool[vTga_gamut] ) + L"\"]\n";
     } //----/ TODO: more options for Tga /------>
 
-    f << "  \"bool write_resume_flm\" [\""<< MtBool[vResume] <<"\"]\n";
-    f << "  \"bool premultiplyalpha\" [\""<< MtBool[0] <<"\"]\n"; // TODO;
-    f << "  \"integer haltspp\" ["<< vhaltspp <<"]\n";
-    f << "  \"integer halttime\" ["<< vhalttime <<"]\n";
+    basicData += L"  \"bool write_resume_flm\" [\""+ CString( MtBool[vResume] ) + L"\"]\n";
+    basicData += L"  \"bool premultiplyalpha\" [\""+ CString( MtBool[0] ) + L"\"]\n"; // TODO;
+    basicData += L"  \"integer haltspp\" ["+ CString( vhaltspp ) + L"]\n";
+    basicData += L"  \"integer halttime\" ["+ CString( vhalttime ) + L"]\n";
 
-    f << "  \"float gamma\" ["<< vContrast <<"]\n\n";
+    basicData += L"  \"float gamma\" ["+ CString( vContrast ) + L"]\n\n";
 
     /* Render mode */
     CString renderMode = L"sampler";
     if ( vSurfaceInt == 6 ) renderMode = L"sppm";
+    //if ( vSurfaceInt > 6 ) renderMode = L"hybrid";
     //-
-    f << "Renderer \""<< renderMode.GetAsciiString() <<"\"\n";
+    basicData += L"Renderer \""+ renderMode + L"\"\n";
 
-    //-- filter -->
-    CString filterData = luxsi_Filter();
-    f << filterData.GetAsciiString();
+    //-- Filter -->
+    basicData += luxsi_Filter();
     
-    //-- sampler -->
-    CString samplerData = luxsi_Sampler();
-    f << samplerData.GetAsciiString();
+    //-- Sampler -->
+    basicData += luxsi_Sampler();
     
-    //-- surface integrator -->
-    luxsi_SurfaceIntegrator();
+    //-- Surface integrator -->
+    basicData += luxsi_SurfaceIntegrator();
 
     //-- Accelerator -->
-    CString accelData = luxsi_Accelerator();
-    f << accelData.GetAsciiString();
+    basicData += luxsi_Accelerator();
+    //-
+ return basicData;
 }
 //--
-void writeLuxsiCam(X3DObject o){
-    //
-    // write camera
-    //
-
-    X3DObject o2;
-    Camera c;
-    if (o.GetType()==L"camera") 
-    {
-        o2=o;  c=o;
-    }
-    else 
-    {
-        o2=o.GetChildren()[0];  c=o.GetChildren()[0];
-    }
-
-    // Operations to calculate look at position.
-    CVector3 vnegZ(0,0,-1);
-    //--
-    vnegZ.MulByMatrix3InPlace(c.GetKinematics().GetGlobal().GetTransform(ftime).GetRotationMatrix3());
-    vnegZ.NormalizeInPlace();
-    vnegZ.ScaleInPlace((double) c.GetParameterValue(L"interestdist"));
-    vnegZ.AddInPlace(c.GetKinematics().GetGlobal().GetTransform(ftime).GetTranslation());
-
-    CTransformation local_transf = o2.GetKinematics().GetLocal().GetTransform(ftime);
-    KinematicState  gs = o2.GetKinematics().GetGlobal();
-    CTransformation gt = gs.GetTransform();
-    CVector3 translation(local_transf.GetTranslation());
-    
-    X3DObject ci(o.GetChildren()[1]);
-    CValue vCType=L"pinhole";
-    float vFdist = 0.0, vLensr = 0.0, vFocal = 0;
-    int vdof_mode = 0;
-
-    CRefArray cShaders = c.GetShaders();
-    for (int i=0; i < cShaders.GetCount(); i++)
-    {
-        //-
-        Shader camShader(cShaders[i]);
-        CString vCSID((camShader.GetProgID()).Split(L".")[1]);
-        if ( luxdebug ) app.LogMessage(L" Lens shader in use: "+ CString(vCSID));
-        //-
-        if (vCSID==L"sib_dof") 
-        {
-            //-- Depth_of_field shader found
-            vdof_mode = camShader.GetParameterValue(L"mode");
-            //--
-            if ( vdof_mode = 0 ) //- custom
-            {
-                /* custom_near_focus, custom_far_focus, custom_coc */
-            }
-            if ( vdof_mode = 1 ) //- auto
-            {
-                vFdist = camShader.GetParameterValue(L"auto_focal_distance");
-            }
-            if ( vdof_mode = 2 ) //- lens
-            {
-                /* len_focal_distance, len_focal_lenght, len_fstop, len_coc */
-                vFdist = camShader.GetParameterValue(L"len_focal_distance");
-            }
-            //-- commons
-            vLensr = camShader.GetParameterValue(L"strenght");        
-        }
-    }
-
-    KinematicState  ci_gs = ci.GetKinematics().GetGlobal();
-    CTransformation ci_gt = ci_gs.GetTransform(ftime);
-
-    CVector3 tranlation(0,1,0);                                     //- time
-    CTransformation target=o2.GetKinematics().GetGlobal().GetTransform(ftime).AddLocalTranslation(tranlation);
-    CVector3 up(target.GetTranslation());
-    float vfov;
-    if ((int)c.GetParameterValue(L"fovtype")==1) 
-    {
-        // calculate the proper FOV (horizontal -> vertical)
-        float hfov = (float)c.GetParameterValue(L"fov");
-        vfov = float(2* atan(1/(float)c.GetParameterValue(L"aspect") * tan(hfov/2*PI/180))*180/PI);
-    } 
-    else
-    {
-        // keep vertical FOV
-        vfov = (float)c.GetParameterValue(L"fov");
-    }
-    //--
-    double x,y,z;
-    vnegZ.Get( x,y,z );
-    CVector3 new_pos = gt.GetTranslation();
-    CVector3 new_pos_ci = ci_gt.GetTranslation();
-
-    //--
-    int camera_proj = c.GetParameterValue(L"proj");
-    //--
-    f << "LookAt "<< new_pos[0] <<" "<< -new_pos[2] <<" "<< new_pos[1] <<"\n";
-    f << "  "<< new_pos_ci[0] <<" "<< -new_pos_ci[2] <<" "<< new_pos_ci[1] <<"\n";
-    f << "  0 0 1 \n"; //<< CString(up.GetZ()).GetAsciiString() << "\n"; // not working correct
-        
-    if ( camera_proj == 1 )
-    {
-        f << "Camera \"perspective\" \n";
-        f << "  \"float fov\" ["<< vfov <<"] \n";
-        f << "  \"float lensradius\" ["<< vLensr/10 <<"] \n";
-        f << "  \"float focaldistance\" ["<< vFdist <<"] \n";
-
-        /* by dof
-
-        1 "float fov" [49.134342077604479]
-	    2 "float screenwindow" [-1.000000000000000 1.000000000000000 -0.562500000000000 0.562500000000000]
-	    3 "bool autofocus" ["false"]
-	    4 "float shutteropen" [0.000000000000000]
-	    5 "float shutterclose" [0.041666666666667]
-
-	    "float lensradius" [0.006250000106437]
-	    "integer blades" [0]
-	    "integer power" [0]
-	    "string distribution" ["uniform"]
-
-	    6 "float focaldistance" [7.000000000000000]
-        
-        //-- no dof
-        1 "float fov" [49.134342077604479]
-	    2 "float screenwindow" [-1.000000000000000 1.000000000000000 -0.562500000000000 0.562500000000000]
-	    3 "bool autofocus" ["false"]
-	    4 "float shutteropen" [0.000000000000000]
-	    5 "float shutterclose" [0.041666666666667]
-	    6 "float focaldistance" [7.000000000000000]
-        */
-    }
-    else
-    {
-        //-- orthographic
-       /*
-        f << "Camera \"orthographic\" \n";
-        "float screenwindow" [-3.657142877578735 3.657142877578735 -2.057142868638039 2.057142868638039]
-	    "bool autofocus" ["false"]
-	    "float shutteropen" [0.00000]
-	    "float shutterclose" [0.0416]
-	    f << "  \"float lensradius\" [" << vLensr << "] \n";
-        */
-    }
-}
-
-//--
-CString write_header_files()
+CString write_header_info()
 {
     //-- commons header for files .lxm and .lxo
-    CString _header = L"";
-    _header += L"\n# Created by LuXSI; Luxrender Exporter for Autodesk Softimage. \n";
-    _header += L"# Copyright (C) 2007 - 2012 of all Authors: \n";
-    _header += L"# Michael Gangolf, \"miga\". \n";
-    _header += L"# Pedro Alcaide, \"povmaniaco\". \n \n";
+    CString head;
+    head += L"\n# Created by LuXSI; Luxrender Exporter for Autodesk Softimage. \n";
+    head += L"# Copyright (C) 2007 - 2012 of all Authors: \n";
+    head += L"# Michael Gangolf, \"miga\". \n";
+    head += L"# Pedro Alcaide, \"povmaniaco\". \n \n";
     //-
-    return _header;
+    return head;
 }
 //--
 void luxsi_mat_preview(bool onlyExport)
@@ -1369,7 +1260,7 @@ void luxsi_mat_preview(bool onlyExport)
 void sceneCollectionsObjects()
 {
     //--
-    itemsArray.Clear();
+    sceneItemsArray.Clear();
     aObj.Clear();
     aCam.Clear();
     aSurfaces.Clear();
@@ -1384,12 +1275,12 @@ void sceneCollectionsObjects()
 
     root = app.GetActiveSceneRoot();
     //--
-    itemsArray += root.FindChildren( L"", L"", CStringArray(), true );
-    for ( int i=0; i < itemsArray.GetCount(); i++ )
+    sceneItemsArray += root.FindChildren( L"", L"", CStringArray(), true );
+    for ( int i=0; i < sceneItemsArray.GetCount(); i++ )
     {
-        X3DObject o(itemsArray[i]);
+        X3DObject o(sceneItemsArray[i]);
         //- test for search all objects type.
-        app.LogMessage( L"\tObject Name: [" + o.GetName() + L"] Type: [" + o.GetType()
+        app.LogMessage( L"Object Name: [" + o.GetName() + L"] Type: [" + o.GetType()
             + L"] parent: "+ X3DObject(o.GetParent()).GetName());
            
         //-- Collection objects / visibilty check
@@ -1404,10 +1295,6 @@ void sceneCollectionsObjects()
         else if (o.GetType()==L"CameraRoot")
         {
             if ( is_visible(o, L"camera"))      aCam.Add(o);    
-        }
-        else if (o.GetType()==L"camera" && X3DObject(o.GetParent()).GetType()!=L"CameraRoot")
-        {
-            if ( is_visible(o, L"camera"))      aCam.Add(o); 
         }
         else if (o.GetType() == L"surfmsh" )
         {
@@ -1439,7 +1326,7 @@ void writeLuxsiScene(double ftime)
         sceneCollectionsObjects();
         
         //-- end for visibility check
-        if ( (aObj.GetCount() + aSurfaces.GetCount()) == 0 )
+        if ( aObj.GetCount() == 0 )
         {
             app.LogMessage(L"Any objects/surfaces to export! Check a list of 'Export hidden items..' in GUI", siFatalMsg );
         }
@@ -1458,7 +1345,9 @@ void writeLuxsiScene(double ftime)
             int ext = 0;
             ext = int(vFileLxs.ReverseFindString("."));
             
-            //- use only for exporter animation -----------------------------------------//
+            //-------------------------------//
+            // Set file names for Animation  //
+            //-------------------------------//
             if ( luxdebug ) app.LogMessage(L"[DEBUG]: ftime is: "+ CString(ftime));
             //-
             if ( ftime != DBL_MAX )
@@ -1491,11 +1380,11 @@ void writeLuxsiScene(double ftime)
             *   Not use normalized path, ofstream need full path.
             */
             ext = int(vFileLxs.ReverseFindString("."));
-            //- add extension for material file..
+            //- material file..
             CString vFileLXM = vFileLxs.GetSubString(0, ext) + (L"_mat.lxm");
-            //- add extension for geometry file..
+            //- geometry file..
             CString vFileLXO = vFileLxs.GetSubString(0, ext) + (L"_geo.lxo");
-            //- add extension for volume file..
+            //- volume file..
             CString vFileVOL = vFileLxs.GetSubString(0, ext) + L"_vol.lxv";
 
             /** For include link to PLY files into LXO file, setup global vFileGeo
@@ -1504,74 +1393,99 @@ void writeLuxsiScene(double ftime)
             */
             vFileGeo = vFileLxs;
             
-            //- init progress bar
+            //-------------------//
+            // Init progress bar //
+            //-------------------//
             pb.PutValue(0);
-            pb.PutMaximum( itemsArray.GetCount());
+            pb.PutMaximum( sceneItemsArray.GetCount());
             pb.PutStep(1);
             pb.PutVisible( true );
             pb.PutCaption( L"Processing data for exporter.." );
             pb.PutCancelEnabled(true);
 
-            //--
-            if ( luxdebug ) app.LogMessage(L"[DEBUG]: Open files for write data "+ vFileLxs);
-            //--
+            //------------------------------//
+            // Gathering data for LXS file  //
+            //------------------------------//
 
-            CString _header = write_header_files();
+            CString headerData = write_header_info();
+            //-- camera
+            CString camData;
+            for (int i = 0; i < aCam.GetCount(); i++) 
+            {
+                camData += writeLuxsiCam(aCam[i]);
+            }
+            //- basics
+            CString basicData = writeLuxsiBasics();
+            //- lights
+            CString lightData = writeLuxsiLight();
+
+            //----------------------//
+            // Open LXS scene file  //
+            //----------------------//
+            std::ofstream flxs;
+            flxs.open(vFileLxs.GetAsciiString(),'w');
             //-
-            f.open(vFileLxs.GetAsciiString());
+            if(flxs.good()) // is OK?
+            {
+                //- insert header
+                flxs << headerData.GetAsciiString();
 
-            //- insert header
-            f << _header.GetAsciiString();
+                //- Camera
+                flxs << camData.GetAsciiString();
 
-            //--
-            if ( luxdebug ) app.LogMessage(L"[DEBUG]: Write Camera..");
-            //--
-            for (int i = 0; i < aCam.GetCount(); i++) writeLuxsiCam(aCam[i]);
+                //- Basic scene data
+                flxs << basicData.GetAsciiString();
 
-            //-- basics scene values
-            writeLuxsiBasics();
+                flxs << "\nWorldBegin \n";
 
-            f << "\nWorldBegin \n";
+                //- includes
+                flxs << "\nInclude \""<< inc_LXM.GetAsciiString() <<"\" \n";
+                flxs << "Include \""<< inc_LXO.GetAsciiString() <<"\" \n";
+                //flxs << "Include \""<< inc_LXV.GetAsciiString() <<"\" \n";
 
-            //-- create includes for geometry and materials
-            f << "\nInclude \""<< inc_LXM.GetAsciiString() <<"\" \n";
-            f << "Include \""<< inc_LXO.GetAsciiString() <<"\" \n";
+                //- lights
+                flxs << "\nAttributeBegin \n";
 
-            f << "\nAttributeBegin \n";
+                flxs << lightData.GetAsciiString();
 
-            //-- lights
-            writeLuxsiLight();
+                flxs << "\nAttributeEnd \n \n";
+                //-
+                flxs << "WorldEnd";
 
-            f << "\nAttributeEnd \n \n";
+                flxs.close();
+            }
+            else
+            {
+                // test
+                app.LogMessage(L"Unable to open LXS file.");
+                flxs.close();
+            }
 
-            f << "WorldEnd";
+            //----------------------------//
+            // Gathering all shader data  //
+            //----------------------------//
 
-            f.close(); //------------------------------------------------------- end lxs
-
-            /** TEST NEW METHOD
-            *   1) gathering data, 2) open file, 3)write data, 4)closed file
-            *   This method reduces the time that the file is open for writing.
-            */
-            CString luxsi_Shader_Data = L"";
-            luxsi_Shader_Data = writeLuxsiShader();
+            CString shaderData = writeLuxsiShader();
             
-            //-- open file .lxm for write data
-            f.open(vFileLXM.GetAsciiString()); 
+            //----------------//
+            // Open LXM file  //
+            //--------------- //
+            std::ofstream flxm;
+            flxm.open(vFileLXM.GetAsciiString(), 'w'); 
 
-            //-- insert header
-            f << _header.GetAsciiString();
+            //- header
+            flxm << "#\n# LuxRender Material file\n";
+            flxm << headerData.GetAsciiString();
             
-            //- insert shader data
-            f << luxsi_Shader_Data.GetAsciiString();
-            
-            //->
-            f.close();
+            //- materials
+            flxm << shaderData.GetAsciiString();
+
             //-
-            if ( luxdebug ) app.LogMessage(L"[DEBUG]: Writed materials file: "+ vFileLXM);
-
-           
-            //- Ghatering geometry data -------------------------------#
-            //--
+            flxm.close(); 
+            
+            //-------------------------------//
+            //  Ghatering all geometry data  //
+            //-------------------------------//
             CString geometryData;
             for (int i = 0; i < aObj.GetCount(); i++) 
             {
@@ -1579,13 +1493,13 @@ void writeLuxsiScene(double ftime)
                 if (pb.IsCancelPressed() ) break;
                 pb.Increment();
             }
-            //-- instance data
+            //- Models and Instances
             CString instanceData;
             if (aModels.GetCount() >0)
             {
                 instanceData += writeLuxsiInstance(aModels);
             }
-            //--
+            //- Pointcloud objects
             CString pointCloudData;
             for (int i = 0; i < aClouds.GetCount(); i++) 
             {
@@ -1593,7 +1507,7 @@ void writeLuxsiScene(double ftime)
                 if (pb.IsCancelPressed() ) break; 
                 pb.Increment();
             }
-            //--
+            //- Surface / Primitives
             CString surfaceData;
             for (int i=0; i < aSurfaces.GetCount(); i++) 
             {
@@ -1601,7 +1515,7 @@ void writeLuxsiScene(double ftime)
                 if (pb.IsCancelPressed() ) break;
                 pb.Increment();
             }
-            /* hair object */
+            //- 'Hair emitter' objects
             CString hairData;
             for ( int i = 0; i < aHair.GetCount(); i++)
             {
@@ -1610,44 +1524,41 @@ void writeLuxsiScene(double ftime)
                 pb.Increment();
             }
             
-            //- ready for write --------------------------------------------#
-            if ( luxdebug ) app.LogMessage(L"[DEBUG]: Open file for geometry: "+ vFileLXO);
+            //-------------------------//
+            // Open LXO geometry file  //
+            //-------------------------//
+            std::ofstream flxo;
+            flxo.open(vFileLXO.GetAsciiString(),'w'); 
 
-            /**
-            *   Open geometry file..
-            *   Add 'empty' check for non frequenty objects..
-            */
-            f.open(vFileLXO.GetAsciiString()); 
+            //- Header
+            flxo << "#\n# LuxRender Geometry file\n";
+            flxo << headerData.GetAsciiString();
 
-            //-- ..insert header
-            f << _header.GetAsciiString();
-
-            //-- ..add polymesh
-            f << geometryData.GetAsciiString();
+            //- Polygon Mesh
+            flxo << geometryData.GetAsciiString();
             
-            //-- ..add surfaces
+            //- Surfaces
             if ( !surfaceData.IsEmpty() )
             {
-                f << surfaceData.GetAsciiString();
+                flxo << surfaceData.GetAsciiString();
             }
-            //-- ..add pointclouds
+            //- Pointclouds
             if ( !pointCloudData.IsEmpty() )
             {
-                f << pointCloudData.GetAsciiString();
+                flxo << pointCloudData.GetAsciiString();
             }
-            //-- ..add instances
+            //- Instances
             if ( !instanceData.IsEmpty() )
             {
-                f << instanceData.GetAsciiString();
+                flxo << instanceData.GetAsciiString();
             }
-            //-- ..add Hair ( add test for empty )
+            //- Hair
             if ( !hairData.IsEmpty() )
             {
-                f << hairData.GetAsciiString();
+                flxo << hairData.GetAsciiString();
             }
-            
-            //-- ..and close _geom file
-            f.close();
+            //-
+            flxo.close();
 
             //-- close pogress bar
             pb.PutVisible( false );
@@ -1677,35 +1588,26 @@ void luxsi_execute()
     //--
     if (vExportDone)
     {
-        #ifdef __unix__
-                pid_t pid = fork();
-				if( 0 == pid ) 
-                {
-                     system ( ( vLuXSIPath +" \""+ vFileExport.GetAsciiString()));
-                     exit(0);
-                }
-        #else
-            // windows
-            CString Lux_Binarie = L"", exec = L"";
+        // windows
+        CString Lux_Binarie = L"", exec = L"";
 
-            //- by default use LuxRender GUI..
-            Lux_Binarie = vLuXSIPath + L"/luxrender.exe";
+        //- by default use LuxRender GUI..
+        Lux_Binarie = vLuXSIPath + L"/luxrender.exe";
 
-            //- or use console..
-            if (vRmode == 1) Lux_Binarie = vLuXSIPath + L"/luxconsole.exe";
+        //- or use console..
+        if (vRmode == 1) Lux_Binarie = vLuXSIPath + L"/luxconsole.exe";
+           
+        //- by default load unique .lxs file..
+        exec = Lux_Binarie +" \""+ vFileLxs + "\"";
 
-            //- by default load unique .lxs file..
-            exec = Lux_Binarie +" \""+ vFileLxs + "\"";
-
-            //- or use queue list for load a list files..
-            if (lqueue) exec = Lux_Binarie + L" -L \""+ vFileQueue + "\"";
+        //- or use queue list for load a list files..
+        if (lqueue) exec = Lux_Binarie + L" -L \""+ vFileQueue + "\"";
             
-            //- reset queue
-            lqueue = false;
-            //-
-            app.LogMessage(exec);
-            loader(exec.GetAsciiString());
-        #endif
+        //- reset queue
+        lqueue = false; 
+        //-
+        app.LogMessage(exec);
+        loader(exec.GetAsciiString());
     }
     else
     {

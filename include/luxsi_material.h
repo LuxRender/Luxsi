@@ -149,4 +149,18 @@ extern CString integerToString(Shader s, CString in_item);
 /**/
 extern CString vmatPreview;
 
+/*!
+* MaterialLibraries into Scene
+*/
+CRefArray sceneMatLibraries;
+/*!
+* Libraries into MaterialLibrary
+*/
+CRefArray materialLibs;
+/*!
+* Materials into a Library
+*/
+CRefArray aMats;
+
+
 #endif //LUXSI_MATERIAL_H

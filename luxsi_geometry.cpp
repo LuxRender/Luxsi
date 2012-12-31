@@ -22,18 +22,15 @@ along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "include\luxsi_geometry.h"
+#include "include\rply.h"
 
 using namespace XSI;
 using namespace MATH;
 using namespace std;
 
 //-
-CString writeGeometryLXO(
-                         CVector3Array allPoints, 
-                         CVector3Array allNormals, 
-                         CVector3Array allUV,
-                         CLongArray indices, 
-                         CTransformation global_trans)
+CString writeGeometryLXO(CVector3Array allPoints, CVector3Array allNormals, CVector3Array allUV,
+                         CLongArray indices, CTransformation global_trans)
 {
     /** Specialized fuction. 
     *   The questions, always before the loop.
@@ -61,9 +58,9 @@ CString writeGeometryLXO(
             //-- points
             CVector3 vPos(allPoints[j][0], allPoints[j][1], allPoints[j][2]);
             vPos.MulByTransformationInPlace(global_trans);
-            vPoints += L" "+ CString(vPos[0]) + L" "+  CString(-vPos[2]) + L" "+ CString(vPos[1]) + L"\n";
+            vPoints += L" "+ CString(vPos[0]) + L" "+ CString(-vPos[2]) + L" "+ CString(vPos[1]) + L"\n";
             //-- UVs
-            vUV += L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]) + L"\n";
+            vUV += L" "+ CString(allUV[j][0]) + L" "+ CString(allUV[j][1]) + L"\n";
         }
     }
     //-- only normals, not UV
@@ -95,7 +92,7 @@ CString writeGeometryLXO(
             vNorm.MulByTransformationInPlace(global_trans);
             vNormals += L" "+ CString(vNorm[0]) + L" "+ CString(vNorm[2]) + L" "+ CString(vNorm[1]) + L"\n";                        
             //-- UVs
-            vUV += L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]) + L"\n";
+            vUV += L" "+ CString(allUV[j][0]) + L" "+ CString(allUV[j][1]) + L"\n";
         }
 
     }
@@ -120,12 +117,8 @@ CString writeGeometryLXO(
     return lxoData;
 }
 //--
-CString writeGeometryPLY(
-                         CVector3Array allPoints, 
-                         CVector3Array allNormals, 
-                         CVector3Array allUV,
-                         CLongArray indices, 
-                         CTransformation global_trans)
+CString writeGeometryPLY(CVector3Array allPoints, CVector3Array allNormals, CVector3Array allUV,
+                         CLongArray indices, CTransformation global_trans)
 {
     /** Specialized fuction. 
     *   The questions, always before the loop.
@@ -144,6 +137,7 @@ CString writeGeometryPLY(
             vPos.MulByTransformationInPlace(global_trans);
             plyData += CString(vPos[0]) + L" "+  CString(-vPos[2]) + L" "+ CString(vPos[1]);
             //-
+            plyData += L" 255 255 255";
             plyData += L"\n"; 
         }
     }
@@ -159,6 +153,7 @@ CString writeGeometryPLY(
             //-- UVs
             plyData += L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]);
             //-
+            plyData += L" 255 255 255";
             plyData += L"\n";
         }
     }
@@ -176,6 +171,7 @@ CString writeGeometryPLY(
             vNorm.MulByTransformationInPlace(global_trans);
             plyData += L" "+ CString(vNorm[0]) + L" "+ CString(vNorm[2]) + L" "+ CString(vNorm[1]);                   
             //- close line
+            plyData += L" 255 255 255";
             plyData += L"\n";
         }
     }
@@ -197,6 +193,7 @@ CString writeGeometryPLY(
             //-- UVs
             plyData += L" "+ CString(allUV[j][0]) + L" "+  CString(allUV[j][1]);              
             //-
+            plyData += L" 255 255 255";
             plyData += L"\n";
         }
 
@@ -342,12 +339,12 @@ CString writeLuxsiObj(X3DObject o)
             //--
             lxoData += L" LightGroup \""+ lName + L"\"\n";
             //-
-            lxoData += L"\nAreaLightSource \"area\" \n"+ 
-                floatToString(s, L"importance")+
-                floatToString(s, L"gain")+
-                floatToString(s, L"power")+
-                floatToString(s, L"efficacy")+
-                integerToString(s, L"nsamples");
+            lxoData += L"\nAreaLightSource \"area\" \n"
+                + floatToString(s, L"importance")
+                + floatToString(s, L"gain")
+                + floatToString(s, L"power")
+                + floatToString(s, L"efficacy")
+                + integerToString(s, L"nsamples");
             lxoData += L"  \"color L\" ["
                 + CString(red * emitt) + L" "
                 + CString(green * emitt) + L" "
@@ -426,51 +423,54 @@ CString writeLuxsiObj(X3DObject o)
 //-
 void write_lxoFile(CString lxoData, CString lxoFile)
 {
-    f.open(lxoFile.GetAsciiString());
+    std::ofstream filelxo;
+    filelxo.open(lxoFile.GetAsciiString(),'w');
     //-
-    f << lxoData.GetAsciiString();
-    //-
-    f.close();
+    filelxo << lxoData.GetAsciiString();
+    filelxo.close();
+    
 }
 //-
-void write_plyFile(CString plyGeometryData, CString vfile, int vertCount, int triCount)
+void write_plyFile(CString plyGeometryData, CString vfile, int vCount, int tCount)
 {
     //-
-    f.open(vfile.GetAsciiString());
-    f << "ply\n";
-    f << "format ascii 1.0\n";
-    f << "comment created with LuXSI; LuxRender Exporter for Autodesk Softimage\n";
-    f << "element vertex "<< vertCount <<"\n";
-    f << "property float x\n";
-    f << "property float y\n";
-    f << "property float z\n";
-
-    /* for vertex colors?
-    f << "property uchar red\n";
-    f << "property uchar green\n";
-    f << "property uchar blue\n";
-    */
+    CString plyStr;
+    //-
+    plyStr  = L"ply\n"; 
+    plyStr += L"format ascii 1.0\n";
+    plyStr += L"comment created with LuXSI; LuxRender Exporter for Autodesk Softimage\n";
+    plyStr += L"element vertex "+ CString( vCount ) + L"\n";
+    plyStr += L"property float x\n";
+    plyStr += L"property float y\n";
+    plyStr += L"property float z\n";
     
     if ( vSmooth_mesh )
     {
-        f << "property float nx\n";
-        f << "property float ny\n";
-        f << "property float nz\n";
+        plyStr += L"property float nx\n";
+        plyStr += L"property float ny\n";
+        plyStr += L"property float nz\n";
     }
     if ( have_UV )
     {
-        f << "property float u\n";
-        f << "property float v\n";
+        plyStr += L"property float u\n";
+        plyStr += L"property float v\n";
     }
+    // for vertex colors
+    plyStr += L"property uchar red\n";
+    plyStr += L"property uchar green\n";
+    plyStr += L"property uchar blue\n";
+    //-
+    plyStr += L"element face "+ CString( tCount ) + L"\n";
+    plyStr += L"property list uchar uint vertex_indices\n";
+    plyStr += L"end_header\n";
 
-    f << "element face "<< triCount <<"\n";
-    f << "property list uchar uint vertex_indices\n";
-    f << "end_header\n";
-
-    //-- write all geometry data
-    f << plyGeometryData.GetAsciiString();
-    //->
-    f.close();
-    //--
+    //-- write file
+    std::ofstream fileply;
+    fileply.open(vfile.GetAsciiString(),'w');
+    //-
+    fileply << plyStr.GetAsciiString();
+    fileply << plyGeometryData.GetAsciiString();
+    
+    fileply.close();
 }
 //-
