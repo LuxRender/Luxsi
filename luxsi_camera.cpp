@@ -75,6 +75,7 @@ CString luxsiCameraShaders(CRefArray camShaders)
     }
     return dofData;
 }
+
 //--
 CString writeLuxsiCam(X3DObject o)
 {
@@ -82,7 +83,7 @@ CString writeLuxsiCam(X3DObject o)
     * Status: work in progress
     ****************************/
     //- values
-    CString dofData, camData; 
+    CString camShaderData, camData; 
     float vfov, aspect;
     //-
     X3DObject camInterest;
@@ -105,7 +106,8 @@ CString writeLuxsiCam(X3DObject o)
     CRefArray cShaders = cam.GetShaders();
     if ( cShaders.GetCount() > 0 )
     {
-        dofData = luxsiCameraShaders(cShaders);
+        //dofData = luxsiCameraShaders(cShaders);
+        camShaderData = luxsiCameraShaders(cShaders);
     }    
     //--
     if ((int)cam.GetParameterValue(L"fovtype")==1) 
@@ -152,19 +154,19 @@ CString writeLuxsiCam(X3DObject o)
             + CString(screen[1]) + L" "
             + CString(screen[2]) + L" "
             + CString(screen[3]) + L"]\n";
-	    //camData += L"float shutteropen" [0.000000000000000]
-	    //camData += L"float shutterclose" [0.041666666666667]
+	    //camData += L"float shutteropen" [0.00]
+	    //camData += L"float shutterclose" [0.04]
         //- clipping ?
         camData += L"  \"float hither\" ["+ CString(cam.GetParameterValue(L"near"))+ L"]\n";
 	    camData += L"  \"float yon\" ["+ CString(cam.GetParameterValue(L"far"))+ L"]\n";
         //-
-        if (!dofData.IsEmpty()) camData += dofData;
+        if (!camShaderData.IsEmpty()) camData += camShaderData;
     }
     else //-- orthographic
     {        
         camData += L"Camera \"orthographic\"\n";
         /*
-	    //- sin dof / sin clipping
+	    //- not dof / not clipping
         "float screenwindow" [-3.65 3.65 -2.53 2.53]
 	    "bool autofocus" ["false"]
 	    "float shutteropen" [0.0]
