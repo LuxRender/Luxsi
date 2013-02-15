@@ -255,14 +255,14 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 	vLuXSIPath += L"/LuXSI/Application/bin";    
     
     //-- lxs files for re-render
-    prop.AddParameter( L"blxs_file",    CValue::siString, sps,L"",L"",  vblxs_file, oParam);
+    prop.AddParameter( L"blxs_file",    CValue::siString, sps,L"",L"",  vblxs_file,     oParam );
     
     //- name for Material preview 
-    prop.AddParameter( L"bmatPreview",  CValue::siString, sps,L"",L"",  vmatPreview,    oParam);
+    prop.AddParameter( L"bmatPreview",  CValue::siString, sps,L"",L"",  vmatPreview,    oParam );
     
-	prop.AddParameter( L"fileExport",   CValue::siString, sps,L"",L"",  vFileExport,   oParam );
+	prop.AddParameter( L"fileExport",   CValue::siString, sps,L"",L"",  vFileExport,    oParam );
 
-    prop.AddParameter( L"fLuxPath",     CValue::siString, sps,L"",L"",  vLuXSIPath,    oParam );
+    prop.AddParameter( L"fLuxPath",     CValue::siString, sps,L"",L"",  vLuXSIPath,     oParam );
 
     return CStatus::OK;
 }
