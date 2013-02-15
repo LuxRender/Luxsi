@@ -378,3 +378,8 @@ float floatValue(Shader s, CString item)
     return float(s.GetParameterValue(item));
 }
 //-
+CVector3 convertMatrix(CVector3 v)
+{
+    CMatrix3 m2(1.0,0.0,0.0, 0.0,0.0,1.0, 0.0,-1.0,0.0);
+    return v.MulByMatrix3InPlace(m2);
+}
