@@ -170,13 +170,6 @@ XSIPLUGINCALLBACK CStatus LuXSI_PPGEvent( const CRef& in_ctxt )
 }
 
 //--
-CVector3 convertMatrix(CVector3 v)
-{
-    CMatrix3 m2(1.0,0.0,0.0,  0.0,0.0,1.0,   0.0,-1.0,0.0);
-    return v.MulByMatrix3InPlace(m2);
-}
-
-//--
 void update_main_values(CString paramName, Parameter changed, PPGEventContext ctxt)
 {
     if (paramName == L"Width")  { vXRes = changed.GetValue();
@@ -533,8 +526,8 @@ void luxsi_render_presets( PPGEventContext ctxt)
 
     //-- commons values for all pressets 
     //--
-    input_presset(L"hSpp",  vhaltspp = 0);
-    input_presset(L"hTime", vhalttime = 0);
+    input_presset(L"hSpp",  0); //vhaltspp = 0);
+    input_presset(L"hTime", 0); //vhalttime = 0);
        
     //--
     if ( vpresets == 0 ) // Custom parameters
@@ -543,42 +536,42 @@ void luxsi_render_presets( PPGEventContext ctxt)
     }
     else if ( vpresets == 1 ) // Preview; Instant Global Illumination
     {
-        input_presset( L"bsampler",      vSampler = 2);
+        input_presset( L"bsampler",      2); //vSampler = 2);
         input_presset( L"bpixsampler",   vPixsampler = 3); // low
         input_presset( L"pixelsamples",  vPixelsamples = 1);
         //-- distributepath
-        input_presset( L"bsurfaceint",              vSurfaceInt = 3); 
         input_presset( L"blight_str",               vLight_str = 2 );
-        input_presset( L"directsampleall",          vdirectsampleall =  true );
+        input_presset( L"bsurfaceint",              vSurfaceInt = 3); 
         input_presset( L"bdirectsamples",           vdirectsamples = 1 );
-        input_presset( L"bindirectsampleall",       vindirectsampleall = false );
         input_presset( L"bindirectsamples",         vindirectsamples = 1 );
-        input_presset( L"bdiffusereflectdepth",     vdiffusereflectdepth = 3 );
-        input_presset( L"bdiffusereflectsamples",   vdiffusereflectsamples = 1 );
-        input_presset( L"bdiffuserefractdepth",     vdiffuserefractdepth = 5 );
-        input_presset( L"bdiffuserefractsamples",   vdiffuserefractsamples = 1 );
-        input_presset( L"bdirectdiffuse",           vdirectdiffuse = true );
-        input_presset( L"bindirectdiffuse",         vindirectdiffuse = true );
-        input_presset( L"bglossyreflectdepth",      vglossyreflectdepth = 2 );
-        input_presset( L"bglossyreflectsamples",    vglossyreflectsamples = 1 );
-        input_presset( L"bglossyrefractdepth",      vglossyrefractdepth = 5 );
-        input_presset( L"bglossyrefractsamples",    vglossyrefractsamples = 1 );
-        input_presset( L"bdirectglossy",            vdirectglossy = true );
-        input_presset( L"bindirectglossy",          vindirectglossy = true );
-        input_presset( L"bspecularreflectdepth",    vspecularreflectdepth = 3 );
-        input_presset( L"bspecularrefractdepth",    vspecularrefractdepth = 5 );
+        input_presset( L"bdiffusereflectdepth",     vdiffusereflectdepth  = 3 );
+        input_presset( L"bdiffusereflectsamples",   vdiffusereflectsamples  = 1 );
+        input_presset( L"bdiffuserefractdepth",     vdiffuserefractdepth    = 5 );
+        input_presset( L"bdiffuserefractsamples",   vdiffuserefractsamples  = 1 );
+        input_presset( L"bglossyreflectdepth",      vglossyreflectdepth     = 2 );
+        input_presset( L"bglossyreflectsamples",    vglossyreflectsamples   = 1 );
+        input_presset( L"bglossyrefractdepth",      vglossyrefractdepth     = 5 );
+        input_presset( L"bglossyrefractsamples",    vglossyrefractsamples   = 1 );
+        input_presset( L"bspecularreflectdepth",    vspecularreflectdepth   = 3 );
+        input_presset( L"bspecularrefractdepth",    vspecularrefractdepth   = 5 );
+        input_presset( L"bindirectsampleall",       vindirectsampleall  = false );
+        input_presset( L"directsampleall",          vdirectsampleall    = true );
+        input_presset( L"bdirectdiffuse",           vdirectdiffuse      = true );
+        input_presset( L"bindirectdiffuse",         vindirectdiffuse    = true );
+        input_presset( L"bdirectglossy",            vdirectglossy       = true );
+        input_presset( L"bindirectglossy",          vindirectglossy     = true );
         //-- volume int
         //-- filter / commons
     }
     else if ( vpresets == 2 ) // Preview; Directlighting ( No GI )
     {
-        input_presset( L"bsurfaceint",  vSurfaceInt = 2); //-- directlighting
-        input_presset( L"blight_str",   vLight_str = 0 ); // auto
-        input_presset( L"bsampler",     vSampler = 3); 
-        input_presset( L"bpixsampler",  vPixsampler = 1);
-        input_presset( L"pixelsamples", vPixelsamples = 1);
-        input_presset( L"bmaxdepth",    vmaxdepth = 5);
-
+        input_presset( L"bsampler",     vSampler    = 3); 
+        input_presset( L"bmaxdepth",    vmaxdepth   = 5);
+        input_presset( L"blight_str",   vLight_str  = 0 );
+        input_presset( L"bpixsampler",  vPixsampler     = 1);
+        input_presset( L"bsurfaceint",  vSurfaceInt     = 2);
+        input_presset( L"pixelsamples", vPixelsamples   = 1);
+        // volume
         input_presset( L"bvolumeint",   vvolumeint = 1);
         //- filter
         input_presset( L"bywidth",      vYwidth = 2.0);
@@ -648,11 +641,11 @@ void luxsi_render_presets( PPGEventContext ctxt)
         input_presset( L"bsampler", vSampler = 1);
         vchainlength = 512;
         vbasampler = 1;
-        input_presset( L"bpixsampler",   vPixsampler = 2); 
-        input_presset( L"pixelsamples",  vPixelsamples = 1);
+        input_presset( L"bpixsampler",  vPixsampler = 2); 
+        input_presset( L"pixelsamples", vPixelsamples = 1);
         //-- surf
-        input_presset( L"bsurfaceint",   vSurfaceInt = 1); // path
-        input_presset( L"bmaxdepth",     vmaxdepth = 10);
+        input_presset( L"bsurfaceint",  vSurfaceInt = 1); // path
+        input_presset( L"bmaxdepth",    vmaxdepth = 10);
         input_presset( L"binc_env",     vInc_env = true);
         //--
     }
@@ -675,7 +668,7 @@ void luxsi_render_presets( PPGEventContext ctxt)
         input_presset( L"bpixsampler",  vPixsampler = 4 ); //TODO; revise 
         input_presset( L"pixelsamples", vPixelsamples = 64);
         input_presset( L"bsurfaceint",  vSurfaceInt = 1); // path
-        vsexpert = false ;
+        input_presset( L"bsexpert",     vsexpert = false);
         input_presset( L"bmaxdepth",    vmaxdepth = 10); 
         input_presset( L"binc_env",     vInc_env = true);
         //-- filter - commons
@@ -685,7 +678,7 @@ void luxsi_render_presets( PPGEventContext ctxt)
     input_presset( L"bsampler", vSampler );
 
     //-- if ( vsampler == low ) //-- TODO;
-    input_presset( L"bpixsampler", vPixsampler );
+    input_presset( L"bpixsampler",  vPixsampler );
     input_presset( L"pixelsamples", vPixelsamples );
 
     //-- if ( vsampler == metro ) //-- TODO;
@@ -736,12 +729,12 @@ XSIPLUGINCALLBACK CStatus LuXSI_Menu_Init( CRef& in_ctxt )
     Menu oMenu;
     oMenu = ctxt.GetSource();
     MenuItem oNewItem;
-    oMenu.AddCallbackItem(L"LuXSI",L"OnLuXSI_MenuClicked",oNewItem);
+    oMenu.AddCallbackItem(L"LuXSI",L"LuXSI_MenuClicked",oNewItem);
     return CStatus::OK;
 }
 
 //--
-XSIPLUGINCALLBACK CStatus OnLuXSI_MenuClicked( XSI::CRef& )
+XSIPLUGINCALLBACK CStatus LuXSI_MenuClicked( XSI::CRef& )
 {
     CValueArray addpropArgs(5) ;
     addpropArgs[0] = L"LuXSI"; // Type of Property
@@ -835,7 +828,6 @@ CString luxsi_SurfaceIntegrator()
         //-
         if ( vsexpert )
         {
-            //surfData += L"  \"string lightstrategy\" [\""<< MtlightST[vLight_str] <<"\"]\n";
             surfData += L"  \"integer shadowraycount\" ["+ CString( vshadowraycount ) + L"]\n";
         }
     }
@@ -872,7 +864,6 @@ CString luxsi_SurfaceIntegrator()
             surfData += L"  \"bool glossyrefractreject\" [\""+ CString( MtBool[0] ) + L"\"]\n";
             surfData += L"  \"float glossyrefractreject_threshold\" ["+ CString( vglossy_refract_reject_thr ) + L"]\n";
             //--
-            //surfData += L"  \"string lightstrategy\" [\""<< MtlightST[vLight_str] <<"\"]\n";
         }
     }
     else if ( vSurfaceInt == 4 ) //-- igi
@@ -913,8 +904,7 @@ CString luxsi_SurfaceIntegrator()
             surfData += L"  \"bool dbg_enableindircaustic\" [\""+ CString( MtBool[vdbg_indircaustic] ) + L"\"]\n";
             surfData += L"  \"bool dbg_enableindirdiffuse\" [\""+ CString( MtBool[vdbg_indirdiffuse] ) + L"\"]\n";
             surfData += L"  \"bool dbg_enableindirspecular\" [\""+ CString( MtBool[vdbg_indirspecular] ) + L"\"]\n";
-        }
-        
+        }        
     }
     else // sppm
     {
@@ -929,15 +919,6 @@ CString luxsi_SurfaceIntegrator()
 	    surfData += L"  \"bool directlightsampling\" [\""+ CString( MtBool[vbdlsampling] ) + L"\"]\n"; 
         //-
         /*
-        SurfaceIntegrator "sppm"
-	    "integer maxeyedepth" [48]
-	    "integer maxphotondepth" [48]
-	    "integer photonperpass" [1000000]
-	    "integer hitpointperpass" [0]
-	    "float startradius" [2.000000000000000]
-	    "float alpha" [0.699999988079071]
-	    "bool includeenvironment" ["true"]
-	    "bool directlightsampling" ["true"]
         //--- expert
         "bool storeglossy" ["false"]
 	    "bool useproba" ["true"]
@@ -961,7 +942,7 @@ CString luxsi_SurfaceIntegrator()
     //- light strategy for all, except sppm
     if ( vSurfaceInt < 6 )
     {
-        surfData += L"  \"string lightstrategy\" [\""+ CString( MtlightST[vLight_str] ) + L"\"]\n";
+        surfData += L"  \"string lightstrategy\" [\""+ CString(MtlightST[vLight_str]) + L"\"]\n";
     }
     return surfData;
 }
@@ -1025,9 +1006,9 @@ CString luxsi_Sampler()
 CString luxsi_Accelerator()
 {
     CString AccelStr;
-    //--------------------------------------------------
+    //-----------------------------------------------------------------
     AccelStr = L"\nAccelerator \""+ CString(MtAccel[vAccel]) + L"\"\n";
-    //--------------------------------------------------
+    //-----------------------------------------------------------------
     if ( vAccel == 0  &&  vExpert ) //-- qbvh
     {
         AccelStr += L"  \"integer maxprimsperleaf\" ["+ CString( vmaxprimsperleaf ) + L"]\n";
@@ -1469,7 +1450,7 @@ void writeLuxsiScene(double ftime)
             
             //----------------//
             // Open LXM file  //
-            //--------------- //
+            //----------------//
             std::ofstream flxm;
             flxm.open(vFileLXM.GetAsciiString(), 'w'); 
 
@@ -1615,6 +1596,7 @@ void luxsi_execute()
     }
 }
 
+//-
 void luxsiRender(CString fileScene)
 {
     /* Use only GUI mode, obviusly..
