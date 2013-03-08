@@ -23,70 +23,66 @@ along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "include\luxsi_lights.h"
 
-using namespace std;
-using namespace XSI;
-using namespace MATH;
-
-//--
-void sceneCollectionLights()
-{
-    //-
-    Model root = app.GetActiveSceneRoot();
-    CRefArray sceneObjectLights = root.FindChildren( L"", L"light", CStringArray(), true);
-    for( long i = 0; i < sceneObjectLights.GetCount(); i++)
-    {
-        X3DObject o(sceneObjectLights[i]);
-    }
-}
 //-
+CRefArray sceneCollectionsLights()
+{
+    //sceneLight.Clear();
+    CRefArray arrayLights;
+    root = app.GetActiveSceneRoot();
+    //-
+    sceneLight = root.FindChildren( L"", L"light", CStringArray(), true );
+    //-
+    for ( int i=0; i < sceneLight.GetCount(); i++ )
+    {
+        X3DObject objectLight(sceneLight[i]);
+        //-
+        if ( is_visible(objectLight, L"light"))
+        {
+            arrayLights.Add(objectLight);
+        }
+    }
+    return arrayLights;
+}
 
+//-
 CString writeLuxsiLight()
 {
-    sceneLight.Clear();
     Alights.Clear();
-    root = app.GetActiveSceneRoot();
     CString lightData;
 
     /* create an array objects with the 'lights' of the scene.
     */
-    sceneLight += root.FindChildren( L"", L"light", CStringArray(), true );
+    Alights = sceneCollectionsLights();
     
-    //-- check visibility
-    for ( int i=0; i < sceneLight.GetCount(); i++ )
+    //-
+    for ( int i=0; i < Alights.GetCount(); i++ )
     {
-        X3DObject o(sceneLight[i]);
-        //-
-        if ( !is_visible(o, L"light")) continue;
+        X3DObject o(Alights[i]);
             
-        //- light object
-        KinematicState  from_global_kinex_state;
-        CTransformation light_from_global_transf;
-        //- set state for 'point from'
-        from_global_kinex_state = o.GetKinematics().GetGlobal();
-        light_from_global_transf = from_global_kinex_state.GetTransform();
-
+        //- light global transform
+        KinematicState global_state = o.GetKinematics().GetGlobal();
+        CTransformation global_transf = global_state.GetTransform();        
+        
         //- point from
         CVector3 light_from;
-        light_from.MulByTransformationInPlace(light_from_global_transf);
+        light_from.MulByTransformationInPlace(global_transf); 
+        //global_transf.GetTranslation()... ? REVISE!!
 
         //- light object interest. Target object for 'infinite' or 'spot' lights
         X3DObject light_interest = Light(o).GetInterest();
             
         //- set state for 'point to'
-        KinematicState  to_global_state;
-        CTransformation light_to_global_transf;
-        //-
-        to_global_state = light_interest.GetKinematics().GetGlobal();
-        light_to_global_transf = to_global_state.GetTransform();
+        KinematicState to_global_state = light_interest.GetKinematics().GetGlobal();
+        CTransformation to_global_transf = to_global_state.GetTransform();
 
         //- point to
         CVector3 light_to;
-        light_to.MulByTransformationInPlace(light_to_global_transf);
+        light_to.MulByTransformationInPlace(to_global_transf);
 
         //--
         Shader s((Light(o).GetShaders())[0]);
         /** Same name for xsi and Lux shaders: 'color'
-        *   if no have any shader, the color is black (0,0,0).
+        *   if no have any shader, the color value is (0,0,0).
         */
         s.GetColorParameterValue(L"color", red, green, blue, alpha);
 
@@ -99,79 +95,155 @@ CString writeLuxsiLight()
         }
         //--
         int lType = Light(o).GetParameterValue(L"Type");
-
-        //--
-        float vLightCone = o.GetParameterValue(L"LightCone"); // is only for spot light??
         vIntensity = s.GetParameterValue(L"intensity");
-        float vSpotblend = s.GetParameterValue(L"spread"); // move to spot light??
-
+        
         //-- search 'Programmatic Identification (ID)' for Light Shader Nodes
-        Light_Shader_ID =s.GetProgID().Split(L".")[1];
+        lightID = s.GetProgID().Split(L".")[1];
         //--
-        if ( luxdebug ) app.LogMessage(L"Light shader used: "+ Light_Shader_ID);
+        if ( luxdebug ) app.LogMessage(L"Light shader in use: "+ lightID);
         //-
         lightData += L"\nLightGroup \""+ group_name + L"\" \n";
 
-        //- for use Image Based Light ( IBL )
-        //if ( luxdebug ) app.LogMessage(L"XSI environment finded: "+ find_XSI_env());
-            
-        //-
-        CString xsi_env = find_XSI_env();
-        //-
-        if ( xsi_env != L"" )
+        /******************* 
+        Lux definition code
+        *******************/
+        /*
+        Light* InfiniteAreaLight::CreateLight(const Transform &light2world, const ParamSet &paramSet)
         {
+	        RGBColor L = paramSet.FindOneRGBColor("L", RGBColor(1.0));
+	        string texmap = paramSet.FindOneString("mapname", "");
+	        int nSamples = paramSet.FindOneInt("nsamples", 1);
+
+	        EnvironmentMapping *map = NULL;
+	        string type = paramSet.FindOneString("mapping", "");
+	        if (type == "" || type == "latlong") {
+		        map = new LatLongMapping();
+	        }
+	        else if (type == "angular") map = new AngularMapping();
+	        else if (type == "vcross") map = new VerticalCrossMapping();
+
+	        // Initialize _ImageTexture_ parameters
+	        float gain = paramSet.FindOneFloat("gain", 1.0f);
+	        float gamma = paramSet.FindOneFloat("gamma", 1.0f);
+
+	        InfiniteAreaLight *l =  new InfiniteAreaLight(light2world, L, nSamples, texmap, map, gain, gamma);
+	        l->hints.InitParam(paramSet);
+	        return l;
+        }
+        */    
+        //-
+        //CString xsi_env = find_XSI_env();
+        //-
+        if (lightID == L"lux_environment_light")
+        {
+            CRefArray sImages(s.GetImageClips());
+            Source vImgClipSrc(ImageClip2(sImages[0]).GetSource());
+            CString envmap = vImgClipSrc.GetParameterValue( L"path");
+            CString environMap = luxsi_replace(envmap.GetAsciiString()).c_str();
+            //-
+            const char *envtype []={"vcross", "angular", "latlong"};
+            int maptype = int(s.GetParameterValue(L"maptype"));
+            
+            //-
             lightData += L"LightSource \"infinite\"\n";
-            lightData += L"  \"float gain\" ["+ CString( vIntensity ) + L"]\n";
-            lightData += L"  \"float importance\" [1.0]\n"; // TODO
-            lightData += L"  \"string mapname\" [\""+ CString( luxsi_replace(xsi_env.GetAsciiString()).c_str() ) + L"\"]\n";
-            lightData += L"  \"string mapping\" [\"latlong\"]\n"; // TODO
-            lightData += L"  \"float gamma\" [1.0]\n";
-            lightData += L"  \"integer nsamples\" [1]\n"; // TODO
+            lightData += L"  \"float gain\" ["+ CString(s.GetParameterValue(L"gain")) + L"]\n";
+            lightData += L"  \"float importance\" ["+ CString(s.GetParameterValue(L"importance")) + L"]\n";
+            lightData += L"  \"string mapname\" [\""+ environMap + L"\"]\n";
+            lightData += L"  \"string mapping\" [\""+ CString(envtype[maptype]) + L"\"]\n";
+            lightData += L"  \"float gamma\" ["+ CString(s.GetParameterValue(L"gamma")) + L"]\n";
+            lightData += L"  \"integer nsamples\" ["+ CString(s.GetParameterValue(L"shadowraysamples")) + L"]\n";
+            //-
+            if (s.GetParameterValue(L"multiply"))
+            {
+                lightData += L"  \"color L\" ["+ CString(red) + L"" + CString(green) + L""+ CString(blue) + L"]\n";
+            }
         }
         //-
         else if (lType == 2) //-- spot
         {
             //-- values
+            float vLightCone = o.GetParameterValue(L"LightCone");
+            float vSpotblend = s.GetParameterValue(L"spread"); 
+            //-
             lightData += L"\nLightSource \"spot\"\n";
             lightData += L"  \"float gain\" ["+ CString( vIntensity ) + L"]\n";
             lightData += L"  \"color L\" ["
-                + CString( red )    + L" "
-                + CString( green )  + L" "
-                + CString( blue )   + L"]\n";
+                + CString( red ) + L" "
+                + CString( green ) + L" "
+                + CString( blue ) + L"]\n";
             //--
             lightData += L"  \"point from\" ["
-                + CString( light_from[0] )  + L" "
+                + CString( light_from[0] ) + L" "
                 + CString( -light_from[2] ) + L" "
-                + CString( light_from[1] )  + L"]\n";
+                + CString( light_from[1] ) + L"]\n";
             lightData += L"  \"point to\" ["
-                + CString( light_to[0] )    + L" "
-                + CString( -light_to[2] )   + L" "
-                + CString( light_to[1] )    + L"]\n";
+                + CString( light_to[0] ) + L" "
+                + CString( -light_to[2] ) + L" "
+                + CString( light_to[1] ) + L"]\n";
             lightData += L"  \"float coneangle\" ["+ CString( vLightCone ) + L"]\n";
             lightData += L"  \"float conedeltaangle\" ["+ CString( vLightCone - vSpotblend ) + L"]\n";
         }
         else if  (lType == 1) //-- infinite
         {
-            CMatrix4 sunTransMat = o.GetKinematics().GetLocal().GetTransform().GetMatrix4();
+            //- test
+            CMatrix4 sundir = o.GetKinematics().GetLocal().GetTransform().GetMatrix4();
             //-
             lightData += L"\nLightSource \"sunsky\"\n";
-            lightData += L"  \"integer nsamples\" [4]\n";
-            lightData += L"  \"vector sundir\" ["
-                + CString( sunTransMat.GetValue(2,0) )  + L" "
-                + CString( -sunTransMat.GetValue(2,2) ) + L" "
-                + CString( sunTransMat.GetValue(2,1) )  + L"]\n";
+            lightData += L"\t\"integer nsamples\" [4]\n";
+            lightData += L"\t\"float turbidity\" [2]\n";
+            lightData += L"\t\"vector sundir\" ["
+                + CString( sundir.GetValue(2,0) ) + L" "
+                + CString( -sundir.GetValue(2,2) ) + L" "
+                + CString( sundir.GetValue(2,1) ) + L"]\n";
             //-
-            lightData += L"  \"float gain\" ["+ CString( vIntensity ) + L"]\n";
-            lightData += L"  \"color L\" ["
-                + CString( red )    + L" "
-                + CString( green )  + L" "
-                + CString( blue )   + L"]\n";
+            lightData += L"\t\"float gain\" ["+ CString( vIntensity ) + L"]\n";
+            lightData += L"\t\"color L\" ["
+                + CString( red ) + L" "
+                + CString( green ) + L" "
+                + CString( blue ) + L"]\n";            
         }
         else // light type 0; point
         {
             //-
             lightData += luxsi_point_light( o, s, light_from);
         }
+        /*
+        Light* SkyLight::CreateLight(const Transform &light2world,
+		const ParamSet &paramSet) {
+	    float scale = paramSet.FindOneFloat("gain", 1.f);				// gain (aka scale) factor to apply to sun/skylight (0.005)
+	    int nSamples = paramSet.FindOneInt("nsamples", 1);
+	    Vector sundir = paramSet.FindOneVector("sundir", Vector(0,0,1));// direction vector of the sun
+	    Normalize(sundir);
+	    float turb = paramSet.FindOneFloat("turbidity", 2.0f);			// [in] turb  Turbidity (1.0,30+) 2-6 are most useful for clear days.
+	    // Perez function multiplicative constants
+	    float aconst = paramSet.FindOneFloat("aconst",
+		    paramSet.FindOneFloat("horizonbrightness", 1.0f));
+	    float bconst = paramSet.FindOneFloat("bconst",
+		    paramSet.FindOneFloat("horizonsize", 1.0f));
+	    float cconst = paramSet.FindOneFloat("cconst",
+		    paramSet.FindOneFloat("sunhalobrightness", 1.0f));
+	    float dconst = paramSet.FindOneFloat("dconst",
+		    paramSet.FindOneFloat("sunhalosize", 1.0f));
+	    float econst = paramSet.FindOneFloat("econst",
+		    paramSet.FindOneFloat("backscattering", 1.0f));
+
+	    SkyLight *l = new SkyLight(light2world, scale, nSamples, sundir, turb, aconst, bconst, cconst, dconst, econst);
+	    l->hints.InitParam(paramSet);
+	    return l;
+        }
+        //----------------------------------------------------------------------
+        Light* Sky2Light::CreateLight(const Transform &light2world,
+		const ParamSet &paramSet) {
+	    float scale = paramSet.FindOneFloat("gain", 1.f);		// gain (aka scale) factor to apply to sun/skylight (0.005)
+	    int nSamples = paramSet.FindOneInt("nsamples", 1);
+	    Vector sundir = paramSet.FindOneVector("sundir", Vector(0,0,1));    // direction vector of the sun
+	    Normalize(sundir);
+	    float turb = paramSet.FindOneFloat("turbidity", 2.0f);	// [in] turb  Turbidity (1.0,10) 2-6 are most useful for clear days.
+
+	    Sky2Light *l = new Sky2Light(light2world, scale, nSamples, sundir, turb);
+	    l->hints.InitParam(paramSet);
+	    return l;
+        }*/
     }    
     return lightData;
 }
@@ -197,7 +269,7 @@ CString luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
         //-
         pLightData += L"\nAreaLightSource \"area\"\n";
         //-
-        if ( Light_Shader_ID == L"soft_light")
+        if ( lightID == L"soft_light")
         {
             //-
             pLightData += L"  \"float gain\" [1.00]\n";
@@ -207,13 +279,13 @@ CString luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
             pLightData += L"  \"color L\" ["+ CString( red ) + L" "+ CString( green ) + L" "+ CString( blue ) + L"]\n";
         
         }
-        else if ( Light_Shader_ID == L"lux_point_light")
+        else if ( lightID == L"lux_point_light")
         {
-            /** if is arealight with the 'lux' node connect..
+            /** If is arealight with the 'lux' node connect..
             *   use only the appropiates values from node?
             */
             pLightData += L"  \"float gain\" ["+ CString( float(s.GetParameterValue(L"gain")) ) + L"]\n";
-            pLightData += L"  \"float importance\" ["+ CString( float(s.GetParameterValue(L"importance")) ) + L"]\n"; // TODO
+            pLightData += L"  \"float importance\" ["+ CString( float(s.GetParameterValue(L"importance")) ) + L"]\n";
             pLightData += L"  \"float power\" ["+ CString( float(s.GetParameterValue(L"power")) ) + L"]\n";
             pLightData += L"  \"float efficacy\" ["+ CString( float(s.GetParameterValue(L"efficacy")) ) + L"]\n";
             pLightData += L"  \"color L\" ["+ CString( red ) + L" "+ CString( green ) + L" "+ CString( blue ) + L"]\n";
@@ -254,7 +326,10 @@ CString luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
             *   really, sphere is an area light object, like XSI
             */
             pLightData += L"\nTransformBegin \n";
-            pLightData += L"Translate "+ CString( light_from[0] ) + L" "+ CString( -light_from[2] ) + L" "+ CString( light_from[1] ) + L"\n";
+            pLightData += L"Translate "
+                + CString( light_from[0] ) + L" "
+                + CString( -light_from[2] ) + L" "
+                + CString( light_from[1] ) + L"\n";
 
             pLightData += L"\nShape \"sphere\"\n";
             pLightData += L"  \"float radius\" ["+ CString( size_X ) + L"]\n";
@@ -270,7 +345,7 @@ CString luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
     {
         /** Basic point light, with 'node' by defaul to XSI( soft_light )
         */
-        if ( Light_Shader_ID == L"soft_light")
+        if ( lightID == L"soft_light")
         {
             pLightData += L"\nLightSource \"point\"\n";
             pLightData += L"  \"float gain\" ["+ CString( vIntensity * 10 ) + L"]\n";
@@ -283,7 +358,7 @@ CString luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
                 + CString( -light_from[2] ) + L" "
                 + CString( light_from[1] ) + L"]\n";
         }
-        else if ( Light_Shader_ID == L"lux_point_light")
+        else if ( lightID == L"lux_point_light")
         {
             //-
             bool usesphere = s.GetParameterValue(L"usesphere");
@@ -304,10 +379,7 @@ CString luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
                     + CString( -light_from[2] ) + L" "
                     + CString( light_from[1] )  + L"]\n";
             }
-            else
-            {
-                pLightData += L"  \"integer nsamples\" ["+ CString( float(s.GetParameterValue(L"shadowray")) ) + L"]\n";
-            }
+            //-
             if ( ies_path != L"")
             {
                 pLightData += L"  \"bool flipz\" [\""+ CString( MtBool[(s.GetParameterValue(L"flipz"))] ) + L"\"]\n";
@@ -316,6 +388,7 @@ CString luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
             //-
             if ( usesphere )
             {
+                pLightData += L"  \"integer nsamples\" ["+ CString( int(s.GetParameterValue(L"shadowray")) ) + L"]\n";
                 //-
                 pLightData += L"\nTransformBegin \n";
                 pLightData += L"Translate "
@@ -324,7 +397,7 @@ CString luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
                     + CString( light_from[1] )  + L"\n";
 
                 pLightData += L"\nShape \"sphere\"\n";
-                pLightData += L"  \"float radius\" ["+ CString( float (s.GetParameterValue(L"radius")) ) + L"]\n";
+                pLightData += L"  \"float radius\" ["+ CString( float(s.GetParameterValue(L"radius")) ) + L"]\n";
                 //-
                 pLightData += L"\nTransformEnd \n";
             }
@@ -340,10 +413,8 @@ CString luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
 //--
 CString luxsi_area_light_transform(X3DObject o, float size_X, float size_Y)
 {
-    //- initial state
-    KinematicState area_state = o.GetKinematics().GetGlobal();
     //- transform
-    CTransformation area_transf = area_state.GetTransform();
+    CTransformation area_transf = o.GetKinematics().GetGlobal().GetTransform();
     //-
     CVector3 p1, p2, p3, p4;
     //-
@@ -414,9 +485,12 @@ CString find_XSI_env()
                         else
                         {
                             app.LogMessage(L" Not valid IBL file: "+ env_file, siWarningMsg);
+                            break;
                         }
                     }
                 }
+                app.LogMessage(L" Not shader");
+                break;
             }
         }
     }

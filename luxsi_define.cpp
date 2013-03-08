@@ -82,11 +82,13 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     prop.AddParameter( L"bfilter",  CValue::siInt4,     sps,L"",L"", 2,     0,10,0,10,              oParam );
     
     //-- volume integrator
-    prop.AddParameter( L"bvolumeint",   CValue::siInt4, sps,L"",L"", 0, 0,10,0,10,  oParam ) ;
+    prop.AddParameter( L"bvolumeint",   CValue::siInt4, sps,L"",L"", 2, 0,10,0,10,  oParam ) ;
     
+    //-- SLG Surface integ.
+    //prop.AddParameter( L"slgint",       CValue::siInt4, sps,L"",L"", 0, oParam);
     //-- Surfaceint 
-    prop.AddParameter( L"bsurfaceint",  CValue::siInt4, sps,L"",L"",   0,   0,10,0,10,  oParam );
-    prop.AddParameter( L"bsexpert",     CValue::siBool, sps,L"",L"",   false,   oParam );
+    prop.AddParameter( L"bsurfaceint",  CValue::siInt4, sps,L"",L"", 2,   0,10,0,10,  oParam );
+    prop.AddParameter( L"bsexpert",     CValue::siBool, sps,L"",L"", false,   oParam );
 
     //-- bi-directional
     prop.AddParameter( L"beye_depth",   CValue::siInt4,  sps,L"",L"", 16,   0,2048,0,48,    oParam );
@@ -97,10 +99,12 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
     //-- directlighting / path
     prop.AddParameter( L"binc_env",     CValue::siBool,     sps,L"",L"", false,    oParam );
     prop.AddParameter( L"brrcon_prob",  CValue::siFloat,    sps,L"",L"", 0.65,     0.0,10.0,0.1,2.0, oParam ); 
-    prop.AddParameter( L"bmaxdepth",    CValue::siInt4,     sps,L"",L"", 10,       0,4096,0,1024,    oParam );
+    prop.AddParameter( L"bmaxdepth",    CValue::siInt4,     sps,L"",L"", 10,       1,4096,2,1024,    oParam );
     prop.AddParameter( L"brrstrategy",  CValue::siInt1,     sps,L"",L"", 0,        0l,4l,0l,4l,      oParam );  
     prop.AddParameter( L"blight_str",   CValue::siInt4,     sps,L"",L"", 2,        0,5,0,5,          oParam ); 
-       
+    //- slg
+    prop.AddParameter( L"rusianrouletedepth",   CValue::siFloat,    sps,L"",L"", 0.65,  0.0,10.0,0.1,2.0, oParam ); 
+
     //-- parameters distributepath
     prop.AddParameter( L"bdirectsampleall",         CValue::siBool, sps,L"",L"",    false,  oParam );
     prop.AddParameter( L"bindirectsampleall",       CValue::siBool, sps,L"",L"",    true,   oParam );
@@ -182,14 +186,14 @@ XSIPLUGINCALLBACK CStatus LuXSI_Define( CRef& in_ctxt )
 	//    "string photonsampler" ["halton"]
     
     //-- Sampler
-    prop.AddParameter( L"bsampler",     CValue::siInt4,     sps,L"",L"",   2,       0,10,0,10,            oParam );
-    prop.AddParameter( L"bmutation",    CValue::siFloat,    sps,L"",L"",   0.1,     0.0f,1.0f,0.0f,0.5f,  oParam );
-    prop.AddParameter( L"bmaxrej",      CValue::siInt4,     sps,L"",L"",   256,     0l,2048l,0l,512l,     oParam );
-    prop.AddParameter( L"buservarian",  CValue::siBool,     sps,L"",L"",   false,   dft,dft,dft,dft,      oParam );
-    prop.AddParameter( L"bchainlength", CValue::siInt4,     sps,L"",L"",   512,     0,512,16,512,         oParam );
-    prop.AddParameter( L"bpixsampler",  CValue::siInt4,     sps,L"",L"",   3,       0,512,16,512,         oParam );
-    prop.AddParameter( L"pixelsamples", CValue::siInt4,     sps,L"",L"",   2,       0,64,0,64,            oParam );
-    prop.AddParameter( L"bbasampler",   CValue::siInt4,     sps,L"",L"",   0,       0,10,0,10,            oParam );
+    prop.AddParameter( L"bsampler",     CValue::siInt4,     sps,L"",L"",   0,       0,10,0,10,          oParam );
+    prop.AddParameter( L"bmutation",    CValue::siFloat,    sps,L"",L"",   0.1,     .0f,1.f,.0f,0.5f,   oParam );
+    prop.AddParameter( L"bmaxconsrej",  CValue::siInt4,     sps,L"",L"",   256,     0,2048,1,512,       oParam );
+    prop.AddParameter( L"buservarian",  CValue::siBool,     sps,L"",L"",   false,   dft,dft,dft,dft,    oParam );
+    prop.AddParameter( L"bchainlength", CValue::siInt4,     sps,L"",L"",   512,     0,512,16,512,       oParam );
+    prop.AddParameter( L"bpixsampler",  CValue::siInt4,     sps,L"",L"",   3,       0,512,16,512,       oParam );
+    prop.AddParameter( L"pixelsamples", CValue::siInt4,     sps,L"",L"",   2,       0,64,0,64,          oParam );
+    prop.AddParameter( L"bbasampler",   CValue::siInt4,     sps,L"",L"",   0,       0,10,0,10,          oParam );
 
     prop.AddParameter( L"bpresets",     CValue::siInt4,     sps,L"",L"",   2,       0,10,0,10,      oParam );
 

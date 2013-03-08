@@ -3,7 +3,7 @@ This file is part of LuXSI;
 LuXSI is a LuxRender Exporter for Autodesk(C) Softimage(C) ( ex-XSI )
 http://www.luxrender.net
 
-Copyright(C) 2007 - 2012  of all Authors:
+Copyright(C) 2007 - 2013  of all Authors:
 Michael Gangolf, 'miga', mailto:miga@migaweb.de                                               
 Pedro Alcaide, 'povmaniaco', mailto:p.alcaide@hotmail.com
  
@@ -27,61 +27,33 @@ using namespace std;
 using namespace XSI;
 using namespace MATH;
 
-/* Diffuse reflect rejection 
-*/
-extern bool vdiff_reflect_reject;
-
-/* Diffuse refract rejection.
-*/
-extern bool vdiff_refract_reject;
-
-/**/
-extern bool vglossy_reflect_reject;
-
-/**/
-extern bool vglossy_refract_reject;
-
 /**/
 extern CRefArray params;
-
-/**/
-extern int vSurfaceInt;
-
 /**/
 extern bool vsexpert;
-
 /**/
 extern bool vfinalgather;
-
 /**/
 extern int vSampler;
-
 /**/
 extern bool vExpert;
-
 /**/
 extern int vbasampler;
-
 /**/
 extern int vAccel;
-
 /**/
 extern bool vacexpert;
-
 /**/
 extern bool vExr;
-
 /**/
 extern bool vTga;
-
 /**/
 extern bool vPng;
-
 /**/
 extern int vfilter;
-
 /**/
 extern bool vfexpert;
-
 /**/
 extern CustomProperty prop;
+/**/
+//extern int vEngine;

@@ -3,7 +3,7 @@ This file is part of LuXSI;
 LuXSI is a LuxRender Exporter for Autodesk(C) Softimage(C) ( ex-XSI )
 http://www.luxrender.net
 
-Copyright(C) 2007 - 2012  of all Authors:
+Copyright(C) 2007 - 2013  of all Authors:
 Michael Gangolf, 'miga', mailto:miga@migaweb.de                                               
 Pedro Alcaide, 'povmaniaco', mailto:p.alcaide@hotmail.com
  
@@ -51,7 +51,8 @@ void dynamic_filter_UI( Parameter changed, CString paramName, PPGEventContext ct
     //--
     for ( long f = 0; f < 7;)
     {
-        hide_params(ui_filter[f]);
+        Parameter(params.GetItem(ui_filter[f])).PutCapabilityFlag( siNotInspectable, true );
+        //hide_params(ui_filter[f]);
         f++;
     }    
     //-- show with all options, if mode expert is true
@@ -91,7 +92,9 @@ void dynamic_filter_UI( Parameter changed, CString paramName, PPGEventContext ct
 //-
 void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext ctxt)
 {
-    //--   
+    //--
+    int surfaceIntegrator = prop.GetParameterValue(L"bsurfaceint");
+    //-
     const char *u_intgrator [] = {
         /*ditributepath 26*/"bdirectsampleall", "bdirectsamples", "bindirectsampleall", "bindirectsamples",
         "bdiffusereflectdepth", "bdiffusereflectsamples", "bdiffuserefractdepth", "bdiffuserefractsamples",
@@ -107,17 +110,20 @@ void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext
         "bincenvironment", "bstoreglossy", "buseproba", "bwavelengthstratificationpasses", "blookupaccel", 
         "bparallelhashgridspare", "bpixelsampler", "bphotonsampler",
         /*path 5*/"blight_str", "binc_env", "brrstrategy", "bmaxdepth", "brrcon_prob",
-        /*bidirectional 4*/"blight_depth", "beye_depth", "beyerrthre", "blightrrthre",
-        /*IGI 3*/"bnsets", "bnlights", "bmindist"};
-       
+        /*bidirectional 5*/"blight_depth", "beye_depth", "beyerrthre", "blightrrthre","rusianrouletedepth",
+        /*IGI 3*/"bnsets", "bnlights", "bmindist"
+    };
     //-
-    for ( long in = 0; in < 73;)
+    for ( long i = 0; i < 74;)
     {
-        hide_params(u_intgrator[in]); 
-        in++;
+        Parameter(params.GetItem(u_intgrator[i])).PutCapabilityFlag( siNotInspectable, true );
+        //hide_params(u_intgrator[in]); 
+        i++;
     }
-    //--
-    if ( vSurfaceInt == 0 ) //-- bidirectional
+    //-
+    //if (vEngine == 0) show_params(L"bsurfaceint");
+    //-
+    if ( surfaceIntegrator == 0 ) //-- bidirectional
     {
         show_params(L"blight_depth");
         show_params(L"beye_depth");
@@ -130,7 +136,7 @@ void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext
         }
         ctxt.PutAttribute(L"Refresh", true );
     }
-    else if ( vSurfaceInt == 1 ) //-- path
+    else if ( surfaceIntegrator == 1 ) //-- path
     {
         show_params(L"bmaxdepth");
         show_params(L"binc_env");
@@ -145,7 +151,7 @@ void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext
         }
         ctxt.PutAttribute(L"Refresh", true );
     }
-    else if ( vSurfaceInt == 2 ) //-- directlighting
+    else if ( surfaceIntegrator == 2 ) //-- directlighting
     {
         show_params(L"bmaxdepth");
         //--
@@ -155,7 +161,7 @@ void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext
         }
         ctxt.PutAttribute(L"Refresh", true );
     }
-    else if ( vSurfaceInt == 3 ) //-- distributepath
+    else if ( surfaceIntegrator == 3 ) //-- distributepath
     {
         /* 21 params show */
         const char *distributed_params [] = {
@@ -175,7 +181,7 @@ void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext
         show_params(L"bdiff_reflect_reject");
         no_read(L"bdiff_reflect_reject_thr");
         //-
-        if ( vdiff_reflect_reject )// 
+        if (prop.GetParameterValue(L"bdiff_reflect_reject"))
         {
             si_read(L"bdiff_reflect_reject_thr");
         }
@@ -183,7 +189,7 @@ void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext
         show_params(L"bdiff_refract_reject");
         no_read(L"bdiff_refract_reject_thr");
         //-
-        if ( vdiff_refract_reject )
+        if ( prop.GetParameterValue(L"bdiff_refract_reject"))
         {
             si_read(L"bdiff_refract_reject");
         }
@@ -191,7 +197,7 @@ void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext
         show_params(L"bglossy_reflect_reject");
         no_read(L"bglossy_reflect_reject_thr");
         //-
-        if ( vglossy_reflect_reject )
+        if ( prop.GetParameterValue(L"bglossy_reflect_reject"))
         {
             si_read(L"bglossy_reflect_reject_thr");
         }
@@ -199,7 +205,7 @@ void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext
         show_params(L"bglossy_refract_reject");
         no_read(L"bglossy_refract_reject_thr");
         //--
-        if ( vglossy_refract_reject )
+        if ( prop.GetParameterValue(L"bglossy_refract_reject"))
         {
             si_read(L"bglossy_refract_reject_thr");
         }
@@ -210,7 +216,7 @@ void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext
         }
         ctxt.PutAttribute(L"Refresh", true );
     }
-    else if ( vSurfaceInt == 4 ) 
+    else if ( surfaceIntegrator == 4 ) 
     {
         show_params(L"bnsets");
         show_params(L"bnlights");
@@ -223,7 +229,7 @@ void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext
         }
         ctxt.PutAttribute(L"Refresh", true );
     }
-    else if ( vSurfaceInt == 5 )// ex-Photonmap
+    else if ( surfaceIntegrator == 5 )// ex-Photonmap
     {
         show_params(L"bmaxeyedepth");
         show_params(L"bmaxphotondepth");
@@ -257,7 +263,7 @@ void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext
         }
         ctxt.PutAttribute(L"Refresh", true );
     }
-    else //- sppm ( wip )
+    else if ( surfaceIntegrator == 6 ) //- sppm ( wip )
     {
         //-
         show_params(L"bmaxeyedepht");
@@ -282,19 +288,26 @@ void dynamic_surfaceInt_UI(Parameter changed, CString paramName, PPGEventContext
         //--
         ctxt.PutAttribute(L"Refresh", true );
     }
+    else // slg
+    {
+        show_params(L"bmaxdepth");
+        show_params(L"rusianrouletedepth");
+        //--
+        ctxt.PutAttribute(L"Refresh", true );
+    }
     //- for all, except sppm
-    if ( vSurfaceInt < 6 ) show_params(L"blight_str");
+    if ( surfaceIntegrator < 6 ) show_params(L"blight_str");
 }
 //--
 void dynamic_sampler_UI( Parameter changed, CString paramName, PPGEventContext ctxt)
 {
     //-
-    const char *hide_sampler[]={"bmutation", "bmaxrej", "buservarian",
+    const char *hide_sampler[]={"bmutation", "bmaxconsrej", "buservarian",
         "bchainlength" , "bpixsampler", "pixelsamples" , "bbasampler"};
-    //-
-    for( int i = 0; i < 7;)
+    //- hide..
+    for( long i = 0; i < 7;)
     {
-        hide_params(hide_sampler[i]);
+        Parameter(params.GetItem(hide_sampler[i])).PutCapabilityFlag( siNotInspectable, true );
         i++;
     }
     //- create dynamic UI
@@ -303,10 +316,8 @@ void dynamic_sampler_UI( Parameter changed, CString paramName, PPGEventContext c
         show_params(L"bmutation");
         show_params(L"buservarian");
         //-
-        if (vExpert)
-        {
-            show_params(L"bmaxrej");
-        }
+        if (vExpert) show_params(L"bmaxconsrej");
+        //-
         ctxt.PutAttribute(L"Refresh", true);
     }
     else if ( vSampler == 1 ) //-- erpt
@@ -323,11 +334,8 @@ void dynamic_sampler_UI( Parameter changed, CString paramName, PPGEventContext c
         {
             show_params(L"bmutation");
             show_params(L"buservarian");
-
-            if ( vExpert )
-            {
-                show_params(L"bmaxrej");
-            }
+            //-
+            if ( vExpert ) show_params(L"bmaxconsrej");            
         }
         ctxt.PutAttribute(L"Refresh", true);
     }
@@ -335,6 +343,7 @@ void dynamic_sampler_UI( Parameter changed, CString paramName, PPGEventContext c
     {
         show_params(L"bpixsampler");
         show_params(L"pixelsamples");
+        //-
         ctxt.PutAttribute(L"Refresh", true);
     }
 }
@@ -347,10 +356,11 @@ void dynamic_Accel_UI(Parameter changed, CString paramName, PPGEventContext ctxt
         /* qbvh */"bmaxprimsperleaf", "bfullsweepthreshold", "bskipfactor",
         /* bvh */"bcostsamples", "bintersectcost", "btraversalcost", "bmaxprims", "bacmaxdepth", "bemptybonus" };
     //--
-    for ( long ac = 0; ac < 9;)
+    for ( long i = 0; i < 9;)
     {
-        hide_params(ui_accel[ac]);
-        ac++;
+        Parameter(params.GetItem(ui_accel[i])).PutCapabilityFlag( siNotInspectable, true );
+        //-
+        i++;
     }
     //--
     if ( vAccel == 0 && vacexpert ) //-- qbvh

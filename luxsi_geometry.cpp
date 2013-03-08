@@ -1,9 +1,9 @@
-/*
+/***********************************************************************
 This file is part of LuXSI;
 LuXSI is a LuxRender Exporter for Autodesk(C) Softimage(C) ( ex-XSI )
 http://www.luxrender.net
 
-Copyright(C) 2007 - 2012  of all Authors:
+Copyright(C) 2007 - 2013  of all Authors:
 Michael Gangolf, 'miga', mailto:miga@migaweb.de                                               
 Pedro Alcaide, 'povmaniaco', mailto:p.alcaide@hotmail.com
  
@@ -19,14 +19,11 @@ GNU General Public License for more details.
                                                                            
 You should have received a copy of the GNU General Public License     
 along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
-*/
+
+***********************************************************************/
 
 #include "include\luxsi_geometry.h"
-#include "include\rply.h"
-
-using namespace XSI;
-using namespace MATH;
-using namespace std;
+//#include "include\rply.h"
 
 //-
 CString writeGeometryLXO(CVector3Array allPoints, CVector3Array allNormals, CVector3Array allUV,
@@ -35,12 +32,10 @@ CString writeGeometryLXO(CVector3Array allPoints, CVector3Array allNormals, CVec
     /** Specialized fuction. 
     *   The questions, always before the loop.
     *   First of all, the most small case.
-    *   Case: si hacemos la pregunta por cada vertice y la malla tiene 1 millon de vertices...
-    *   Imagine todo el trabajo!!
     */
     CString lxoData, vTris, vPoints, vNormals, vUV;
     //-
-    if (!vSmooth_mesh && !have_UV )
+    if (!exportNormals && !have_UV )
     {
         for (LONG j=0; j < allPoints.GetCount(); j++)
         {
@@ -51,7 +46,7 @@ CString writeGeometryLXO(CVector3Array allPoints, CVector3Array allNormals, CVec
         }
     }
     //- only UV, without normals
-    else if( !vSmooth_mesh && have_UV )
+    else if( !exportNormals && have_UV )
     {
         for (LONG j=0; j < allPoints.GetCount(); j++)
         {
@@ -64,7 +59,7 @@ CString writeGeometryLXO(CVector3Array allPoints, CVector3Array allNormals, CVec
         }
     }
     //-- only normals, not UV
-    else if ( vSmooth_mesh && !have_UV )
+    else if ( exportNormals && !have_UV )
     {
         for (LONG j=0; j < allPoints.GetCount(); j++)
         {
@@ -79,7 +74,7 @@ CString writeGeometryLXO(CVector3Array allPoints, CVector3Array allNormals, CVec
         }
     }
     //- all data
-    else // ( vSmooth_mesh && have_UV )
+    else // ( exportNormals && have_UV )
     {
         for (LONG j=0; j < allPoints.GetCount(); j++)
         {
@@ -104,7 +99,7 @@ CString writeGeometryLXO(CVector3Array allPoints, CVector3Array allNormals, CVec
     //-
     lxoData =  L"  \"integer triindices\" [\n"+ vTris + L"\n ]";
     lxoData += L"  \"point P\" [\n"+ vPoints + L"\n ]";
-    if ( vSmooth_mesh )
+    if ( exportNormals )
     {
         lxoData += L" \"normal N\" [\n"+ vNormals + L"\n ]";
     }
@@ -123,12 +118,10 @@ CString writeGeometryPLY(CVector3Array allPoints, CVector3Array allNormals, CVec
     /** Specialized fuction. 
     *   The questions, always before the loop.
     *   First of all, the most small case.
-    *   Case: si hacemos la pregunta por cada vertice y la malla tiene 1 millon de vertices...
-    *   Imagine todo el trabajo!!
     */
     CString plyData;
     //- only points
-    if ( !vSmooth_mesh && !have_UV )
+    if ( !exportNormals && !have_UV )
     {
         for (LONG j=0; j < allPoints.GetCount(); j++)
         {
@@ -142,7 +135,7 @@ CString writeGeometryPLY(CVector3Array allPoints, CVector3Array allNormals, CVec
         }
     }
     //- points + UVs, not normals
-    else if( !vSmooth_mesh && have_UV ) 
+    else if( !exportNormals && have_UV ) 
     {
         for (LONG j=0; j < allPoints.GetCount(); j++)
         {
@@ -158,7 +151,7 @@ CString writeGeometryPLY(CVector3Array allPoints, CVector3Array allNormals, CVec
         }
     }
     //-- points + normals, not UV
-    else if ( vSmooth_mesh && !have_UV )
+    else if ( exportNormals && !have_UV )
     {
         for (LONG j=0; j < allPoints.GetCount(); j++)
         {
@@ -244,10 +237,10 @@ CString writeLuxsiObj(X3DObject o)
     //-
     LONG subdLevel = 0;
     Property geopr = o.GetProperties().GetItem(L"Geometry Approximation");
-    if ((int)geopr.GetParameterValue(L"gapproxmordrsl") > 0 )
+    if (int(geopr.GetParameterValue(L"gapproxmordrsl")) > 0 )
     {
         vIsSubD = true; //-- only render
-        subdLevel = (int)geopr.GetParameterValue(L"gapproxmordrsl");
+        subdLevel = int(geopr.GetParameterValue(L"gapproxmordrsl"));
         //- TODO; create advice message, for used this option ?
     }
     //--
@@ -304,7 +297,7 @@ CString writeLuxsiObj(X3DObject o)
             {
                 lxoGeometry = writeGeometryLXO( allPoints, allNormals, allUV, indices, global_trans);
             }
-        }
+        } //- end override
         //--
         lxoData = L"\nAttributeBegin #"+ o.GetName();
         lxoData += L"\nNamedMaterial \""+ m.GetName() + L"\"\n";
@@ -314,7 +307,7 @@ CString writeLuxsiObj(X3DObject o)
         *   TODO; find better mode
         */
         bool vIsPortal = false;        
-        //- 
+        //-
         string::size_type loc = string( CString( o.GetName()).GetAsciiString()).find( "PORTAL", 0 );
         if (loc != string::npos) vIsPortal = true;
 
@@ -337,7 +330,7 @@ CString writeLuxsiObj(X3DObject o)
             CString lName = findInGroup(o.GetName());
             if (lName == L"") lName = o.GetName();
             //--
-            lxoData += L" LightGroup \""+ lName + L"\"\n";
+            lxoData += L"LightGroup \""+ lName + L"\"\n";
             //-
             lxoData += L"\nAreaLightSource \"area\" \n"
                 + floatToString(s, L"importance")
@@ -355,12 +348,10 @@ CString writeLuxsiObj(X3DObject o)
         lxoData += L"\n"+ type_shape + L" \""+ type_mesh + L"\" \n";        
         lxoData += L"  \"integer nsubdivlevels\" ["+ CString( subdLevel ) + L"]\n";
         lxoData += L"  \"string subdivscheme\" [\"loop\"] \n";
-        lxoData += L"  \"bool dmnormalsmooth\" [\""+ CString( MtBool[vSmooth_mesh] ) + L"\"]\n";
+        lxoData += L"  \"bool dmnormalsmooth\" [\""+ CString( MtBool[exportNormals] ) + L"\"]\n";
         lxoData += L"  \"bool dmsharpboundary\" [\""+ CString( MtBool[vSharp_bound] ) + L"\"]\n";
         //f << "  \"string displacementmap\" [\"none\"]\n"; // here, place normalmap texture
         //f << "  \"float dmscale\" [\"0.0\"] \"float dmoffset\" [\"0.0\"]\n";
-        //-
-        lxoData += L"   \"bool dmnormalsmooth\" [\""+ CString( MtBool[vSmooth_mesh] ) + L"\"]\n";
         
         //--------------
         if ( !vplymesh )
@@ -444,7 +435,7 @@ void write_plyFile(CString plyGeometryData, CString vfile, int vCount, int tCoun
     plyStr += L"property float y\n";
     plyStr += L"property float z\n";
     
-    if ( vSmooth_mesh )
+    if ( exportNormals )
     {
         plyStr += L"property float nx\n";
         plyStr += L"property float ny\n";
@@ -466,7 +457,7 @@ void write_plyFile(CString plyGeometryData, CString vfile, int vCount, int tCoun
 
     //-- write file
     std::ofstream fileply;
-    fileply.open(vfile.GetAsciiString(),'w');
+    fileply.open(vfile.GetAsciiString(), ios::binary); // add 'binary' for compat to SLG
     //-
     fileply << plyStr.GetAsciiString();
     fileply << plyGeometryData.GetAsciiString();

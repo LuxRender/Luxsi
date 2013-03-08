@@ -32,6 +32,8 @@ using namespace MATH;
 using namespace std;
 
 /**/
+extern Model root;
+/**/
 extern Application app;
 /**/
 extern double ftime;
@@ -43,5 +45,7 @@ extern CString floatToString(Shader in_shader, CString in_item);
 extern CString floatToString(Shader in_shader, CString in_item, CString in_definition);
 /**/
 extern CString integerToString(Shader s, CString item);
+/**/
+bool is_visible(X3DObject in_obj, CString in_string);
 
 #endif // LUXSI_CAMERA_H

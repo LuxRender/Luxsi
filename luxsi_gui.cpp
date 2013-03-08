@@ -1,9 +1,9 @@
-/*
+/***********************************************************************
 This file is part of LuXSI;
 LuXSI is a LuxRender Exporter for Autodesk(C) Softimage(C) ( ex-XSI )
 http://www.luxrender.net
 
-Copyright(C) 2007 - 2012  of all Authors:
+Copyright(C) 2007 - 2013  of all Authors:
 Michael Gangolf, 'miga', mailto:miga@migaweb.de                                               
 Pedro Alcaide, 'povmaniaco', mailto:p.alcaide@hotmail.com
  
@@ -19,7 +19,8 @@ GNU General Public License for more details.
                                                                            
 You should have received a copy of the GNU General Public License     
 along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
-*/
+
+***********************************************************************/
 
 #include "include\luxsi_main.h"
 
@@ -103,10 +104,10 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
     lay.EndGroup(); //- export hidden..
 
     lay.AddGroup(L"Geometry"); //L"Mesh options");
-        lay.AddItem(L"smooth_mesh", L"Export smooth meshes");
+        lay.AddItem(L"smooth_mesh", L"Export mesh normals");
         lay.AddItem(L"sharp_bound", L"Preserve sharp edges");
         lay.AddRow();
-            lay.AddItem(L"bplymesh", L"Use PLY mesh");
+            lay.AddItem(L"bplymesh", L"Use PLY format");
             lay.AddItem(L"over_geo", L"Override Geometry");
         lay.EndRow();
     lay.EndGroup();
@@ -121,7 +122,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.AddTab(L"General ");
     //------------------------------//
     //-- Render mode, internal:console / external:gui
-    lay.AddGroup(L"LuxRender Engine");
+    lay.AddGroup(L"Render Engine");
         lay.AddRow();
         CValueArray Acombo(4);
             Acombo[0] = L"GUI";     Acombo[1] = 0; //-- TODO;
@@ -131,7 +132,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         CValueArray vAengine(4);
             vAengine[0] = L"Classic";   vAengine[1] = 0;
             vAengine[2] = L"Hybrid";    vAengine[3] = 1;
-        lay.AddEnumControl( L"bengine", vAengine, L"Engine", siControlCombo ) ;
+        //lay.AddEnumControl( L"bengine", vAengine, L"Engine", siControlCombo ) ;
         lay.EndRow();
         
         //--
@@ -144,7 +145,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddItem(L"disint", L"Display Int.");
             lay.AddItem(L"savint", L"Save Int.");
         lay.EndRow();
-            lay.AddItem(L"fLuxPath", L"Luxrender Path", siControlFolder);
+            lay.AddItem(L"fLuxPath", L"Binary Path", siControlFolder);
             PPGItem lpath = lay.GetItem( L"fLuxPath" ); 
             lpath.PutLabelPercentage(55);
     lay.EndGroup();
@@ -169,10 +170,10 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.EndGroup();
 
  
-    //---------------------// 
+    //--------------------------------------------------------------------------------// 
     lay.AddTab(L"Render ");
-    //---------------------//
-    CValueArray aPresets(24);
+    //--------------------------------------------------------------------------------//
+    CValueArray aPresets(20);
         aPresets[0] = L"Custom parameter";                              aPresets[1] = 0;
         aPresets[2] = L"Preview - Instant Global Illumination";         aPresets[3] = 1;
         aPresets[4] = L"Preview - Direct Lighting (No GI)";             aPresets[5] = 2;
@@ -183,9 +184,9 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         aPresets[14] = L"Progressive - Path Tracing (exterior)";        aPresets[15] = 7;
         aPresets[16] = L"Bucket - Bidir Path Tracing (interior)";       aPresets[17] = 8;
         aPresets[18] = L"Bucket - Path Tracing (exterior)";             aPresets[19] = 9;
-        aPresets[20] = L"Hybrid - Path Tracing (test)";                 aPresets[21] = 10;
-        aPresets[22] = L"Hybrid - Bidir. Path Tracing (test)";          aPresets[23] = 11;
-    lay.AddEnumControl(L"bpresets", aPresets, L"R. Presets", siControlCombo ) ;
+        //aPresets[20] = L"Hybrid - Path Tracing (test)";                 aPresets[21] = 10;
+        //aPresets[22] = L"Hybrid - Bidir. Path Tracing (test)";          aPresets[23] = 11;
+    //lay.AddEnumControl(L"bpresets", aPresets, L"R. Presets", siControlCombo ) ;
 
     lay.AddGroup(L"Surface Integrator"); //-- surface
         lay.AddRow();
@@ -197,11 +198,22 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
                 vItem6[8]  = L"Inst. Global Illu."; vItem6[9] = 4;
                 vItem6[10] = L"Ex-Photonmap";       vItem6[11] = 5;
                 vItem6[12] = L"SPPM";               vItem6[13] = 6;
-                vItem6[14] = L"Hybrid (PT)";        vItem6[15] = 7;
-                vItem6[16] = L"Hybrid (BDPT)";      vItem6[17] = 8;
-            lay.AddEnumControl( L"bsurfaceint", vItem6, L"Integrator", siControlCombo ) ;
+                vItem6[14] = L"SLG Path Tracing";   vItem6[15] = 7;
+                vItem6[16] = L"SLG BiDir PTracing"; vItem6[17] = 8;
+            lay.AddEnumControl( L"bsurfaceint", vItem6, L"Integrator", siControlCombo );
             lay.AddItem(L"bsexpert", L"Advanced").PutWidthPercentage(6);
         lay.EndRow();
+        //------------------------------------------>
+        /*lay.AddGroup(L"SLG Integrator");
+            CValueArray hyItem(4);
+                hyItem[0] = L"Path Tracing";       hyItem[1] = 0;
+                hyItem[2] = L"BiDir Path Tracing"; hyItem[3] = 1;
+            lay.AddEnumControl( L"slgint", hyItem, L"Integrator", siControlCombo ) ;
+        //lay.EndGroup(); // hybrid
+            lay.AddItem( L"maxdepth", L"Max. depth").PutLabelPercentage(70);
+            lay.AddItem( L"russianroulette", L"Russian Roulette").PutLabelPercentage(70);
+        */ //----------------------------------------------->
+
     lay.AddGroup(); //-- no label
             CValueArray vAlist(14); //-- light strategy
                 vAlist[0]  = L"one";         vAlist[1] = 0;
@@ -213,7 +225,9 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
                 vAlist[12] = L"logpowerimp"; vAlist[13] = 6;
             lay.AddEnumControl( L"blight_str", vAlist, L"Light Strategy",siControlCombo).PutLabelPercentage(70);//-- combo
 
-            //-- bidireccional / path / directlighting
+            //-- slg render
+            lay.AddItem( L"rusianrouletedepth", L"Rusian R. Depth").PutLabelPercentage(70);
+            //-  bidireccional / path / directlighting
             lay.AddItem( L"bmaxdepth", L"Max. depth").PutLabelPercentage(70);
             lay.AddItem( L"bshadowraycount", L"Shadow Ray Count").PutLabelPercentage(70);
             lay.AddItem( L"beye_depth",   L"Eye Depth").PutLabelPercentage(70);
@@ -224,36 +238,36 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             //-- distributedpath
             lay.AddItem(L"bdirectsamples", L"Direct light Sampling").PutLabelPercentage(80);
         lay.AddRow();
-            lay.AddItem(L"bdirectsampleall", L"Sample all");
-            lay.AddItem(L"bdirectdiffuse", L"Diffuse");
-            lay.AddItem(L"bdirectglossy", L"Glossy");
+            lay.AddItem(L"bdirectsampleall",    L"Sample all");
+            lay.AddItem(L"bdirectdiffuse",      L"Diffuse");
+            lay.AddItem(L"bdirectglossy",       L"Glossy");
         lay.EndRow();
-            lay.AddItem(L"bindirectsamples", L"Indirect light Sampling").PutLabelPercentage(80);
+            lay.AddItem(L"bindirectsamples",    L"Indirect light Sampling").PutLabelPercentage(80);
         lay.AddRow();
-            lay.AddItem(L"bindirectsampleall", L"Sample all");
-            lay.AddItem(L"bindirectdiffuse", L"Diffuse");
-            lay.AddItem(L"bindirectglossy", L"Glossy");
+            lay.AddItem(L"bindirectsampleall",  L"Sample all");
+            lay.AddItem(L"bindirectdiffuse",    L"Diffuse");
+            lay.AddItem(L"bindirectglossy",     L"Glossy");
         lay.EndRow();
 
     lay.AddGroup(L"Diffuse settings");
         lay.AddRow();
-            lay.AddItem(L"bdiffusereflectsamples", L"Refl. sampl").PutLabelPercentage(80);
-            lay.AddItem(L"bdiffusereflectdepth", L"Refl. depth").PutLabelPercentage(80);
+            lay.AddItem(L"bdiffusereflectsamples",  L"Refl. sampl").PutLabelPercentage(80);
+            lay.AddItem(L"bdiffusereflectdepth",    L"Refl. depth").PutLabelPercentage(80);
         lay.EndRow();
         lay.AddRow();  
-            lay.AddItem(L"bdiffuserefractsamples", L"Refr. sampl").PutLabelPercentage(80);
-            lay.AddItem(L"bdiffuserefractdepth", L"Refr. depth").PutLabelPercentage(80);
+            lay.AddItem(L"bdiffuserefractsamples",  L"Refr. sampl").PutLabelPercentage(80);
+            lay.AddItem(L"bdiffuserefractdepth",    L"Refr. depth").PutLabelPercentage(80);
         lay.EndRow();
     lay.EndGroup();
     
     lay.AddGroup(L"Glossy settings");
         lay.AddRow();
-            lay.AddItem(L"bglossyreflectsamples", L"Refl. sampl").PutLabelPercentage(80);
-            lay.AddItem(L"bglossyreflectdepth", L"Refl. depth").PutLabelPercentage(80);
+            lay.AddItem(L"bglossyreflectsamples",   L"Refl. sampl").PutLabelPercentage(80);
+            lay.AddItem(L"bglossyreflectdepth",     L"Refl. depth").PutLabelPercentage(80);
         lay.EndRow();
         lay.AddRow();
-            lay.AddItem(L"bglossyrefractsamples", L"Refr. sampl").PutLabelPercentage(80);
-            lay.AddItem(L"bglossyrefractdepth", L"Refr. depth").PutLabelPercentage(80);
+            lay.AddItem(L"bglossyrefractsamples",   L"Refr. sampl").PutLabelPercentage(80);
+            lay.AddItem(L"bglossyrefractdepth",     L"Refr. depth").PutLabelPercentage(80);
         lay.EndRow();
     lay.EndGroup();
 
@@ -396,7 +410,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
             lay.AddItem( L"pixelsamples", L"Pixelsamples");
         //--
             lay.AddItem( L"bmutation", L"Large Mut. prob.").PutLabelPercentage(60);
-            lay.AddItem( L"bmaxrej", L"Max cons. rejects").PutLabelPercentage(60);
+            lay.AddItem( L"bmaxconsrej", L"Max cons. rejects").PutLabelPercentage(60);
             lay.AddItem( L"buservarian", L"User Variance");
         //--
     lay.EndGroup();
@@ -404,10 +418,11 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
     //--------- integrator ----------->
     lay.AddGroup(L"Volume integrator");
         lay.AddRow();
-            CValueArray vItvolume(6);
-                vItvolume[0] = L"Multi";    vItvolume[1] = 0;
+            CValueArray vItvolume(8);
+                vItvolume[0] = L"None";     vItvolume[1] = 0;
                 vItvolume[2] = L"Single";   vItvolume[3] = 1;
-                vItvolume[4] = L"Emission"; vItvolume[5] = 2;
+                vItvolume[4] = L"Multiple"; vItvolume[5] = 2;
+                vItvolume[6] = L"Emission"; vItvolume[7] = 3;
             lay.AddEnumControl(L"bvolumeint",vItvolume,L"Volume Integrator",siControlCombo );
             lay.AddItem(L"bvolexpert", L"Advanced").PutWidthPercentage(6);
         lay.EndRow();
@@ -529,7 +544,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
     lay.AddTab(L"About");
     //-------------------/
     lay.AddGroup();
-        lay.AddStaticText(L" LuXSI; LuxRender Exporter for Autodesk Softimage.");
+        lay.AddStaticText(L" LuxRender Exporter for Autodesk Softimage.");
         lay.AddStaticText(L" Version v1.1 (Windows 32 and 64 bits).");
         lay.AddGroup();
         lay.AddStaticText(L" Copyright 2007 - 2012 of all Authors:");
@@ -538,7 +553,7 @@ XSIPLUGINCALLBACK CStatus LuXSI_DefineLayout( CRef& in_ctxt )
         lay.EndGroup();
         lay.AddGroup();
             lay.AddStaticText(L" Collaborators:");
-            lay.AddStaticText(L" \"sshadows\"\n Leslaw Cymer \"l_cymer\"");
+            lay.AddStaticText(L" \"sshadows\"\n Leslaw Cymer  \"l_cymer\"");
         lay.EndGroup();
         //-
         lay.AddStaticText(L" LuxRender is a GPL physically based\n and unbiased rendering engine.");

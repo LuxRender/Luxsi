@@ -29,7 +29,7 @@ IF(MSVC)
         cmake_policy(VERSION 2.8)
 ENDIF(MSVC)
 
-PROJECT(luxsi CXX)
+PROJECT(luxsi_slg CXX)
 SET(VERSION 1.1)
 
 ## include SDK headers ##

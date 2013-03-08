@@ -28,6 +28,7 @@ along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace std;
 using namespace XSI;
+using namespace MATH;
 
 /* for preview materials
 */
@@ -131,7 +132,7 @@ CString write_lux_glossy(Shader in_shader);
 * @param in_texture     LuxRender texture component ( Kd, Ks, Kr...)
 * @param in_shader_port Nodeport name ( diffuse, specular, Kd,,)
 */
-CString mat_value( Shader in_shader, CString in_texture, CString in_shader_port);
+CString swColorTexture( Shader in_shader, CString in_texture, CString in_shader_port);
 
 /** Helpers for material definitions 
 */

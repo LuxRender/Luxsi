@@ -1,9 +1,9 @@
-/*
+/***********************************************************************
 This file is part of LuXSI;
 LuXSI is a LuxRender Exporter for Autodesk(C) Softimage(C) ( ex-XSI )
 http://www.luxrender.net
 
-Copyright(C) 2007 - 2012  of all Authors:
+Copyright(C) 2007 - 2013  of all Authors:
 Michael Gangolf, 'miga', mailto:miga@migaweb.de                                               
 Pedro Alcaide, 'povmaniaco', mailto:p.alcaide@hotmail.com
  
@@ -19,7 +19,8 @@ GNU General Public License for more details.
                                                                            
 You should have received a copy of the GNU General Public License     
 along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
-*/
+
+***********************************************************************/
 
 #ifndef LUXSI_INSTANCES_H
 #define LUXSI_INSTANCES_H
@@ -32,7 +33,8 @@ using namespace MATH;
 using namespace std;
 
 //-
-extern CStringArray aInstanceList;
+//extern 
+CStringArray aInstanceList;
 
 /**/
 extern bool luxdebug;

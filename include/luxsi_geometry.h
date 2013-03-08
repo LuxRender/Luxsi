@@ -71,7 +71,7 @@ extern CString vFileGeo;
 
 /* Define on/off exported smoooth objects
 */
-extern bool vSmooth_mesh;
+extern bool exportNormals;
 
 /* Preserve hard edges 
 */

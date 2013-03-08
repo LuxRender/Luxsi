@@ -1,9 +1,9 @@
-/*
+/***********************************************************************
 This file is part of LuXSI;
 LuXSI is a LuxRender Exporter for Autodesk(C) Softimage(C) ( ex-XSI )
 http://www.luxrender.net
 
-Copyright(C) 2007 - 2012  of all Authors:
+Copyright(C) 2007 - 2013  of all Authors:
 Michael Gangolf, 'miga', mailto:miga@migaweb.de                                               
 Pedro Alcaide, 'povmaniaco', mailto:p.alcaide@hotmail.com
  
@@ -19,7 +19,8 @@ GNU General Public License for more details.
                                                                            
 You should have received a copy of the GNU General Public License     
 along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
-*/
+
+***********************************************************************/
 
 #include "include\luxsi_main.h"
 
@@ -36,11 +37,11 @@ extern float vContrast;
 /**/
 extern CString vChanel;
 
-/* for normalize path files ( slash character )
+/* for normalize path to files ( slash character )
 */
 extern std::string luxsi_replace(string input);
 
-/* Is 'normal' scene or 'Preview'
+/* Is 'normal' scene, or 'Preview'
 */
 extern bool is_preview;
 
@@ -49,15 +50,15 @@ CString luxsi_texture(Material mat, Shader s)
     //-- test
     CString texStr;
     //- end
-    CRefArray texMat = s.GetShaders();
+    CRefArray materialTextures = s.GetShaders();
 
     //-( 3 ) for textures..
-    for (int k=0; k < texMat.GetCount(); k++)
+    for (int k=0; k < materialTextures.GetCount(); k++)
     {
-        Texture tex = texMat[k];
+        Texture tex = materialTextures[k];
         CString vTexID(tex.GetProgID().Split(L".")[1]);
         // test
-        CString texFact=L"";
+        //CString texFact=L"";
         //bool vNorm=false;
         CString vChanType=L"color";
               
@@ -80,13 +81,14 @@ CString luxsi_texture(Material mat, Shader s)
             CString uvmap = L"uv";
             if ( is_preview ) uvmap = L"spherical";
                  
-            //- 
+            //- active 'bump_inuse' in image interface 
             if ( bool(tex.GetParameterValue(L"bump_inuse")) == true && vChanel == L"bumpmap")
             {
                 //--
                 vChanType = L"float";
             }
-                    
+            const char *texFilterType []= {"bilinear", "mipmap_trilinear", "mipmap_ewa", "nearest"};
+
             //----/ rewrite all /-------->
             texStr += L"\nTexture \"" + _tex_name + L"\" \""+ vChanType + L"\" \"imagemap\" \n";
             texStr += L" \"string wrap\" [\"repeat\"] \n"; //TODO; create option at spdl file
@@ -94,7 +96,7 @@ CString luxsi_texture(Material mat, Shader s)
             texStr += L" \"string filename\" [\""+ CString(luxsi_replace(vFileName.GetAsciiString()).c_str()) + L"\"] \n";
             texStr += L" \"float gamma\" ["+ CString( vContrast ) + L"]\n";
             texStr += L" \"float gain\" [1.000000]\n";
-            texStr += L" \"string filtertype\" [\"bilinear\"] \n";// TODO; create option
+            texStr += L" \"string filtertype\" [\""+ CString(texFilterType[0]) + L"\"] \n";// TODO; create option
             texStr += L" \"string mapping\" [\""+ uvmap +"\"] \n";
             texStr += L" \"float vscale\" [-1.0]\n";
             texStr += L" \"float uscale\" [1.0] \n";

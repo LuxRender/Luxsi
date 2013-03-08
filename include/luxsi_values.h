@@ -48,7 +48,7 @@ CRefArray params;
 float red = 0.0f, green = 0.0f, blue = 0.0f, alpha = 0.0f;
 
 //-- distributepath
-/*
+/* moved to luxsi.h
 bool vdirectdiffuse = true, vdirectglossy = true, vindirectsampleall = false, vindirectdiffuse = true;
 bool vindirectglossy = true, vdirectsampleall = true, vdiff_reflect_reject = false;
 bool vdiff_refract_reject = false, vglossy_reflect_reject = false, vglossy_refract_reject = false;
@@ -92,12 +92,9 @@ int vSurfaceInt = 0, vRRstrategy = 0, vEye_depth=16, vLight_depth=16, vLight_str
 float vEyeRRthre = 0.0f, vLightRRthre = 0.0f, vrrcon_prob = 0.65f;
 bool vInc_env = false, vsexpert = false;
 
-//-- volume integrator
-int vvolumeint = 0;
-
 // Accelerator	
 int vmaxprimsperleaf = 4, vfullsweepthr = 16, vskipfactor = 1, vtreetype = 2; // combo
-int vcostsamples = 0, vmaxprims = 1, vacmaxdepth = -1;
+int vcostsamples = 0, vmaxprims = 1, vacmaxdepth = -1; // povman
 
 //-- kd-tree
 int vintersectcost = 80, vtraversalcost = 1; 
@@ -107,20 +104,23 @@ bool vrefineinmed = false, vacexpert = false;
 
 //-- igi
 int vnsets = 4, vnlights = 64;
-float vmindist = 0.10f; 
+float vmindist = 0.10f;
+
 //-- Sampler
 float vlmutationpro = 0.1f, vmutationrange = 2.5;
-int vSampler = 2, vmaxconsecrejects = 256, vchainlength = 512, vPixsampler = 3, vPixelsamples = 2;
+int vSampler = 2, vmaxconsecrejects = 256, vchainlength = 512, vPixsampler = 3, vPixelsamples = 4;
 int vbasampler = 0;
-bool vusevariance = false;
-//-- 
-int vBounces=10, vpresets=2 ;
+bool vusevariance = false, vExpert = false;
+
+//--
+int vpresets = 0 ;
 
 //-- stop render option, display int., save int.
 int vEngine = 0, vThreads = 2, vAccel = 2, vRmode = 0;
-bool vAutoTh = true, vExpert = false, luxdebug = false;
+bool vAutoTh = true, luxdebug = false;
 int vhaltspp = 0, vhalttime = 0, vDis = 12, vSave = 120;
-
+//
+bool vExportDone = false, vResume = false;
 
 
 //-- hidden options
@@ -133,18 +133,8 @@ int vhaltspp = 0, vhalttime = 0, vDis = 12, vSave = 120;
 */
 bool vIsHiddenCam = true, vIsHiddenLight = true, vIsHiddenObj = true, vIsHiddenSurface = false, vIsHiddenClouds = false;
 
-//--
-bool vIsLinux = false;
-//bool vProg = true; // not used ??
-bool vExportDone = false, vResume = false;
-
 //-- export
-bool vSmooth_mesh = false, vSharp_bound = false, vplymesh = false;;
-
-// float vCSize = 0.4f, vGITolerance = 0.025f, vSpacingX = 0.1f, vSpacingY = 0.1f; 
-float vContrast = 2.2f;
-float vrrprob = 0.65f;
-//-- surface
+bool exportNormals = false, vSharp_bound = false, vplymesh = true;
 
 //-- filter
 float vXwidth = 2.0f, vYwidth = 2.0f, vFalpha = 2.0f, vF_B = 0.3f, vF_C = 0.3f, vTau = 0.3f;
@@ -153,30 +143,26 @@ bool vfexpert = false, vSupers = false;;
 
 //-- material preview
 
-int vlights = 0; //  UNUSED ??
-
 /* is 'preview' or normal scene
 */
 bool is_preview;
 
 //----/ convention names, prefix; Mt /----->
 const char *MtBool[] = { "false", "true" };
-const char *MtBsampler[]= { "lowdiscrepancy", "random" }; // mode, Asampler [vSampler]
 const char *MtAccel[]= { "qbvh", "bvh", "kdtree" }; // mode; iter vAccel
 
-//--
-CRefArray aGroups;
 /** CStringArrays:
 *   aMatList,       />! for Material
-*   aInstanceList,  />! for Instances
 */
-CStringArray aMatList, aInstanceList;
+CStringArray aMatList;
 
-CString vSun = L"", vHDRI = L"", vFileExport = L"", vFileGeo = L"", vLuXSIPath = L"";
+CString vSun = L"", vFileExport = L"", vFileGeo = L"", vLuXSIPath = L"";
 
-//-- new test for values
 //-- save image options
+float vContrast = 2.2f;
 int vXRes = 640, vYRes = 480, vRpng = 3, vExr_Znorm = 2, vRtga = 1;
 bool vPng = true, vWpng_16 = false, vPng_gamut = false, vTga = false, vTga_gamut = false, vExr = false;
+//- SLG
+//int vslgint = 0;
 
 #endif //LUXSI_VALUES_H

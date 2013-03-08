@@ -22,6 +22,7 @@ along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "include\luxsi_main.h"
+#include "include\luxsi_camera.h"
 
 using namespace XSI;
 using namespace MATH;
@@ -58,7 +59,6 @@ bool is_visible(X3DObject o, CString objType)
     Property visi = o.GetProperties().GetItem(L"Visibility");
     bool view_visbl = (bool)visi.GetParameterValue(L"viewvis");
     bool rend_visbl = (bool)visi.GetParameterValue(L"rendvis");
-    
     /*
     * add visible objects and not visibles if 'vIsHidden..' is True.
     */
@@ -331,11 +331,11 @@ CString luxsiTransformClasic(X3DObject o, CString pivotReference)
             + CString( axis[1] ) + L"\n";
     }
     /** Scale.
-    *   Add support for not uniform scale using "or". 
+    *   Add support for non-uniform scale using "or". 
     */
     if (goTransform.GetSclX()!=1 || goTransform.GetSclY()!=1 || goTransform.GetSclZ()!=1)
     {
-        /** WARNING! change 'Y' for 'Z', but not negative ( -z ).
+        /** WARNING! change 'Y' for 'Z', but not negative ( -Z ).
         */
         transformData += L"Scale "
             + CString(goTransform.GetSclX()) + L" "
@@ -348,28 +348,29 @@ CString luxsiTransformClasic(X3DObject o, CString pivotReference)
 //- material micro-functions
 CString floatToString(Shader s, CString item, CString definition)
 {
-    CString strData = L"  \"float "+ item + L"\" ["+ CString(s.GetParameterValue(definition)) + L"] \n";
+    CString strData = L"    \"float "+ item + L"\" ["+ CString(s.GetParameterValue(definition)) + L"] \n";
     //-
     return strData;
 }
 //-
 CString floatToString(Shader s, CString item)
 {
-    CString strData = L"  \"float "+ item + L"\" ["+ CString(s.GetParameterValue(item)) + L"] \n";
+    CString strData = L"    \"float "+ item + L"\" ["+ CString(s.GetParameterValue(item)) + L"] \n";
     //-
     return strData;
 }
 //-
 CString integerToString(Shader s, CString item, CString definition)
 {
-    CString strData = L"  \"integer "+ item + L"\" ["+ CString(s.GetParameterValue(definition)) + L"] \n";
+    //if (definition == L"") definition = item;
+    CString strData = L"    \"integer "+ item + L"\" ["+ CString(s.GetParameterValue(definition)) + L"] \n";
     //-
     return strData;            
 }
 //-
 CString integerToString(Shader s, CString item)
 {
-    CString strData = L"  \"integer "+ item + L"\" ["+ CString(s.GetParameterValue(item)) + L"] \n";
+    CString strData = L"    \"integer "+ item + L"\" ["+ CString(s.GetParameterValue(item)) + L"] \n";
     //-
     return strData;            
 }

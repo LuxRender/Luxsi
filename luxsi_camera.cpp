@@ -1,9 +1,9 @@
-/*
+/***********************************************************************
 This file is part of LuXSI;
 LuXSI is a LuxRender Exporter for Autodesk(C) Softimage(C) ( ex-XSI )
 http://www.luxrender.net
 
-Copyright(C) 2007 - 2012  of all Authors:
+Copyright(C) 2007 - 2013  of all Authors:
 Michael Gangolf, 'miga', mailto:miga@migaweb.de                                               
 Pedro Alcaide, 'povmaniaco', mailto:p.alcaide@hotmail.com
  
@@ -19,11 +19,54 @@ GNU General Public License for more details.
                                                                            
 You should have received a copy of the GNU General Public License     
 along with LuXSI.  If not, see <http://www.gnu.org/licenses/>.
-*/
+
+***********************************************************************/
 
 #include "include\luxsi_camera.h"
 
+//-
+CRefArray sceneCollectionsCameras()
+{
+    //-
+    CRefArray sceneCams, aCams;
+    root = app.GetActiveSceneRoot();
+    sceneCams += root.FindChildren( L"", L"CameraRoot", CStringArray(), true );
+    //-
+    for ( long i = 0; i < sceneCams.GetCount(); i++)
+    {
+        X3DObject obj(sceneCams[i]);
+        //-
+        if ( is_visible(obj, L"camera")) aCams.Add(obj);
+    }
+    return aCams;
+}
 //--
+CVector3 cameraLookAt(Camera cam, CString date)
+{
+    CVector3 cameraData;
+    //
+    if (date == L"Look")
+    {
+        cameraData = cam.GetKinematics().GetGlobal().GetTransform(ftime).GetTranslation();
+    }
+    else if (date == L"At")
+    {
+        X3DObject camInterest = cam.GetInterest();
+        cameraData = camInterest.GetKinematics().GetGlobal().GetTransform(ftime).GetTranslation();
+    }
+    else if (date == L"Up")
+    {
+        CMatrix4 camMatrix = cam.GetKinematics().GetGlobal().GetTransform(ftime).GetMatrix4();
+        //- 
+        cameraData.Set(camMatrix.GetValue(1,0), camMatrix.GetValue(1,1), camMatrix.GetValue(1,2));
+    }
+    else
+    {
+        app.LogMessage(L"Incorrect camera vector type");
+    }
+    return cameraData;
+}
+//-- 
 CString luxsiCameraShaders(CRefArray camShaders)
 {
     CString dofData;
@@ -75,9 +118,8 @@ CString luxsiCameraShaders(CRefArray camShaders)
     }
     return dofData;
 }
-
-//--
-CString writeLuxsiCam(X3DObject o)
+//-
+CString writeLuxsiCam()
 {
     /****************************
     * Status: work in progress
@@ -85,86 +127,94 @@ CString writeLuxsiCam(X3DObject o)
     //- values
     CString camShaderData, camData; 
     float vfov, aspect;
-    //-
-    X3DObject camInterest;
-    Camera cam;
-    cam = o.GetChildren()[0]; // camera
-    camInterest = o.GetChildren()[1]; // target
-    //camInterest = cam.GetInterest(); // other mode        
 
-    /* Camera position */
-    KinematicState  cam_global_state    = cam.GetKinematics().GetGlobal();
-    CTransformation cam_global_transf   = cam_global_state.GetTransform(ftime);
-    CVector3 camPos = cam_global_transf.GetTranslation();
-
-    /* Camera target position */
-    KinematicState  target_global_state     = camInterest.GetKinematics().GetGlobal();
-    CTransformation target_global_transf    = target_global_state.GetTransform(ftime);
-    CVector3 targetPos = target_global_transf.GetTranslation();
-    
-    //- shader nodes connect to camera
-    CRefArray cShaders = cam.GetShaders();
-    if ( cShaders.GetCount() > 0 )
-    {
-        //dofData = luxsiCameraShaders(cShaders);
-        camShaderData = luxsiCameraShaders(cShaders);
-    }    
-    //--
-    if ((int)cam.GetParameterValue(L"fovtype")==1) 
-    {
-        // calculate the proper FOV (horizontal -> vertical)
-        aspect = float(cam.GetParameterValue(L"aspect"));
-        float hfov = float(cam.GetParameterValue(L"fov"));
-        vfov = float( 2 * ( atan( (1/aspect) * tan(hfov / 2 * PI/180)) ) * (180/PI) );
-    } 
-    else
-    {
-        // keep vertical FOV
-        vfov = float(cam.GetParameterValue(L"fov"));
-    }
-    //- test from liblux
-    //float frame = aspect;
-    float screen[4];
-	if (aspect > 1.f){
-		screen[0] = -aspect; screen[1] = aspect; screen[2] = -1.f; screen[3] = 1.f;
-	} else {
-		screen[0] = -1.f; screen[1] = 1.f; screen[2] = -1.f / aspect; screen[3] = 1.f / aspect;
-	}
-    //--
-    int camera_proj = cam.GetParameterValue(L"proj");
-    //--
-    camData = L"LookAt "
-        + CString(camPos[0]) + L" "
-        + CString(-camPos[2]) + L" "
-        + CString(camPos[1]) + L"\n";
+    CRefArray aCamera = sceneCollectionsCameras();
     //-
-    camData += L" "
-        + CString(targetPos[0]) + L" "
-        + CString(-targetPos[2]) + L" "
-        + CString(targetPos[1]) + L"\n";
-    //-
-    camData += L" 0 0 1 \n"; //TODO
-    //--    
-    if ( camera_proj == 1 )
+    for ( long i = 0; i < aCamera.GetCount(); i++)
     {
-        camData += L"Camera \"perspective\" \n";
-        camData += L"  \"float fov\" ["+ CString( vfov ) + L"] \n";
-        camData += L"  \"float screenwindow\" ["
-            + CString(screen[0]) + L" "
-            + CString(screen[1]) + L" "
-            + CString(screen[2]) + L" "
-            + CString(screen[3]) + L"]\n";
-	    //camData += L"float shutteropen" [0.00]
-	    //camData += L"float shutterclose" [0.04]
-        //- clipping ?
-        camData += L"  \"float hither\" ["+ CString(cam.GetParameterValue(L"near"))+ L"]\n";
-	    camData += L"  \"float yon\" ["+ CString(cam.GetParameterValue(L"far"))+ L"]\n";
+        X3DObject camRoot(aCamera[i]);    
         //-
-        if (!camShaderData.IsEmpty()) camData += camShaderData;
-    }
-    else //-- orthographic
-    {        
-        camData += L"Camera \"orthographic\"\n";
+        Camera cam = camRoot.GetChildren()[0]; // camera
+    
+        /* Position */
+        CVector3 look = cameraLookAt(cam, L"Look");
+        /* Target */
+        CVector3 target = cameraLookAt(cam, L"At");
+        /* Up */
+        CVector3 up = cameraLookAt(cam, L"Up");
+    
+        //- shader nodes connect to camera
+        CRefArray cShaders = cam.GetShaders();
+        //-
+        if ( cShaders.GetCount() > 0 )
+        {
+            camShaderData = luxsiCameraShaders(cShaders);
+        }
+
+        //- compute FOV
+        aspect = float(cam.GetParameterValue(L"aspect"));
+        vfov = float(cam.GetParameterValue(L"fov"));
+        //-
+        if ( int(cam.GetParameterValue(L"fovtype")) == 1) 
+        {
+            // calculate the proper FOV (horizontal -> vertical)
+            float hfov = float(cam.GetParameterValue(L"fov"));
+            vfov = float( 2 * ( atan( (1/aspect) * tan(hfov / 2 * PI/180)) ) * (180/PI) );
+        } 
+        //- calculate screen window ( from liblux )
+        CVector4 screenW(-1.f, 1.f, -1.f/aspect, 1.f/aspect);
+        //-
+	    if (aspect > 1.f) screenW.Set(-aspect, aspect, -1.f, 1.f);
+    
+        //-- projection type
+        int camera_proj = cam.GetParameterValue(L"proj");
+
+        //- pos
+        camData = L"\nLookAt "
+            + CString(look[0]) + L" "
+            + CString(-look[2]) + L" "
+            + CString(look[1]) + L"\n";
+
+        //- target
+        camData += L"\t"
+            + CString(target[0]) + L" "
+            + CString(-target[2]) + L" "
+            + CString(target[1]) + L"\n"; 
+
+        //- up
+        camData += L"\t"
+            + CString(up[0]) + L" "
+            + CString(-up[2]) + L" "
+            + CString(up[1]) + L"\n";
+
+        //--    
+        if ( camera_proj == 1 )
+        {
+            camData += L"\nCamera \"perspective\" \n";
+            camData += L"  \"float fov\" ["+ CString( vfov ) + L"] \n";
+            camData += L"  \"float screenwindow\" ["
+                + CString(screenW[0]) + L" "
+                + CString(screenW[1]) + L" "
+                + CString(screenW[2]) + L" "
+                + CString(screenW[3]) + L"]\n";
+	        //camData += L"float shutteropen" [0.00]
+	        //camData += L"float shutterclose" [0.04]
+
+            //- clipping ?
+            camData += L"  \"float hither\" ["+ CString(cam.GetParameterValue(L"near"))+ L"]\n";
+	        camData += L"  \"float yon\" ["+ CString(cam.GetParameterValue(L"far"))+ L"]\n";
+        
+            //- add Camera shaders
+            if (!camShaderData.IsEmpty()) camData += camShaderData;
+        }
+        else //-- orthographic
+        {        
+            camData += L"\nCamera \"orthographic\"\n";
+            camData += L"  \"float screenwindow\" ["
+                + CString(screenW[0]) + L" "
+                + CString(screenW[1]) + L" "
+                + CString(screenW[2]) + L" "
+                + CString(screenW[3]) + L"]\n";
         /*
 	    //- not dof / not clipping
         "float screenwindow" [-3.65 3.65 -2.53 2.53]
@@ -173,11 +223,10 @@ CString writeLuxsiCam(X3DObject o)
 	    "float shutterclose" [0.0416]
         */
         
+        }
+        /* panoramic = environment ?
+            Camera "environment"
+        */
     }
-    /* panoramic = environment ?
-        Camera "environment"
-    */
     return camData;
 }
-
-//--
