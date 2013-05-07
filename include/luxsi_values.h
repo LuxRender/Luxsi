@@ -38,7 +38,7 @@ Application app;
 Model root;
 ofstream f;
 Null null;
-CustomProperty prop ;
+CustomProperty prop;
 UIToolkit kit = app.GetUIToolkit();
 ProgressBar pb = kit.GetProgressBar();
 //--
