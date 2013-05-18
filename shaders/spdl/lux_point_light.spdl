@@ -3,7 +3,7 @@
 # LuXSI is a LuxRender Exporter for Autodesk(C) Softimage(C) ( ex-XSI )
 # (http://www.luxrender.org)
 #
-# Copyright(C) 2007 - 2012  of all Authors:
+# Copyright(C) 2007 - 2013  of all Authors:
 # Michael Gangolf, 'miga', mailto:miga@migaweb.de
 # Pedro Alcaide, 'povmaniaco', mailto:p.alcaide@hotmail.com
 #
@@ -13,7 +13,7 @@
 # or (at your option) any later version.
 #
 # LuXSI is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty 
+# but WITHOUT ANY WARRANTY; without even the implied warranty
 # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See the GNU General Public License for more details.
 #
@@ -36,7 +36,7 @@ PropertySet "lux_point_light_pset"
 	Parameter "color" input
 	{
 		GUID = "{D417F427-245F-4B3B-9D1D-1A1740CD0C57}";
-		# light color ?
+        # light color ?
 		ui "mapping" = "{07C5EDE4-52A4-11D0-8298-00A0243E366B}";
 		Type = color;
 		Texturable = on;
@@ -47,7 +47,7 @@ PropertySet "lux_point_light_pset"
 		GUID = "{DA31CBB0-0D67-47B8-8FB3-12911E9AB3F2}";
 		Type = scalar;
 		Value = 1.0;
-		Value Minimum = 0.0;
+		Value Minimum = 0.1;
 		Value Maximum = 1000.0;
 	}
 	Parameter "importance" input
@@ -62,6 +62,7 @@ PropertySet "lux_point_light_pset"
 	{
 		GUID = "{1D000DC8-14E5-468E-B8C5-40FE6017879F}";
 		Type = string;
+		Value = "";
 	}
 	Parameter "flipz" input
 	{
@@ -76,7 +77,7 @@ PropertySet "lux_point_light_pset"
 		Value = 0.5;
 		Value Minimum = 0.1;
 		Value Maximum = 1024.0;
-	}	
+	}
 	Parameter "efficacy" input
 	{
 		GUID = "{B195005D-5DBD-4F34-A047-E0C6B9EB2983}";
@@ -102,10 +103,10 @@ PropertySet "lux_point_light_pset"
 	Parameter "shadowray" input
 	{
 		GUID = "{AFD844C0-5829-41B3-ACD6-98E74C9A6D3C}";
-		Type = scalar;
-		Value = 1.0;
-		Value Minimum = 0.1;
-		Value Maximum = 100.0;
+		Type = integer;
+		Value = 1;
+		Value Minimum = 1;
+		Value Maximum = 100;
 	}
 	Parameter "hiddengeo" input
 	{
@@ -138,7 +139,7 @@ Defaults
 		UIType = "rgb";
 		Commands = "{F5C75F11-2F05-11D3-AA95-00AA0068D2C0}";
 	}
-	
+
 	gain
 	{
 		Name = "Gain";
@@ -147,20 +148,20 @@ Defaults
 	{
 		Name = "Importance";
 	}
-	
+
 	iesfile
 	{
 		Name = "Path IES file";
 		UIType = "dscontrol"
 		{
-			 Class = "edit";
-			 Caption = ";file=1;openfile=1;filefilter=IES Files |*.ies";
+			Class = "edit";
+			Caption = ";file=1;openfile=1;filefilter=IES Files |*.ies";
 		}
 	}
-	
+
 	flipz
 	{
-		Name = "Flip Z (IES correction)";	
+		Name = "Flip Z (Use IES correction)";
 	}
 	power
 	{
@@ -184,9 +185,9 @@ Defaults
 	}
 	hiddengeo
 	{
-		Name = "Hidden Geometry";
+		Name = "Hidden Geometry ( for not shadows)";
 	}
-	
+
 }
 
 Layout "Default"
@@ -204,23 +205,34 @@ Layout "Default"
 	Group, ShowFrame
 	{
 		usesphere;
-		radius, LabelWidth(75%,95);
-		shadowray, LabelWidth(75%,95);
+		radius, LabelWidth(70%,95);
+		shadowray, LabelWidth(70%,95);
 		hiddengeo;
 	}
 }
 
-BeginScript
-	sub usesphere_Onchanged()
-		pset.radius.Enable(pset.usesphere.Value = TRUE)
-		pset.shadowray.Enable(pset.usesphere.Value = TRUE)
-		pset.hiddengeo.Enable(pset.usesphere.Value = TRUE)
-	end sub
-	Application.LogMessage( usesphere.Value )
-	Sub OnInit
-        usesphere_Onchanged
+Logic
+{
+	Sub iesfile_Onchanged()
+	''' for not use sphere with IES light '''
+	flipz.Enable(iesfile <> "")
+	usesphere.Enable(iesfile = "")
+	radius.Enable(iesfile = "" and usesphere = TRUE)
+	shadowray.Enable(iesfile = "" and usesphere = TRUE)
+	hiddengeo.Enable(iesfile = "" and usesphere = TRUE)
 	End Sub
-EndScript
+
+	Sub usesphere_Onchanged()
+	radius.Enable(usesphere = TRUE)
+	shadowray.Enable(usesphere = TRUE)
+	hiddengeo.Enable(usesphere = TRUE)
+	End Sub
+
+	Sub OnInit
+	iesfile_Onchanged
+	usesphere_Onchanged
+	End Sub
+}
 
 
 Plugin = Shader
