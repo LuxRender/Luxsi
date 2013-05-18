@@ -32,18 +32,18 @@ CString SLGRenderScene(CString in_sceneFile);
 //-
 CVector3 storeLightDirection(X3DObject obj, CString pivot)
 {
-	CMatrix4 lDir;
+	CMatrix4 lightDir;
 	//-
 	if ( pivot == L"local")
 	{
-		lDir = obj.GetKinematics().GetLocal().GetTransform().GetMatrix4();
+		lightDir = obj.GetKinematics().GetLocal().GetTransform().GetMatrix4();
 	}
 	else
 	{
-		lDir = obj.GetKinematics().GetGlobal().GetTransform().GetMatrix4();
+		lightDir = obj.GetKinematics().GetGlobal().GetTransform().GetMatrix4();
 	}
 	//-
-	CVector3 lightDirection(lDir.GetValue(2,0), -lDir.GetValue(2,2), lDir.GetValue(2,1));
+	CVector3 lightDirection(lightDir.GetValue(2,0), -lightDir.GetValue(2,2), lightDir.GetValue(2,1));
 	//-
 	return lightDirection;
 }
