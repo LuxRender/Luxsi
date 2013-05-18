@@ -70,6 +70,12 @@ PropertySet "lux_glossy_pset"
         Value Minimum = 0.0;
         Value Maximum = 1.0;
     }
+	Parameter "anisotropic" input
+    {
+        GUID = "{FF8EBE29-144D-49B1-9486-C8F0C2198761}";
+        Type = boolean;
+        Value = off;
+    }
 	Parameter "uroughness" input
     {
         GUID = "{09FCBD92-BAE4-4F5B-8AA1-AEA5D74C3364}";
@@ -178,8 +184,12 @@ Defaults
 	}
     index
     {
-        Name = "Index";
+        Name = "Use IOR";
     }
+	anisotropic
+	{
+		Name="Anisotropic roughness";
+	}
 	uroughness
 	{
 		Name = "U roughness";
@@ -220,24 +230,30 @@ Defaults
 
 Layout "Default"
 {
+	# Glossy values
 	Group, ShowFrame
 	{
 		Kd;
 		Ks;
 		multibounce;
 		index;
+	}
+	Group, ShowFrame
+	{
+		anisotropic;
 		uroughness;
 		vroughness;
 	}
 	sigma;
 	
+	# Glossy Translucent values
 	Group, ShowFrame
 	{
 		translucent;
 		Kt;
 		onesided;
 	}
-	
+
 	/*
 	Group, ShowFrame
     {
@@ -252,22 +268,27 @@ Logic
 {
 	'Sub use_bump_OnChanged()
 	'	pset.bump_fact.Show(pset.use_bump.Value = TRUE)
-    '    Refresh
+    '   Refresh
     'End Sub
+	Sub anisotropic_OnChanged()
+		' more..
+		vroughness.Enable(anisotropic = true)
+	End Sub
 	Sub translucent_OnChanged()
-		pset.sigma.Enable(pset.translucent.Value = FALSE)
-		pset.onesided.Enable(pset.translucent.Value = TRUE)
-		pset.Kt.Enable(pset.translucent.Value = TRUE)
+		Ks.Enable(translucent = false)
+		sigma.Enable(translucent = false)
+		onesided.Enable(translucent = true)
+		Kt.Enable(translucent = true)
 		Refresh
 	End Sub
 	
 	Sub OnInit
+		anisotropic_OnChanged
 		translucent_OnChanged
 	End Sub
-
 }
 
 Plugin = Shader
 {
-    FileName = "lux_matte";
+    FileName = "luxsi_shaders";
 }
