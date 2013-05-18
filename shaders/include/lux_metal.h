@@ -10,7 +10,7 @@
 
 typedef struct
 {
-    miTag				mname;				// color
+    miTag				mname;			// color
 	miScalar			roughness;		// Transmit
 } lux_metal_t;
 

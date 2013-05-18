@@ -12,10 +12,10 @@
 extern "C" DLLEXPORT miBoolean
 lux_mirror
 (
-	miColor				*result,
-	miState				*state,
-	lux_mirror_t			*params
-	)
+    miColor             *result,
+    miState             *state,
+    lux_mirror_t        *params
+)
 {
 	// TODO: Shader main code goes here
 	*result = *mi_eval_color(&params->kr);
@@ -26,15 +26,15 @@ lux_mirror
 extern "C" DLLEXPORT void
 lux_mirror_init
 (
-	miState				*state,
-	lux_mirror_t			*params,
-	miBoolean			*inst_init_req
-	)
+    miState             *state,
+    lux_mirror_t        *params,
+    miBoolean           *inst_init_req
+)
 {
 	if( params == NULL )
 	{
 		// TODO: Shader global initialization code goes here (if needed)
-		
+
 		// Request a per-instance shader initialization as well (set to miFALSE if not needed)
 		*inst_init_req = miTRUE;
 	}
@@ -48,9 +48,9 @@ lux_mirror_init
 extern "C" DLLEXPORT void
 lux_mirror_exit
 (
-	miState				*state,
-	lux_mirror_t			*params
-	)
+    miState             *state,
+    lux_mirror_t        *params
+)
 {
 	if( params == NULL )
 	{
