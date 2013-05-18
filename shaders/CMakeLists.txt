@@ -23,43 +23,6 @@
 #
 #######################################################################
 
-MESSAGE(STATUS "CMAKE VERSION DETECTED " ${CMAKE_VERSION})
-
-IF(MSVC)
-        cmake_minimum_required(VERSION 2.8)
-        cmake_policy(VERSION 2.8)
-ENDIF(MSVC)
-
-PROJECT(shaders CXX)
-SET(VERSION 1.1)
-
-## include SDK headers ##
-INCLUDE_DIRECTORIES("$ENV{XSISDK_ROOT}/include/Core")
-INCLUDE_DIRECTORIES("$ENV{XSISDK_ROOT}/include")
-
-## link SDK libs ##
-SET(LIBS sicppsdk sicoresdk shader)
-
-## set architecture ##
-IF(ARCH_X86_64)
-    SET(ARCH nt-x86-64)
-ELSE(ARCH_X86_64)
-    SET(ARCH nt-x86)
-ENDIF(ARCH_X86_64)
-
-LINK_DIRECTORIES("$ENV{XSISDK_ROOT}/lib/${ARCH}")
-
-IF(LIBS)
-        LINK_LIBRARIES(${LIBS})
-ENDIF(LIBS)
-
-## set project sources and headers ##
-file(GLOB luxsi_SHADERS_SOURCES ${CMAKE_SOURCE_DIR}/*.cpp)
-file(GLOB luxsi_SHADERS_HEADERS ${CMAKE_SOURCE_DIR}/include/*.h)
-
-SOURCE_GROUP("Source Files" FILES ${luxsi_SHADERS_SOURCES})
-SOURCE_GROUP("Header Files" FILES ${luxsi_SHADERS_HEADERS})
-
 
 ## shaders libraries
 add_library(lux_car_paint           SHARED lux_car_paint.cpp)
