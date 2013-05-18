@@ -387,7 +387,7 @@ CString writeLuxsiObj(X3DObject o)
             /** Make link to .ply file \n
             *   The vFileGeo value = full path + filename + framenumber + LXS extension. \n 
             *   luxsi_normalize_path(), returns alone the filename with the framenumber. \n
-            *   Here we add the name of the object and the expension PLY.
+            *   Here we add the name of the object and the extension PLY.
             */
             CString ply_ext = L"_"+ o.GetName() + L".ply";
             CString include_ply_filename = luxsi_normalize_path(vFileGeo) + ply_ext;
