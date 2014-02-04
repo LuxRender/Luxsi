@@ -58,30 +58,26 @@ CString writeLuxsiLight()
     for ( int i=0; i < Alights.GetCount(); i++ )
     {
         X3DObject o(Alights[i]);
+        Light light = Light(o);
             
         //- light global transform
-        KinematicState global_state = o.GetKinematics().GetGlobal();
-        CTransformation global_transf = global_state.GetTransform();        
-        
+        CTransformation global_transf = o.GetKinematics().GetGlobal().GetTransform();
         //- point from
         CVector3 light_from;
         light_from.MulByTransformationInPlace(global_transf); 
-        //global_transf.GetTranslation()... ? REVISE!!
-
+        
         //- light object interest. Target object for 'infinite' or 'spot' lights
         X3DObject light_interest = Light(o).GetInterest();
             
         //- set state for 'point to'
-        KinematicState to_global_state = light_interest.GetKinematics().GetGlobal();
-        CTransformation to_global_transf = to_global_state.GetTransform();
-
+        CTransformation to_global_transf = light_interest.GetKinematics().GetGlobal().GetTransform();
         //- point to
         CVector3 light_to;
         light_to.MulByTransformationInPlace(to_global_transf);
 
         //--
         Shader s((Light(o).GetShaders())[0]);
-        /** Same name for xsi and Lux shaders: 'color'
+        /** Same name for XSI and Lux shaders: 'color'
         *   if no have any shader, the color value is (0,0,0).
         */
         s.GetColorParameterValue(L"color", red, green, blue, alpha);
@@ -131,8 +127,6 @@ CString writeLuxsiLight()
 	        return l;
         }
         */    
-        //-
-        //CString xsi_env = find_XSI_env();
         //-
         if (lightID == L"lux_environment_light")
         {
@@ -276,8 +270,7 @@ CString luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
             pLightData += L"  \"float importance\" [1.0]\n"; // TODO
             pLightData += L"  \"float power\" ["+ CString( float(s.GetParameterValue(L"intensity"))*10 ) + L"]\n";
             pLightData += L"  \"float efficacy\" [17.0]\n"; //TODO
-            pLightData += L"  \"color L\" ["+ CString( red ) + L" "+ CString( green ) + L" "+ CString( blue ) + L"]\n";
-        
+            pLightData += L"  \"color L\" ["+ CString( red ) + L" "+ CString( green ) + L" "+ CString( blue ) + L"]\n";        
         }
         else if ( lightID == L"lux_point_light")
         {
@@ -368,10 +361,11 @@ CString luxsi_point_light(X3DObject o, Shader s, CVector3 light_from)
             if ( usesphere ) pLightData += L"\nAreaLightSource \"area\"\n"; 
             //-
             pLightData += L"  \"float gain\" ["+ CString( float(s.GetParameterValue(L"gain")) ) + L"]\n";
-            pLightData += L"  \"float importance\" ["+ CString( float(s.GetParameterValue(L"importance")) ) + L"]\n"; // TODO
+            pLightData += L"  \"float importance\" ["+ CString( float(s.GetParameterValue(L"importance")) ) + L"]\n";
             pLightData += L"  \"float power\" ["+ CString( float(s.GetParameterValue(L"power")) ) + L"]\n";
             pLightData += L"  \"float efficacy\" ["+ CString( float(s.GetParameterValue(L"efficacy")) ) + L"]\n";
             pLightData += L"  \"color L\" ["+ CString( red ) + L" "+ CString( green ) + L" "+ CString( blue ) + L"]\n";
+            //-
             if (!usesphere)
             {
                 pLightData += L"  \"point from\" ["
@@ -418,14 +412,10 @@ CString luxsi_area_light_transform(X3DObject o, float size_X, float size_Y)
     //-
     CVector3 p1, p2, p3, p4;
     //-
-    p1.Set(-size_X/2, size_Y/2, 0.0);
-    p1.MulByTransformationInPlace(area_transf);
-    p2.Set(-size_X/2, -size_Y/2, 0.0);
-    p2.MulByTransformationInPlace(area_transf);
-    p3.Set(size_X/2, -size_Y/2, 0.0);
-    p3.MulByTransformationInPlace(area_transf);
-    p4.Set(size_X/2, size_Y/2, 0.0);
-    p4.MulByTransformationInPlace(area_transf);
+    p1.Set(-size_X/2, size_Y/2, 0.0);   p1.MulByTransformationInPlace(area_transf);
+    p2.Set(-size_X/2, -size_Y/2, 0.0);  p2.MulByTransformationInPlace(area_transf);
+    p3.Set(size_X/2, -size_Y/2, 0.0);   p3.MulByTransformationInPlace(area_transf);
+    p4.Set(size_X/2, size_Y/2, 0.0);    p4.MulByTransformationInPlace(area_transf);
     //-
     CString aPoints = L"";
     aPoints += CString( p1[0] ) + L" "+ CString( -p1[2] ) + L" "+ CString( p1[1] ) + L" ";

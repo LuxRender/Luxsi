@@ -90,7 +90,4 @@ CString find_XSI_env();
 CString luxsi_point_light(X3DObject in_obj, Shader in_shader, CVector3 in_vector);
 /**/
 CRefArray sceneLight, Alights;
-//-
-//- InfiniteAreaLight *l =  new InfiniteAreaLight(light2world, L, nSamples, texmap, map, gain, gamma);
-
     
